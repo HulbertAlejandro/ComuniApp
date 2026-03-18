@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.activity.compose.BackHandler
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.utils.RequestResult
@@ -30,6 +31,11 @@ fun RegisterScreen(
     onNavigateBack: () -> Unit = {},
     viewModel: RegisterViewModel = viewModel()
 ) {
+
+    // BackHandler para manejar el botón de retroceso
+    BackHandler {
+        onNavigateBack()
+    }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val registerResult by viewModel.registerResult.collectAsState()

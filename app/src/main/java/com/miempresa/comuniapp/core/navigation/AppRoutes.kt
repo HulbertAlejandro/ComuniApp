@@ -1,9 +1,24 @@
 package com.miempresa.comuniapp.core.navigation
 
-object AppRoutes {
-    const val HOME = "home"
-    const val LOGIN = "login"
-    const val REGISTER = "register"
-    const val FORGOT_PASSWORD = "forgot_password"
-    const val RESET_PASSWORD = "reset_password"
+import kotlinx.serialization.Serializable
+
+@Serializable
+sealed class AppRoutes {
+    @Serializable
+    data object Home : AppRoutes()
+    
+    @Serializable
+    data object Login : AppRoutes()
+    
+    @Serializable
+    data object Register : AppRoutes()
+    
+    @Serializable
+    data object ForgotPassword : AppRoutes()
+    
+    @Serializable
+    data object ResetPassword : AppRoutes()
+    
+    @Serializable
+    data object Dashboard : AppRoutes()
 }

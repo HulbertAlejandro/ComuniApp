@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.miempresa.comuniapp.features.dashboard.UserScreen
 import com.miempresa.comuniapp.features.home.HomeScreen
 import com.miempresa.comuniapp.features.login.LoginScreen
 import com.miempresa.comuniapp.features.password.ForgetPasswordScreen
@@ -16,32 +17,34 @@ fun AppNavGraph(
 ) {
     NavHost(
         navController = navController,
-        startDestination = AppRoutes.HOME
+        startDestination = AppRoutes.Home
     ) {
 
-        composable(AppRoutes.HOME) {
+        composable<AppRoutes.Home> {
             HomeScreen(
                 onLoginClick = {
-                    navController.navigate(AppRoutes.LOGIN)
+                    navController.navigate(AppRoutes.Login)
                 }
             )
         }
 
-        composable(AppRoutes.LOGIN) {
+        composable<AppRoutes.Login> {
             LoginScreen(
                 onRegisterClick = {
-                    navController.navigate(AppRoutes.REGISTER)
+                    navController.navigate(AppRoutes.Register)
                 },
                 onForgotPasswordClick = {
-                    navController.navigate(AppRoutes.FORGOT_PASSWORD)
+                    navController.navigate(AppRoutes.ForgotPassword)
                 },
                 onLoginSuccess = {
-                    // luego aquí limpiamos stack
+                    navController.navigate(AppRoutes.Dashboard) {
+                        popUpTo(AppRoutes.Home) { inclusive = true }
+                    }
                 }
             )
         }
 
-        composable(AppRoutes.REGISTER) {
+        composable<AppRoutes.Register> {
             RegisterScreen(
                 onNavigateBack = {
                     navController.popBackStack()
@@ -49,22 +52,36 @@ fun AppNavGraph(
             )
         }
 
-        composable(AppRoutes.FORGOT_PASSWORD) {
+        composable<AppRoutes.ForgotPassword> {
             ForgetPasswordScreen(
                 onNavigateToReset = {
-                    navController.navigate(AppRoutes.RESET_PASSWORD)
+                    navController.navigate(AppRoutes.ResetPassword)
                 }
             )
         }
 
-        composable(AppRoutes.RESET_PASSWORD) {
+        composable<AppRoutes.ResetPassword> {
             ResetPasswordScreen(
                 onPasswordResetSuccess = {
-                    navController.navigate(AppRoutes.LOGIN) {
-                        popUpTo(AppRoutes.LOGIN) {
+                    navController.navigate(AppRoutes.Login) {
+                        popUpTo(AppRoutes.Login) {
                             inclusive = true
                         }
                     }
+                }
+            )
+        }
+
+        composable<AppRoutes.Dashboard> {
+            UserScreen(
+                onLogout = {
+                    navController.navigate(AppRoutes.Home) {
+                        popUpTo(AppRoutes.Home) { inclusive = true }
+                    }
+                },
+                onEditProfile = {
+                    // TODO: Navigate to edit profile screen
+                    // For now, this can be empty or show a toast
                 }
             )
         }
