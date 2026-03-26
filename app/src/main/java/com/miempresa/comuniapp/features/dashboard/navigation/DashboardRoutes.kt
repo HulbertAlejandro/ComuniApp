@@ -14,4 +14,10 @@ sealed class DashboardRoutes {
 
     @Serializable
     data class UserDetail(val userId: String) : DashboardRoutes()
+
+    @Serializable
+    data object ReportList : DashboardRoutes()
+
+    @Serializable
+    data class ReportDetail(val reportId: String) : DashboardRoutes()
 }

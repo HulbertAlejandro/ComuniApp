@@ -18,6 +18,7 @@ import com.miempresa.comuniapp.features.user.list.UserListViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
+    paddingValues: PaddingValues,
     onUserClick: (String) -> Unit,
     viewModel: UserListViewModel = hiltViewModel()
 ) {
@@ -26,82 +27,52 @@ fun SearchScreen(
 
     val filteredUsers = users.filter { user ->
         user.name.contains(searchQuery, ignoreCase = true) ||
-        user.email.contains(searchQuery, ignoreCase = true) ||
-        user.city.contains(searchQuery, ignoreCase = true)
+                user.email.contains(searchQuery, ignoreCase = true) ||
+                user.city.contains(searchQuery, ignoreCase = true)
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Buscar Usuarios") }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            // Campo de búsqueda
-            SearchBar(
-                query = searchQuery,
-                onQueryChange = { searchQuery = it },
-                onSearch = { /* Ya se filtra automáticamente */ },
-                active = false,
-                onActiveChange = { },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-            ) {
-                // Contenido del searchBar (no necesario para esta implementación)
-            }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+    ) {
 
-            // Lista de resultados
-            if (filteredUsers.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (searchQuery.isEmpty()) "No hay usuarios disponibles" 
-                              else "No se encontraron usuarios",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    items(filteredUsers) { user ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onUserClick(user.id) }
-                                .padding(vertical = 4.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp),
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = user.name,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Text(
-                                    text = user.email,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Text(
-                                    text = "${user.city} - ${user.address}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+        SearchBar(
+            query = searchQuery,
+            onQueryChange = { searchQuery = it },
+            onSearch = {},
+            active = false,
+            onActiveChange = {},
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {}
+
+        if (filteredUsers.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (searchQuery.isEmpty())
+                        "No hay usuarios disponibles"
+                    else
+                        "No se encontraron usuarios"
+                )
+            }
+        } else {
+            LazyColumn {
+                items(filteredUsers) { user ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onUserClick(user.id) }
+                            .padding(8.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(user.name, fontWeight = FontWeight.Medium)
+                            Text(user.email)
+                            Text("${user.city} - ${user.address}")
                         }
                     }
                 }

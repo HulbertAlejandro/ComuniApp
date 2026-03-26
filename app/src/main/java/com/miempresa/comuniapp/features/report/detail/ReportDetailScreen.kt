@@ -20,84 +20,79 @@ import com.miempresa.comuniapp.domain.model.ReportStatus
 @Composable
 fun ReportDetailScreen(
     reportId: String,
+    paddingValues: PaddingValues,
     onNavigateBack: () -> Unit,
     viewModel: com.miempresa.comuniapp.features.report.ReportViewModel = hiltViewModel()
 ) {
     val report = remember(reportId) { viewModel.findById(reportId) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Detalle de Reporte") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        report?.let {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Foto del reporte
-                AsyncImage(
-                    model = it.photoUrl,
-                    contentDescription = "Foto del reporte",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp),
-                    contentScale = ContentScale.Crop
-                )
+    report?.let {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
 
-                // Información del reporte
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            AsyncImage(
+                model = it.photoUrl,
+                contentDescription = "Foto del reporte",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
+                contentScale = ContentScale.Crop
+            )
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    Text(
+                        text = it.title,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    ReportDetailItem("Descripción", it.description)
+                    ReportDetailItem("Tipo", it.type)
+                    ReportDetailItem("ID del Propietario", it.ownerId)
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = it.title,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        
-                        ReportDetailItem("Descripción", it.description)
-                        ReportDetailItem("Tipo", it.type)
-                        ReportDetailItem("ID del Propietario", it.ownerId)
-                        
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            ReportDetailItem("Estado", it.status.name)
-                            ReportStatusChip(it.status)
-                        }
-                        
-                        ReportDetailItem("Ubicación", "Lat: ${it.location.latitude}, Lon: ${it.location.longitude}")
+                        ReportDetailItem("Estado", it.status.name)
+                        ReportStatusChip(it.status)
                     }
+
+                    ReportDetailItem(
+                        "Ubicación",
+                        "Lat: ${it.location.latitude}, Lon: ${it.location.longitude}"
+                    )
                 }
             }
-        } ?: run {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
+
+            Button(
+                onClick = onNavigateBack,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Reporte no encontrado")
+                Text("Volver")
             }
         }
+    } ?: Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues),
+        contentAlignment = Alignment.Center
+    ) {
+        Text("Reporte no encontrado")
     }
 }
 

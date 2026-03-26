@@ -16,70 +16,63 @@ import com.miempresa.comuniapp.domain.model.ReportStatus
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportListScreen(
+    paddingValues: PaddingValues,
     onReportClick: (String) -> Unit,
     viewModel: com.miempresa.comuniapp.features.report.ReportViewModel = hiltViewModel()
 ) {
     val reports by viewModel.reports.collectAsState(initial = emptyList())
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Lista de Reportes") }
-            )
+    if (reports.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
         }
-    ) { padding ->
-        if (reports.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(vertical = 8.dp)
-            ) {
-                items(reports) { report ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onReportClick(report.id) }
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    } else {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(vertical = 8.dp)
+        ) {
+            items(reports) { report ->
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onReportClick(report.id) }
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        Text(
+                            text = report.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        Text(
+                            text = report.description,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 2
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = report.title,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium
+                                text = "Tipo: ${report.type}",
+                                style = MaterialTheme.typography.bodySmall
                             )
-                            
-                            Text(
-                                text = report.description,
-                                style = MaterialTheme.typography.bodyMedium,
-                                maxLines = 2
-                            )
-                            
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Tipo: ${report.type}",
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                                
-                                ReportStatusChip(report.status)
-                            }
+
+                            ReportStatusChip(report.status)
                         }
                     }
                 }

@@ -4,12 +4,15 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
 import com.miempresa.comuniapp.features.dashboard.UserScreen
 import com.miempresa.comuniapp.features.home.HomeScreen
 import com.miempresa.comuniapp.features.login.LoginScreen
 import com.miempresa.comuniapp.features.password.ForgetPasswordScreen
 import com.miempresa.comuniapp.features.password.ResetPasswordScreen
 import com.miempresa.comuniapp.features.register.RegisterScreen
+import com.miempresa.comuniapp.features.report.list.ReportListScreen
+import com.miempresa.comuniapp.features.report.detail.ReportDetailScreen
 
 @Composable
 fun AppNavGraph(

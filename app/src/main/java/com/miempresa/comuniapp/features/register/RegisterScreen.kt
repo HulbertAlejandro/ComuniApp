@@ -23,6 +23,7 @@ import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.ui.components.AppPasswordField
 import com.miempresa.comuniapp.ui.components.AppTextField
+import com.miempresa.comuniapp.ui.components.ConfirmDialog
 import com.miempresa.comuniapp.ui.theme.*
 import kotlinx.coroutines.delay
 
@@ -32,9 +33,11 @@ fun RegisterScreen(
     viewModel: RegisterViewModel = hiltViewModel()
 ) {
 
+    var showExitDialog by remember { mutableStateOf(false) }
+
     // BackHandler para manejar el botón de retroceso
     BackHandler {
-        onNavigateBack()
+        showExitDialog = true
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -134,5 +137,18 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(30.dp))
         }
+    }
+
+    // Diálogo de confirmación de salida
+    if (showExitDialog) {
+        ConfirmDialog(
+            title = "¿Está seguro de salir?",
+            text = "Si sale, perderá todos los datos del formulario de registro.",
+            onDismiss = { showExitDialog = false },
+            onConfirm = {
+                viewModel.resetForm()
+                onNavigateBack()
+            }
+        )
     }
 }

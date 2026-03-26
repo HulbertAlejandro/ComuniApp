@@ -25,7 +25,9 @@ fun BottomNavigationBar(
 
     // Actualizar el título de la barra superior según la pantalla actual
     LaunchedEffect(currentDestination) {
-        val destination = Destination.entries.find { it.route::class.qualifiedName == currentDestination?.route }
+        val destination = Destination.items.find {
+            currentDestination?.route?.contains(it.route::class.simpleName ?: "") == true
+        }
         if (destination != null) {
             titleTopBar(destination.label)
         }
@@ -36,10 +38,15 @@ fun BottomNavigationBar(
         modifier = Modifier.fillMaxWidth(),
     ){
         // Iteramos cada item de navegación definido en Destination
-        Destination.entries.forEachIndexed { index, destination ->
+        Destination.items.forEachIndexed { index: Int, destination: Destination ->
 
             // Verificar si el item está seleccionado
-            val isSelected = currentDestination?.route == destination.route::class.qualifiedName
+            val isSelected = when (destination.route) {
+                is DashboardRoutes.HomeUser -> currentDestination?.route?.contains("HomeUser") == true
+                is DashboardRoutes.Search -> currentDestination?.route?.contains("Search") == true
+                is DashboardRoutes.Profile -> currentDestination?.route?.contains("Profile") == true
+                else -> false
+            }
 
             NavigationBarItem(
                 label = {
@@ -72,12 +79,16 @@ fun BottomNavigationBar(
 }
 
 // Definición de los items de navegación de la barra inferior
-enum class Destination(
+sealed class Destination(
     val route: DashboardRoutes,
     val label: String,
-    val icon: ImageVector,
+    val icon: ImageVector
 ){
-    HOME(DashboardRoutes.HomeUser, "Home", Icons.Default.Home ),
-    SEARCH(DashboardRoutes.Search, "Buscar", Icons.Default.Search),
-    PROFILE(DashboardRoutes.Profile, "Perfil", Icons.Default.AccountCircle)
+    data object HOME : Destination(DashboardRoutes.HomeUser, "Home", Icons.Default.Home )
+    data object SEARCH : Destination(DashboardRoutes.Search, "Buscar", Icons.Default.Search)
+    data object PROFILE : Destination(DashboardRoutes.Profile, "Perfil", Icons.Default.AccountCircle)
+    
+    companion object {
+        val items = listOf(HOME, SEARCH, PROFILE)
+    }
 }

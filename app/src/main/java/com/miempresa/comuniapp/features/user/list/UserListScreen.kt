@@ -16,58 +16,51 @@ import com.miempresa.comuniapp.domain.model.User
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserListScreen(
+    paddingValues: PaddingValues,
     onUserClick: (String) -> Unit,
     viewModel: UserListViewModel = hiltViewModel()
 ) {
     val users by viewModel.users.collectAsState(initial = emptyList())
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Lista de Usuarios") }
-            )
+    if (users.isEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
         }
-    ) { padding ->
-        if (users.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(vertical = 8.dp)
-            ) {
-                items(users) { user ->
-                    ListItem(
-                        headlineContent = {
+    } else {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(vertical = 8.dp)
+        ) {
+            items(users) { user ->
+                ListItem(
+                    headlineContent = {
+                        Text(
+                            text = user.name,
+                            fontWeight = FontWeight.Medium
+                        )
+                    },
+                    supportingContent = {
+                        Column {
+                            Text(user.email)
                             Text(
-                                text = user.name,
-                                fontWeight = FontWeight.Medium
+                                text = "${user.city} - ${user.address}",
+                                style = MaterialTheme.typography.bodySmall
                             )
-                        },
-                        supportingContent = {
-                            Column {
-                                Text(user.email)
-                                Text(
-                                    text = "${user.city} - ${user.address}",
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onUserClick(user.id) }
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                    Divider()
-                }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onUserClick(user.id) }
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+                Divider()
             }
         }
     }

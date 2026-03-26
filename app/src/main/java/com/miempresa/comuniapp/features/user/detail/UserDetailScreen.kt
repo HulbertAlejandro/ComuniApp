@@ -1,7 +1,9 @@
 package com.miempresa.comuniapp.features.user.detail
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -20,87 +22,79 @@ import com.miempresa.comuniapp.domain.model.User
 @Composable
 fun UserDetailScreen(
     userId: String,
+    paddingValues: PaddingValues,
     onNavigateBack: () -> Unit,
     userViewModel: UserDetailViewModel = hiltViewModel()
 ) {
     val user = remember(userId) { userViewModel.findById(userId) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Detalle de Usuario") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        user?.let {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Foto de perfil
-                if (it.profilePictureUrl.isNotEmpty()) {
-                    AsyncImage(
-                        model = it.profilePictureUrl,
-                        contentDescription = "Foto de perfil",
-                        modifier = Modifier
-                            .size(120.dp)
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .size(120.dp)
-                            .clip(CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = it.name.first().uppercase(),
-                            style = MaterialTheme.typography.headlineLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+    user?.let {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
 
-                // Información del usuario
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            if (it.profilePictureUrl.isNotEmpty()) {
+                AsyncImage(
+                    model = it.profilePictureUrl,
+                    contentDescription = "Foto de perfil",
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        DetailItem("Nombre", it.name)
-                        DetailItem("Email", it.email)
-                        DetailItem("Ciudad", it.city)
-                        DetailItem("Dirección", it.address)
-                        if (it.phoneNumber.isNotEmpty()) {
-                            DetailItem("Teléfono", it.phoneNumber)
-                        }
-                        DetailItem("Rol", it.role.name)
-                    }
+                    Text(
+                        text = it.name.first().uppercase(),
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
-        } ?: run {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                Text("Usuario no encontrado")
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    DetailItem("Nombre", it.name)
+                    DetailItem("Email", it.email)
+                    DetailItem("Ciudad", it.city)
+                    DetailItem("Dirección", it.address)
+                    if (it.phoneNumber.isNotEmpty()) {
+                        DetailItem("Teléfono", it.phoneNumber)
+                    }
+                    DetailItem("Rol", it.role.name)
+                }
+            }
+
+            Button(
+                onClick = onNavigateBack
+            ) {
+                Text("Volver")
             }
         }
+    } ?: Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues),
+        contentAlignment = Alignment.Center
+    ) {
+        Text("Usuario no encontrado")
     }
 }
 

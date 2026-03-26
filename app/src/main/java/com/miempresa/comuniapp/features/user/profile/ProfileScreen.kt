@@ -20,10 +20,11 @@ import coil3.compose.AsyncImage
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
+    paddingValues: PaddingValues,
     onEditProfile: () -> Unit,
     onLogout: () -> Unit
 ) {
-    // Datos de usuario de ejemplo (en una app real vendrían de un ViewModel)
+
     val currentUser = remember {
         com.miempresa.comuniapp.domain.model.User(
             id = "1",
@@ -38,89 +39,70 @@ fun ProfileScreen(
         )
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Mi Perfil") },
-                actions = {
-                    IconButton(onClick = onEditProfile) {
-                        Icon(Icons.Default.Edit, contentDescription = "Editar perfil")
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            // Foto de perfil
-            if (currentUser.profilePictureUrl.isNotEmpty()) {
-                AsyncImage(
-                    model = currentUser.profilePictureUrl,
-                    contentDescription = "Foto de perfil",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = "Avatar",
-                        modifier = Modifier.size(60.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
 
-            // Información del usuario
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    ProfileItem("Nombre", currentUser.name)
-                    ProfileItem("Email", currentUser.email)
-                    ProfileItem("Ciudad", currentUser.city)
-                    ProfileItem("Dirección", currentUser.address)
-                    if (currentUser.phoneNumber.isNotEmpty()) {
-                        ProfileItem("Teléfono", currentUser.phoneNumber)
-                    }
-                    ProfileItem("Rol", currentUser.role.name)
-                }
-            }
-
-            // Botón de cerrar sesión
-            Button(
-                onClick = onLogout,
+        if (currentUser.profilePictureUrl.isNotEmpty()) {
+            AsyncImage(
+                model = currentUser.profilePictureUrl,
+                contentDescription = "Foto de perfil",
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error
-                )
+                    .size(120.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "Cerrar Sesión",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = "Avatar",
+                    modifier = Modifier.size(60.dp),
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
+        }
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                ProfileItem("Nombre", currentUser.name)
+                ProfileItem("Email", currentUser.email)
+                ProfileItem("Ciudad", currentUser.city)
+                ProfileItem("Dirección", currentUser.address)
+                if (currentUser.phoneNumber.isNotEmpty()) {
+                    ProfileItem("Teléfono", currentUser.phoneNumber)
+                }
+                ProfileItem("Rol", currentUser.role.name)
+            }
+        }
+
+        Button(
+            onClick = onLogout,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error
+            )
+        ) {
+            Text("Cerrar Sesión")
         }
     }
 }
