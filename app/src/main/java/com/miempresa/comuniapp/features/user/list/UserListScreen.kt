@@ -11,13 +11,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.miempresa.comuniapp.domain.model.User
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserListScreen(
     onUserClick: (String) -> Unit,
-    viewModel: UserListViewModel = viewModel()
+    viewModel: UserListViewModel = hiltViewModel()
 ) {
     val users by viewModel.users.collectAsState(initial = emptyList())
 

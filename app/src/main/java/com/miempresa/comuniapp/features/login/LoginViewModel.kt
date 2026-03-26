@@ -4,11 +4,18 @@ import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.core.utils.ValidatedField
+import com.miempresa.comuniapp.domain.repository.UserRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class LoginViewModel : ViewModel() {
+import javax.inject.Inject
+
+@HiltViewModel
+class LoginViewModel @Inject constructor(
+    private val repository: UserRepository
+) : ViewModel() {
 
     val email = ValidatedField("") { value ->
         when {
@@ -34,15 +41,12 @@ class LoginViewModel : ViewModel() {
 
     fun login() {
         if (isFormValid) {
-
-            _loginResult.value =
-                if (email.value == "carlos@email.com" &&
-                    password.value == "123456"
-                ) {
-                    RequestResult.Success("Login exitoso")
-                } else {
-                    RequestResult.Failure("Credenciales inválidas")
-                }
+            val user = repository.login(email.value, password.value)
+            _loginResult.value = if (user != null) {
+                RequestResult.Success("Login exitoso")
+            } else {
+                RequestResult.Failure("Credenciales inválidas")
+            }
         }
     }
 

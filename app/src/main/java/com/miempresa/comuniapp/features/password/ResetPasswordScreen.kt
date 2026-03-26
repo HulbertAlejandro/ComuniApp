@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.ui.components.AppPasswordField
@@ -18,7 +19,7 @@ import com.miempresa.comuniapp.ui.theme.appPrimaryButtonColors
 @Composable
 fun ResetPasswordScreen(
     onPasswordResetSuccess: () -> Unit = {},
-    viewModel: ResetPasswordViewModel = viewModel()
+    viewModel: ResetPasswordViewModel = hiltViewModel()
 ) {
 
     val snackbarHostState = remember { SnackbarHostState() }

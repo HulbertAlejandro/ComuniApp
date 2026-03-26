@@ -4,11 +4,19 @@ import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.core.utils.ValidatedField
+import com.miempresa.comuniapp.domain.model.User
+import com.miempresa.comuniapp.domain.repository.UserRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.util.UUID
+import javax.inject.Inject
 
-class RegisterViewModel : ViewModel() {
+@HiltViewModel
+class RegisterViewModel @Inject constructor(
+    private val repository: UserRepository
+) : ViewModel() {
 
     val name = ValidatedField("") { value ->
         if (value.isBlank()) "El nombre es obligatorio" else null
@@ -46,6 +54,10 @@ class RegisterViewModel : ViewModel() {
         }
     }
 
+    val profilePictureUrl = ValidatedField("") { value ->
+        null // No validation for profile picture URL
+    }
+
     val isFormValid: Boolean
         get() =
             name.isValid &&
@@ -61,11 +73,17 @@ class RegisterViewModel : ViewModel() {
 
     fun register() {
         if (isFormValid) {
-            _registerResult.value =
-                RequestResult.Success("Registro exitoso")
-        } else {
-            _registerResult.value =
-                RequestResult.Failure("Formulario inválido")
+            val newUser = User(
+                id = UUID.randomUUID().toString(),
+                name = name.value,
+                city = city.value,
+                address = address.value,
+                email = email.value,
+                password = password.value,
+                profilePictureUrl = profilePictureUrl.value
+            )
+            repository.save(newUser)
+            _registerResult.value = RequestResult.Success("Registro exitoso")
         }
     }
 
@@ -80,5 +98,6 @@ class RegisterViewModel : ViewModel() {
         email.reset()
         password.reset()
         confirmPassword.reset()
+        profilePictureUrl.reset()
     }
 }

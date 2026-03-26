@@ -11,13 +11,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.miempresa.comuniapp.domain.model.ReportStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportListScreen(
     onReportClick: (String) -> Unit,
-    viewModel: com.miempresa.comuniapp.features.report.ReportViewModel = viewModel()
+    viewModel: com.miempresa.comuniapp.features.report.ReportViewModel = hiltViewModel()
 ) {
     val reports by viewModel.reports.collectAsState(initial = emptyList())
 

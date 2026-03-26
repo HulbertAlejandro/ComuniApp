@@ -3,11 +3,15 @@ package com.miempresa.comuniapp.features.password
 import androidx.lifecycle.ViewModel
 import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.core.utils.ValidatedField
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class ResetPasswordViewModel : ViewModel() {
+import javax.inject.Inject
+
+@HiltViewModel
+class ResetPasswordViewModel @Inject constructor() : ViewModel() {
 
     val newPassword = ValidatedField("") { value ->
         when {

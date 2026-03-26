@@ -4,11 +4,15 @@ import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.core.utils.ValidatedField
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class ForgetPasswordViewModel : ViewModel() {
+import javax.inject.Inject
+
+@HiltViewModel
+class ForgetPasswordViewModel @Inject constructor() : ViewModel() {
 
     val email = ValidatedField("") { value ->
         when {

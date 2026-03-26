@@ -13,6 +13,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.miempresa.comuniapp.domain.model.ReportStatus
 
@@ -21,7 +22,7 @@ import com.miempresa.comuniapp.domain.model.ReportStatus
 fun ReportDetailScreen(
     reportId: String,
     onNavigateBack: () -> Unit,
-    viewModel: com.miempresa.comuniapp.features.report.ReportViewModel = viewModel()
+    viewModel: com.miempresa.comuniapp.features.report.ReportViewModel = hiltViewModel()
 ) {
     val report = remember(reportId) { viewModel.findById(reportId) }
 

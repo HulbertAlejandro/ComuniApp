@@ -5,13 +5,16 @@ import androidx.lifecycle.viewModelScope
 import com.miempresa.comuniapp.domain.model.Location
 import com.miempresa.comuniapp.domain.model.Report
 import com.miempresa.comuniapp.domain.model.ReportStatus
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class ReportViewModel : ViewModel() {
+@HiltViewModel
+class ReportViewModel @Inject constructor() : ViewModel() {
 
     private val _reports = MutableStateFlow<List<Report>>(emptyList())
     val reports: StateFlow<List<Report>> = _reports.asStateFlow()

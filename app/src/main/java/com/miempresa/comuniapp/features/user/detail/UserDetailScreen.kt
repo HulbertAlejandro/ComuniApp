@@ -13,18 +13,18 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.miempresa.comuniapp.domain.model.User
-import com.miempresa.comuniapp.features.user.list.UserListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserDetailScreen(
     userId: String,
     onNavigateBack: () -> Unit,
-    userListViewModel: UserListViewModel = viewModel()
+    userViewModel: UserDetailViewModel = hiltViewModel()
 ) {
-    val user = remember(userId) { userListViewModel.findById(userId) }
+    val user = remember(userId) { userViewModel.findById(userId) }
 
     Scaffold(
         topBar = {
