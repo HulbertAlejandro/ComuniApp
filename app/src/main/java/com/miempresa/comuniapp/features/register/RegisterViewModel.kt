@@ -73,6 +73,13 @@ class RegisterViewModel @Inject constructor(
 
     fun register() {
         if (isFormValid) {
+            // Verificar si el email ya existe
+            val existingUser = repository.findByEmail(email.value)
+            if (existingUser != null) {
+                _registerResult.value = RequestResult.Failure("El email ya está registrado")
+                return
+            }
+
             val newUser = User(
                 id = UUID.randomUUID().toString(),
                 name = name.value,

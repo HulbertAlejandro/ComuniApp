@@ -28,6 +28,10 @@ class UserRepositoryImpl @Inject constructor(): UserRepository { // Implementamo
         return _users.value.firstOrNull { it.id == id }
     }
 
+    override fun findByEmail(email: String): User? {
+        return _users.value.firstOrNull { it.email == email }
+    }
+
     override fun login(email: String, password: String): User? {
         return _users.value.firstOrNull { it.email == email && it.password == password }
     }
