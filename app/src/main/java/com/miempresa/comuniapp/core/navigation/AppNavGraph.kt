@@ -4,15 +4,12 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.toRoute
 import com.miempresa.comuniapp.features.dashboard.UserScreen
 import com.miempresa.comuniapp.features.home.HomeScreen
 import com.miempresa.comuniapp.features.login.LoginScreen
 import com.miempresa.comuniapp.features.password.ForgetPasswordScreen
 import com.miempresa.comuniapp.features.password.ResetPasswordScreen
 import com.miempresa.comuniapp.features.register.RegisterScreen
-import com.miempresa.comuniapp.features.report.list.ReportListScreen
-import com.miempresa.comuniapp.features.report.detail.ReportDetailScreen
 
 @Composable
 fun AppNavGraph(
@@ -20,7 +17,7 @@ fun AppNavGraph(
 ) {
     NavHost(
         navController = navController,
-        startDestination = AppRoutes.Home
+        startDestination = AppRoutes.Login
     ) {
 
         composable<AppRoutes.Home> {
@@ -41,7 +38,7 @@ fun AppNavGraph(
                 },
                 onLoginSuccess = {
                     navController.navigate(AppRoutes.Dashboard) {
-                        popUpTo(AppRoutes.Home) { inclusive = true }
+                        popUpTo(AppRoutes.Login) { inclusive = true }
                     }
                 }
             )
@@ -78,13 +75,12 @@ fun AppNavGraph(
         composable<AppRoutes.Dashboard> {
             UserScreen(
                 onLogout = {
-                    navController.navigate(AppRoutes.Home) {
-                        popUpTo(AppRoutes.Home) { inclusive = true }
+                    navController.navigate(AppRoutes.Login) {
+                        popUpTo(AppRoutes.Dashboard) { inclusive = true }
                     }
                 },
                 onEditProfile = {
                     // TODO: Navigate to edit profile screen
-                    // For now, this can be empty or show a toast
                 }
             )
         }
