@@ -13,6 +13,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.miempresa.comuniapp.R
+import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.ui.components.AppPasswordField
 import com.miempresa.comuniapp.ui.components.AppTextField
 import com.miempresa.comuniapp.ui.theme.*
@@ -21,34 +22,32 @@ import com.miempresa.comuniapp.ui.theme.*
 fun LoginScreen(
     onRegisterClick: () -> Unit = {},
     onForgotPasswordClick: () -> Unit = {},
-    onLoginSuccess: () -> Unit = {},
     viewModel: LoginViewModel = hiltViewModel()
 ) {
 
     val snackbarHostState = remember { SnackbarHostState() }
     val loginResult by viewModel.loginResult.collectAsState()
 
-    // Observa cambios en loginResult y muestra Snackbar
     LaunchedEffect(loginResult) {
         loginResult?.let { result ->
+
             val message = when (result) {
-                is com.miempresa.comuniapp.core.utils.RequestResult.Success -> result.message
-                is com.miempresa.comuniapp.core.utils.RequestResult.Failure -> result.errorMessage
+                is RequestResult.Success -> result.message
+                is RequestResult.Failure -> result.errorMessage
+                is RequestResult.Loading -> "Cargando..."
             }
 
             snackbarHostState.showSnackbar(message)
 
             viewModel.resetLoginResult()
-
-            if (result is com.miempresa.comuniapp.core.utils.RequestResult.Success) {
-                onLoginSuccess()
-            }
         }
     }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = {
+            SnackbarHost(snackbarHostState)
+        }
     ) { padding ->
 
         Column(

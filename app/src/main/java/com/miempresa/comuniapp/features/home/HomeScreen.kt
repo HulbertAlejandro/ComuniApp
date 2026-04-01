@@ -1,84 +1,77 @@
 package com.miempresa.comuniapp.features.home
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.miempresa.comuniapp.features.home.components.EventCard
+import androidx.compose.ui.unit.sp
+import com.miempresa.comuniapp.R
+import com.miempresa.comuniapp.ui.theme.appPrimaryButtonColors
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onLoginClick: () -> Unit,
-    viewModel: HomeViewModel = hiltViewModel()
 ) {
-    val events by viewModel.events.collectAsState()
-
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = "ComuniApp",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Eventos en tu comunidad",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { /* Notificaciones */ }) {
-                        Icon(Icons.Default.Notifications, contentDescription = "Notificaciones")
-                    }
-                    IconButton(onClick = onLoginClick) {
-                        Icon(Icons.Default.AccountCircle, contentDescription = "Perfil / Login")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
-        },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(bottom = 24.dp)
+                .padding(horizontal = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            item {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Próximos Eventos",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-            }
+            Image(
+                painter = painterResource(id = R.drawable.logo_comunidad),
+                contentDescription = "Logo de la aplicación",
+                modifier = Modifier.size(220.dp)
+            )
 
-            items(events) { event ->
-                EventCard(
-                    event = event,
-                    onInterestedClick = {
-                        // Acción simulada
-                    }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "ComuniApp",
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.Bold
+                ),
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = "Plataforma para descubrir, crear y participar en eventos comunitarios.",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
+                    lineHeight = 24.sp
+                ),
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Button(
+                onClick = onLoginClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(55.dp),
+                shape = MaterialTheme.shapes.large,
+                colors = appPrimaryButtonColors()
+            ) {
+                Text(
+                    text = "Iniciar Sesión",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.SemiBold
+                    )
                 )
             }
         }

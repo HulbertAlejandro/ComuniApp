@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -19,44 +20,27 @@ fun BottomNavigationBar(
     navController: NavHostController,
     titleTopBar: (String) -> Unit
 ){
-    // Obtener la entrada actual de la pila de navegación
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    // Actualizar el título de la barra superior según la pantalla actual
     LaunchedEffect(currentDestination) {
         val destination = Destination.items.find {
-            currentDestination?.route?.contains(it.route::class.simpleName ?: "") == true
+            currentDestination?.hasRoute(it.route::class) == true
         }
         if (destination != null) {
             titleTopBar(destination.label)
         }
     }
 
-    // Crear la barra de navegación inferior
     NavigationBar(
         modifier = Modifier.fillMaxWidth(),
     ){
-        // Iteramos cada item de navegación definido en Destination
-        Destination.items.forEachIndexed { index: Int, destination: Destination ->
-
-            // Verificar si el item está seleccionado
-            val isSelected = when (destination.route) {
-                is DashboardRoutes.HomeUser -> currentDestination?.route?.contains("HomeUser") == true
-                is DashboardRoutes.Search -> currentDestination?.route?.contains("Search") == true
-                is DashboardRoutes.Profile -> currentDestination?.route?.contains("Profile") == true
-                else -> false
-            }
+        Destination.items.forEach { destination ->
+            val isSelected = currentDestination?.hasRoute(destination.route::class) == true
 
             NavigationBarItem(
-                label = {
-                    // Etiqueta del item de navegación
-                    Text(
-                        text = destination.label
-                    )
-                },
+                label = { Text(text = destination.label) },
                 onClick = {
-                    // Navegar a la ruta correspondiente al item seleccionado
                     navController.navigate(destination.route){
                         popUpTo(navController.graph.findStartDestination().id) {
                             saveState = true
@@ -66,7 +50,6 @@ fun BottomNavigationBar(
                     }
                 },
                 icon = {
-                    // Icono del item de navegación
                     Icon(
                         imageVector = destination.icon,
                         contentDescription = destination.label
@@ -78,13 +61,12 @@ fun BottomNavigationBar(
     }
 }
 
-// Definición de los items de navegación de la barra inferior
 sealed class Destination(
-    val route: DashboardRoutes,
+    val route: Any,
     val label: String,
     val icon: ImageVector
 ){
-    data object HOME : Destination(DashboardRoutes.HomeUser, "Home", Icons.Default.Home )
+    data object HOME : Destination(DashboardRoutes.EventList, "Eventos", Icons.Default.Home )
     data object SEARCH : Destination(DashboardRoutes.Search, "Buscar", Icons.Default.Search)
     data object PROFILE : Destination(DashboardRoutes.Profile, "Perfil", Icons.Default.AccountCircle)
     

@@ -1,9 +1,12 @@
-package com.miempresa.comuniapp.features.home.components
+package com.miempresa.comuniapp.features.event.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -18,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.domain.model.Event
+import com.miempresa.comuniapp.domain.model.EventStatus
 
 @Composable
 fun EventCard(
@@ -47,8 +51,8 @@ fun EventCard(
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
-                    placeholder = painterResource(R.drawable.ic_launcher_background),
-                    error = painterResource(R.drawable.ic_launcher_background)
+                    placeholder = painterResource(id = R.drawable.ic_launcher_background),
+                    error = painterResource(id = R.drawable.ic_launcher_background)
                 )
 
                 // Chips superiores en la misma fila (Overlay)
@@ -76,12 +80,19 @@ fun EventCard(
                         modifier = Modifier.height(28.dp)
                     )
 
-                    val statusColor = if (event.status == "LLENO") Color.Red else Color(0xFF4CAF50)
+                    val isFull = event.eventStatus == EventStatus.FULL
+                    val statusText = when(event.eventStatus) {
+                        EventStatus.ACTIVE -> "ACTIVO"
+                        EventStatus.FULL -> "LLENO"
+                        EventStatus.FINISHED -> "FINALIZADO"
+                    }
+                    val statusColor = if (isFull) Color.Red else Color(0xFF4CAF50)
+                    
                     SuggestionChip(
                         onClick = {},
                         label = {
                             Text(
-                                text = event.status,
+                                text = statusText,
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold
                             )
@@ -112,7 +123,7 @@ fun EventCard(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Fecha y Ubicación
+                // Fecha
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Event,
@@ -130,6 +141,7 @@ fun EventCard(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
+                // Ubicación (Coordenadas ya que no hay locationName)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.LocationOn,
@@ -139,7 +151,7 @@ fun EventCard(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = event.locationName,
+                        text = "Lat: ${event.location.latitude}, Lon: ${event.location.longitude}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -153,8 +165,9 @@ fun EventCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Start
                 ) {
-                    val attendeesText = if (event.status == "LLENO") "CUPOS LLENOS" else "${event.currentAttendees} / ${event.maxAttendees ?: "∞"} asistentes"
-                    val attendeesColor = if (event.status == "LLENO") Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
+                    val isFull = event.eventStatus == EventStatus.FULL
+                    val attendeesText = if (isFull) "CUPOS LLENOS" else "${event.currentAttendees} / ${event.maxAttendees ?: "∞"} asistentes"
+                    val attendeesColor = if (isFull) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
 
                     Text(
                         text = attendeesText,
@@ -166,7 +179,7 @@ fun EventCard(
                     Spacer(modifier = Modifier.width(12.dp))
 
                     Text(
-                        text = "Org: ${event.organizerName} - ${event.organizerLevel}",
+                        text = "Org: ${event.organizerName}",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1
@@ -181,10 +194,10 @@ fun EventCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Botón Me Interesa (Corregido color a secondaryContainer)
+                    val isFull = event.eventStatus == EventStatus.FULL
                     Button(
                         onClick = onInterestedClick,
-                        enabled = event.status != "LLENO",
+                        enabled = !isFull,
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.secondaryContainer,

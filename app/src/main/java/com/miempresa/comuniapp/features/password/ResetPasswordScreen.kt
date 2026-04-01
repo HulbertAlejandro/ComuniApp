@@ -29,6 +29,7 @@ fun ResetPasswordScreen(
             val message = when (it) {
                 is RequestResult.Success -> it.message
                 is RequestResult.Failure -> it.errorMessage
+                is RequestResult.Loading -> "Actualizando contraseña..."
             }
 
             snackbarHostState.showSnackbar(message)
@@ -96,10 +97,14 @@ fun ResetPasswordScreen(
                     .fillMaxWidth()
                     .height(55.dp)
             ) {
-                Text(
-                    "Actualizar contraseña",
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                if (result is RequestResult.Loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Actualizar contraseña")
+                }
             }
         }
     }

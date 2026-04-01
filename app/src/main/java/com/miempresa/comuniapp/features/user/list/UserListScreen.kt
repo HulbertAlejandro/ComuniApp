@@ -14,15 +14,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.miempresa.comuniapp.features.home.HomeViewModel
-import com.miempresa.comuniapp.features.home.components.EventCard
+import com.miempresa.comuniapp.features.event.EventViewModel
+import com.miempresa.comuniapp.features.event.components.EventCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserListScreen(
     paddingValues: PaddingValues,
     onUserClick: (String) -> Unit,
-    viewModel: HomeViewModel = hiltViewModel()
+    viewModel: EventViewModel = hiltViewModel()
 ) {
     val events by viewModel.events.collectAsState()
 

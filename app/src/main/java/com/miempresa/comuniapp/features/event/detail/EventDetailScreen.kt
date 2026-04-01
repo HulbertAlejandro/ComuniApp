@@ -1,10 +1,8 @@
-package com.miempresa.comuniapp.features.report.detail
+package com.miempresa.comuniapp.features.event.detail
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,19 +12,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
-import com.miempresa.comuniapp.domain.model.ReportStatus
+import com.miempresa.comuniapp.features.event.EventViewModel
+import com.miempresa.comuniapp.features.event.components.EventStatusChip
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ReportDetailScreen(
-    reportId: String,
+fun EventDetailScreen(
+    eventId: String,
     paddingValues: PaddingValues,
     onNavigateBack: () -> Unit,
-    viewModel: com.miempresa.comuniapp.features.report.ReportViewModel = hiltViewModel()
+    viewModel: EventViewModel = hiltViewModel()
 ) {
-    val report = remember(reportId) { viewModel.findById(reportId) }
+    val event = remember(eventId) { viewModel.findById(eventId) }
 
-    report?.let {
+    event?.let {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -37,8 +36,8 @@ fun ReportDetailScreen(
         ) {
 
             AsyncImage(
-                model = it.photoUrl,
-                contentDescription = "Foto del reporte",
+                model = it.imageUrl,
+                contentDescription = "Imagen del evento",
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp),
@@ -53,29 +52,30 @@ fun ReportDetailScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+
                     Text(
                         text = it.title,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold
                     )
 
-                    ReportDetailItem("Descripción", it.description)
-                    ReportDetailItem("Tipo", it.type)
-                    ReportDetailItem("ID del Propietario", it.ownerId)
+                    DetailItem("Descripción", it.description)
+                    DetailItem("Categoría", it.category)
+                    DetailItem("Ubicación", it.location.toString())
+                    DetailItem("Fecha inicio", it.startDate)
+                    DetailItem("Fecha fin", it.endDate)
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        ReportDetailItem("Estado", it.status.name)
-                        ReportStatusChip(it.status)
-                    }
-
-                    ReportDetailItem(
-                        "Ubicación",
-                        "Lat: ${it.location.latitude}, Lon: ${it.location.longitude}"
+                    DetailItem(
+                        "Asistentes",
+                        "${it.currentAttendees} / ${it.maxAttendees ?: "∞"}"
                     )
+
+                    DetailItem(
+                        "Organizador",
+                        "${it.organizerName} - ${it.organizerLevel}"
+                    )
+
+                    EventStatusChip(it.eventStatus)
                 }
             }
 
@@ -92,44 +92,21 @@ fun ReportDetailScreen(
             .padding(paddingValues),
         contentAlignment = Alignment.Center
     ) {
-        Text("Reporte no encontrado")
+        Text("Evento no encontrado")
     }
 }
 
 @Composable
-private fun ReportDetailItem(label: String, value: String) {
+private fun DetailItem(label: String, value: String) {
     Column {
         Text(
             text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.labelMedium
         )
         Text(
             text = value,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium
-        )
-    }
-}
-
-@Composable
-private fun ReportStatusChip(status: ReportStatus) {
-    val (color, text) = when (status) {
-        ReportStatus.PENDING -> MaterialTheme.colorScheme.error to "Pendiente"
-        ReportStatus.IN_PROGRESS -> MaterialTheme.colorScheme.primary to "En Progreso"
-        ReportStatus.RESOLVED -> MaterialTheme.colorScheme.primary to "Resuelto"
-    }
-    
-    Surface(
-        modifier = Modifier,
-        shape = MaterialTheme.shapes.small,
-        color = color.copy(alpha = 0.12f)
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            style = MaterialTheme.typography.labelSmall,
-            color = color
         )
     }
 }

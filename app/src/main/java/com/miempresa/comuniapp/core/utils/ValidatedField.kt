@@ -8,7 +8,6 @@ class ValidatedField<T>(
     private val initialValue: T,
     private val validate: (T) -> String?
 ) {
-
     var value by mutableStateOf(initialValue)
         private set
 
@@ -29,5 +28,6 @@ class ValidatedField<T>(
     fun reset() {
         value = initialValue
         showError = false
+        // No necesitas modificar `error`, se actualizará automáticamente
     }
 }

@@ -3,8 +3,8 @@ package com.miempresa.comuniapp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.navigation.compose.rememberNavController
-import com.miempresa.comuniapp.core.navigation.AppNavGraph
+import androidx.activity.enableEdgeToEdge
+import com.miempresa.comuniapp.core.navigation.AppNavigation
 import com.miempresa.comuniapp.ui.theme.ComuniAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -13,11 +13,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        enableEdgeToEdge()
         setContent {
             ComuniAppTheme {
-                val navController = rememberNavController()
-                AppNavGraph(navController = navController)
+                AppNavigation()
             }
         }
     }

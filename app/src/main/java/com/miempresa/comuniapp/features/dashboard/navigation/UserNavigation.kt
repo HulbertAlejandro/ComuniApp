@@ -6,10 +6,9 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
-import com.miempresa.comuniapp.features.report.detail.ReportDetailScreen
-import com.miempresa.comuniapp.features.report.list.ReportListScreen
+import com.miempresa.comuniapp.features.event.detail.EventDetailScreen
+import com.miempresa.comuniapp.features.event.list.EventListScreen
 import com.miempresa.comuniapp.features.user.detail.UserDetailScreen
-import com.miempresa.comuniapp.features.user.list.UserListScreen
 import com.miempresa.comuniapp.features.user.profile.ProfileScreen
 import com.miempresa.comuniapp.features.user.search.SearchScreen
 
@@ -17,19 +16,28 @@ import com.miempresa.comuniapp.features.user.search.SearchScreen
 fun UserNavigation(
     navController: NavHostController,
     padding: PaddingValues,
-    onEditProfile: () -> Unit,
     onLogout: () -> Unit
-){
+) {
     NavHost(
         navController = navController,
-        startDestination = DashboardRoutes.HomeUser
+        startDestination = DashboardRoutes.EventList
     ) {
-
-        composable<DashboardRoutes.HomeUser> {
-            UserListScreen(
+        composable<DashboardRoutes.EventList> {
+            EventListScreen(
                 paddingValues = padding,
-                onUserClick = { userId ->
-                    navController.navigate(DashboardRoutes.UserDetail(userId))
+                onEventClick = { eventId ->
+                    navController.navigate(DashboardRoutes.EventDetail(eventId = eventId))
+                }
+            )
+        }
+
+        composable<DashboardRoutes.EventDetail> { backStackEntry ->
+            val args = backStackEntry.toRoute<DashboardRoutes.EventDetail>()
+            EventDetailScreen(
+                eventId = args.eventId,
+                paddingValues = padding,
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }
@@ -38,7 +46,7 @@ fun UserNavigation(
             SearchScreen(
                 paddingValues = padding,
                 onUserClick = { userId ->
-                    navController.navigate(DashboardRoutes.UserDetail(userId))
+                    navController.navigate(DashboardRoutes.UserDetail(userId = userId))
                 }
             )
         }
@@ -46,37 +54,15 @@ fun UserNavigation(
         composable<DashboardRoutes.Profile> {
             ProfileScreen(
                 paddingValues = padding,
-                onEditProfile = onEditProfile,
+                onEditProfile = { /* TODO: Implementar navegación a edición */ },
                 onLogout = onLogout
             )
         }
 
-        composable<DashboardRoutes.UserDetail> {
-            val args = it.toRoute<DashboardRoutes.UserDetail>()
-
+        composable<DashboardRoutes.UserDetail> { backStackEntry ->
+            val args = backStackEntry.toRoute<DashboardRoutes.UserDetail>()
             UserDetailScreen(
                 userId = args.userId,
-                paddingValues = padding,
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
-            )
-        }
-
-        composable<DashboardRoutes.ReportList> {
-            ReportListScreen(
-                paddingValues = padding,
-                onReportClick = { reportId ->
-                    navController.navigate(DashboardRoutes.ReportDetail(reportId))
-                }
-            )
-        }
-
-        composable<DashboardRoutes.ReportDetail> {
-            val args = it.toRoute<DashboardRoutes.ReportDetail>()
-
-            ReportDetailScreen(
-                reportId = args.reportId,
                 paddingValues = padding,
                 onNavigateBack = {
                     navController.popBackStack()

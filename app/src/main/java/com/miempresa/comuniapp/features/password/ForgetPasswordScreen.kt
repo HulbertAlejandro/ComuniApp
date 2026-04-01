@@ -1,7 +1,6 @@
 package com.miempresa.comuniapp.features.password
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
@@ -15,8 +14,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.ui.components.AppTextField
-import com.miempresa.comuniapp.ui.theme.AppGradientBackground
-import com.miempresa.comuniapp.ui.theme.SurfaceWhite
 import com.miempresa.comuniapp.ui.theme.appPrimaryButtonColors
 
 @Composable
@@ -33,6 +30,7 @@ fun ForgetPasswordScreen(
             val message = when (it) {
                 is RequestResult.Success -> it.message
                 is RequestResult.Failure -> it.errorMessage
+                is RequestResult.Loading -> "Enviando correo..."
             }
 
             snackbarHostState.showSnackbar(message)
@@ -60,7 +58,7 @@ fun ForgetPasswordScreen(
         ) {
 
             Image(
-                painter = painterResource(R.drawable.logo_comunidad),
+                painter = painterResource(id = R.drawable.logo_comunidad),
                 contentDescription = "Logo",
                 modifier = Modifier.size(220.dp)
             )
@@ -94,10 +92,15 @@ fun ForgetPasswordScreen(
                     .fillMaxWidth()
                     .height(55.dp)
             ) {
-                Text(
-                    "Enviar enlace",
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                if (result is RequestResult.Loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text("Enviar enlace")
+                }
             }
         }
     }

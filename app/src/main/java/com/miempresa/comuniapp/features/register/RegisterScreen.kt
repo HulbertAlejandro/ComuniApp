@@ -29,13 +29,12 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun RegisterScreen(
-    onNavigateBack: () -> Unit = {},
+    onNavigateToBack: () -> Unit = {},
     viewModel: RegisterViewModel = hiltViewModel()
 ) {
 
     var showExitDialog by remember { mutableStateOf(false) }
 
-    // BackHandler para manejar el botón de retroceso
     BackHandler {
         showExitDialog = true
     }
@@ -49,13 +48,14 @@ fun RegisterScreen(
             val message = when (result) {
                 is RequestResult.Success -> result.message
                 is RequestResult.Failure -> result.errorMessage
+                is RequestResult.Loading -> "Registrando usuario..."
             }
 
             snackbarHostState.showSnackbar(message)
 
             if (result is RequestResult.Success) {
                 delay(1000)
-                onNavigateBack()
+                onNavigateToBack()
             }
 
             viewModel.resetRegisterResult()
@@ -93,10 +93,38 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(30.dp))
 
-            AppTextField(viewModel.name.value, { viewModel.name.onChange(it) }, "Nombre", Icons.Default.Person, viewModel.name.error)
-            AppTextField(viewModel.city.value, { viewModel.city.onChange(it) }, "Ciudad", Icons.Default.LocationOn, viewModel.city.error)
-            AppTextField(viewModel.address.value, { viewModel.address.onChange(it) }, "Dirección", Icons.Default.Home, viewModel.address.error)
-            AppTextField(viewModel.email.value, { viewModel.email.onChange(it) }, "Email", Icons.Default.Email, viewModel.email.error)
+            AppTextField(
+                viewModel.name.value,
+                { viewModel.name.onChange(it) },
+                "Nombre",
+                Icons.Default.Person,
+                viewModel.name.error
+            )
+
+            AppTextField(
+                viewModel.city.value,
+                { viewModel.city.onChange(it) },
+                "Ciudad",
+                Icons.Default.LocationOn,
+                viewModel.city.error
+            )
+
+            AppTextField(
+                viewModel.address.value,
+                { viewModel.address.onChange(it) },
+                "Dirección",
+                Icons.Default.Home,
+                viewModel.address.error
+            )
+
+            AppTextField(
+                viewModel.email.value,
+                { viewModel.email.onChange(it) },
+                "Email",
+                Icons.Default.Email,
+                viewModel.email.error
+            )
+
             AppPasswordField(
                 value = viewModel.password.value,
                 onValueChange = { viewModel.password.onChange(it) },
@@ -104,6 +132,7 @@ fun RegisterScreen(
                 icon = Icons.Default.Lock,
                 error = viewModel.password.error
             )
+
             AppPasswordField(
                 value = viewModel.confirmPassword.value,
                 onValueChange = { viewModel.confirmPassword.onChange(it) },
@@ -123,15 +152,23 @@ fun RegisterScreen(
                     .fillMaxWidth()
                     .height(55.dp)
             ) {
-                Text(
-                    "Registrarse",
-                    style = MaterialTheme.typography.bodyLarge
-                )
+
+                if (registerResult is RequestResult.Loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        "Registrarse",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            TextButton(onClick = onNavigateBack) {
+            TextButton(onClick = onNavigateToBack) {
                 Text("Volver")
             }
 
@@ -139,15 +176,14 @@ fun RegisterScreen(
         }
     }
 
-    // Diálogo de confirmación de salida
     if (showExitDialog) {
         ConfirmDialog(
             title = "¿Está seguro de salir?",
-            text = "Si sale, perderá todos los datos del formulario de registro.",
+            text = "Si sale, perderá todos los datos del formulario.",
             onDismiss = { showExitDialog = false },
             onConfirm = {
                 viewModel.resetForm()
-                onNavigateBack()
+                onNavigateToBack()
             }
         )
     }

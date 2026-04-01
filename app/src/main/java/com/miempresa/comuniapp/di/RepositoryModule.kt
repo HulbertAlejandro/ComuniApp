@@ -1,10 +1,8 @@
 package com.miempresa.comuniapp.di
 
 import com.miempresa.comuniapp.data.repository.EventRepositoryImpl
-import com.miempresa.comuniapp.data.repository.ReportRepositoryImpl
 import com.miempresa.comuniapp.data.repository.UserRepositoryImpl
 import com.miempresa.comuniapp.domain.repository.EventRepository
-import com.miempresa.comuniapp.domain.repository.ReportRepository
 import com.miempresa.comuniapp.domain.repository.UserRepository
 import dagger.Binds
 import dagger.Module
@@ -21,12 +19,6 @@ abstract class RepositoryModule {
     abstract fun bindUserRepository(
         userRepositoryImpl: UserRepositoryImpl
     ): UserRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindReportRepository(
-        reportRepositoryImpl: ReportRepositoryImpl
-    ): ReportRepository
 
     @Binds
     @Singleton
