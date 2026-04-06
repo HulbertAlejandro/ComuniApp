@@ -26,7 +26,11 @@ fun UserDetailScreen(
     onNavigateBack: () -> Unit,
     userViewModel: UserDetailViewModel = hiltViewModel()
 ) {
-    val user = remember(userId) { userViewModel.findById(userId) }
+    val user by userViewModel.currentUser.collectAsState()
+
+    LaunchedEffect(userId) {
+        userViewModel.findById(userId)
+    }
 
     user?.let {
         Column(

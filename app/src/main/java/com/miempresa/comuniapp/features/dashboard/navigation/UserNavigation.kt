@@ -54,7 +54,6 @@ fun UserNavigation(
         composable<DashboardRoutes.Profile> {
             ProfileScreen(
                 paddingValues = padding,
-                onEditProfile = { /* TODO: Implementar navegación a edición */ },
                 onLogout = onLogout
             )
         }

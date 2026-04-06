@@ -9,10 +9,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
-@Singleton // Anotamos la clase como Singleton para que Hilt gestione una única instancia
-class UserRepositoryImpl @Inject constructor(): UserRepository { // Implementamos la interfaz UserRepository
+@Singleton
+class UserRepositoryImpl @Inject constructor(): UserRepository {
 
-    // Usamos StateFlow para manejar la lista de usuarios de manera reactiva
     private val _users = MutableStateFlow<List<User>>(emptyList())
     override val users: StateFlow<List<User>> = _users.asStateFlow()
 
@@ -20,20 +19,34 @@ class UserRepositoryImpl @Inject constructor(): UserRepository { // Implementamo
         _users.value = fetchUsers()
     }
 
-    override fun save(user: User) {
+    override suspend fun save(user: User) {
         _users.value += user
     }
 
-    override fun findById(id: String): User? {
+    override suspend fun findById(id: String): User? {
         return _users.value.firstOrNull { it.id == id }
     }
 
-    override fun findByEmail(email: String): User? {
+    override suspend fun findByEmail(email: String): User? {
         return _users.value.firstOrNull { it.email == email }
     }
 
-    override fun login(email: String, password: String): User? {
+    override suspend fun login(email: String, password: String): User? {
         return _users.value.firstOrNull { it.email == email && it.password == password }
+    }
+
+    override suspend fun update(user: User) {
+        val index = _users.value.indexOfFirst { it.id == user.id }
+
+        if (index != -1) {
+            _users.value = _users.value.toMutableList().apply {
+                set(index, user)
+            }
+        }
+    }
+
+    override suspend fun getAll(): List<User> {
+        return _users.value
     }
 
     private fun fetchUsers(): List<User> {

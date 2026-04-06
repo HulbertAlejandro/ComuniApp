@@ -4,9 +4,18 @@ import com.miempresa.comuniapp.domain.model.User
 import kotlinx.coroutines.flow.StateFlow
 
 interface UserRepository {
+
     val users: StateFlow<List<User>>
-    fun save(user: User)
-    fun findById(id: String): User?
-    fun findByEmail(email: String): User?
-    fun login(email: String, password: String): User?
+
+    suspend fun save(user: User)
+
+    suspend fun findById(id: String): User?
+
+    suspend fun findByEmail(email: String): User?
+
+    suspend fun login(email: String, password: String): User?
+
+    suspend fun update(user: User)
+
+    suspend fun getAll(): List<User>
 }
