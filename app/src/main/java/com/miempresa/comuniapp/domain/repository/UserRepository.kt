@@ -47,4 +47,9 @@ interface UserRepository {
         longitude: Double,
         radiusKm: Double
     ): List<User>
+
+    // Gestión de intereses por usuario
+    suspend fun addInterestToUser(userId: String, eventId: String)
+    suspend fun removeInterestFromUser(userId: String, eventId: String)
+    suspend fun getUserInterestedEventIds(userId: String): Set<String>
 }

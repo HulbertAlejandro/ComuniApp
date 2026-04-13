@@ -61,7 +61,7 @@ class CreateEventViewModel @Inject constructor(
         // Usamos UTC para evitar el desfase del día al seleccionar en el DatePicker
         val base = dateMillis ?: (if (isStart) startDateMillis else endDateMillis) ?: System.currentTimeMillis()
         val zonedDateTime = Instant.ofEpochMilli(base)
-            .atZone(ZoneId.of("UTC"))
+            .atZone(ZoneId.of("America/Bogota"))
             .withHour(hour)
             .withMinute(minute)
             .withSecond(0)

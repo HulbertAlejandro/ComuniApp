@@ -16,7 +16,6 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
 
     private val _events = MutableStateFlow<List<Event>>(emptyList())
     override val events: StateFlow<List<Event>> = _events.asStateFlow()
-    private val _interestedEventIds = MutableStateFlow<Set<String>>(emptySet())
 
     init {
         _events.value = seedEvents()
@@ -107,21 +106,13 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
     override suspend fun addInterest(eventId: String) {
         val event = findById(eventId) ?: return
 
-        _interestedEventIds.value += eventId
-
         update(event.copy(interestCount = event.interestCount + 1))
     }
 
     override suspend fun removeInterest(eventId: String) {
         val event = findById(eventId) ?: return
 
-        _interestedEventIds.value -= eventId
-
         update(event.copy(interestCount = maxOf(0, event.interestCount - 1)))
-    }
-
-    override suspend fun getInterestedEventIds(): Flow<Set<String>> {
-        return _interestedEventIds
     }
 
     // =============================

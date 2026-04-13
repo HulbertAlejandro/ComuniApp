@@ -193,4 +193,30 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
             )
         )
     }
+
+    // =============================
+    // Intereses por usuario
+    // =============================
+
+    override suspend fun addInterestToUser(userId: String, eventId: String) {
+        val user = findById(userId) ?: return
+        update(
+            user.copy(
+                interestedEventIds = user.interestedEventIds + eventId
+            )
+        )
+    }
+
+    override suspend fun removeInterestFromUser(userId: String, eventId: String) {
+        val user = findById(userId) ?: return
+        update(
+            user.copy(
+                interestedEventIds = user.interestedEventIds - eventId
+            )
+        )
+    }
+
+    override suspend fun getUserInterestedEventIds(userId: String): Set<String> {
+        return findById(userId)?.interestedEventIds ?: emptySet()
+    }
 }

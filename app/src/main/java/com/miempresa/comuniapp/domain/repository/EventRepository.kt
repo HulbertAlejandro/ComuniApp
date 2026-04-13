@@ -64,8 +64,6 @@ interface EventRepository {
 
     suspend fun removeInterest(eventId: String)
 
-    suspend fun getInterestedEventIds(): Flow<Set<String>>
-
     // =============================
     // Asistencia (cupo)
     // =============================

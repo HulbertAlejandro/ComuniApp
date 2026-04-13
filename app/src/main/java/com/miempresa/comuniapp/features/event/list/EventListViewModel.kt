@@ -38,9 +38,6 @@ class EventListViewModel @Inject constructor(
     private val _currentUserLocation = MutableStateFlow<Location?>(null)
     val currentUserLocation: StateFlow<Location?> = _currentUserLocation.asStateFlow()
 
-    private val _votedEventIds = MutableStateFlow<Set<String>>(emptySet())
-    val votedEventIds: StateFlow<Set<String>> = _votedEventIds.asStateFlow()
-
     private val _usersMap = MutableStateFlow<Map<String, User>>(emptyMap())
     val usersMap: StateFlow<Map<String, User>> = _usersMap.asStateFlow()
 
@@ -49,6 +46,13 @@ class EventListViewModel @Inject constructor(
 
     private val _proximityActive = MutableStateFlow(false)
     val proximityActive: StateFlow<Boolean> = _proximityActive.asStateFlow()
+
+    // ✅ ID del usuario actualmente logueado (para cambio de sesión)
+    private val _currentUserId = MutableStateFlow<String?>(null)
+
+    // ✅ Intereses cargados desde el usuario de sesión (no global)
+    private val _votedEventIds = MutableStateFlow<Set<String>>(emptySet())
+    val votedEventIds: StateFlow<Set<String>> = _votedEventIds.asStateFlow()
 
     private val PROXIMITY_RADIUS_KM = 5.0
 
@@ -59,7 +63,6 @@ class EventListViewModel @Inject constructor(
             preloadOrganizers(events)
         }
 
-    // Los eventos se filtran Y se ordenan por interestCount descendente
     val events: StateFlow<List<Event>> = combine(
         approvedEventsFlow,
         snapshotFlow { selectedCategory },
@@ -68,7 +71,7 @@ class EventListViewModel @Inject constructor(
         combine(_proximityActive, _currentUserLocation) { active, loc -> active to loc }
     ) { events, category, date, query, (proximityActive, userLocation) ->
         applyFilters(events, category, date, query, proximityActive, userLocation)
-            .sortedByDescending { it.interestCount }   // ← orden por popularidad
+            .sortedByDescending { it.interestCount }
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -76,25 +79,80 @@ class EventListViewModel @Inject constructor(
     )
 
     init {
-        loadCurrentUserLocation()
-
-        viewModelScope.launch {
-            repository.getInterestedEventIds().collect {
-                _votedEventIds.value = it
-            }
-        }
-    }
-
-    private fun loadCurrentUserLocation() {
+        // ✅ Observa cambios de sesión para recargar intereses dinámicamente
         viewModelScope.launch {
             sessionDataStore.sessionFlow
                 .filterNotNull()
                 .collectLatest { session ->
-                    val user = userRepository.findById(session.userId)
-                    _currentUserLocation.value = user?.location
+                    val userId = session.userId
+
+                    // Si cambió el usuario, recargamos todo
+                    if (_currentUserId.value != userId) {
+                        _currentUserId.value = userId
+
+                        // Cargar ubicación del nuevo usuario
+                        val user = userRepository.findById(userId)
+                        _currentUserLocation.value = user?.location
+
+                        // ✅ Cargar intereses del nuevo usuario desde su propio arreglo
+                        _votedEventIds.value =
+                            userRepository.getUserInterestedEventIds(userId)
+                    }
                 }
         }
     }
+
+    // ✅ Toggle: agrega o quita de ambos lados (User + Event)
+    fun onInterested(eventId: String) {
+        val userId = _currentUserId.value ?: return
+
+        viewModelScope.launch {
+            if (_votedEventIds.value.contains(eventId)) {
+                // Ya votó → quitar
+                repository.removeInterest(eventId)
+                userRepository.removeInterestFromUser(userId, eventId)
+                _votedEventIds.update { it - eventId }
+            } else {
+                // No ha votado → agregar
+                repository.addInterest(eventId)
+                userRepository.addInterestToUser(userId, eventId)
+                _votedEventIds.update { it + eventId }
+            }
+        }
+    }
+
+    // ── Filtros (sin cambios) ─────────────────────────────────────────────────
+
+    fun toggleProximityFilter() {
+        val nowActive = !_proximityActive.value
+        _proximityActive.value = nowActive
+        selectedFilter = if (nowActive) "Cerca de mí" else null
+        if (nowActive) { selectedCategory = null; selectedDate = null }
+    }
+
+    fun filterByCategory(category: Category?) {
+        selectedCategory = category
+        selectedFilter = if (category != null) "Categoría" else null
+        if (category != null) _proximityActive.value = false
+    }
+
+    fun filterByDate(date: LocalDate?) {
+        selectedDate = date
+        selectedFilter = if (date != null) "Fecha" else null
+        if (date != null) _proximityActive.value = false
+    }
+
+    fun onSearchQueryChanged(query: String) { searchQuery = query }
+
+    fun clearAllFilters() {
+        selectedCategory = null
+        selectedDate = null
+        selectedFilter = null
+        searchQuery = ""
+        _proximityActive.value = false
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private fun applyFilters(
         events: List<Event>,
@@ -104,9 +162,9 @@ class EventListViewModel @Inject constructor(
         proximityActive: Boolean,
         userLocation: Location?
     ): List<Event> = events.filter { event ->
-        val categoryMatch  = category == null || event.category == category
-        val dateMatch      = date == null     || eventMatchesDate(event, date)
-        val queryMatch     = query.isBlank()  ||
+        val categoryMatch = category == null || event.category == category
+        val dateMatch = date == null || eventMatchesDate(event, date)
+        val queryMatch = query.isBlank() ||
                 event.title.contains(query, ignoreCase = true) ||
                 event.description.contains(query, ignoreCase = true)
         val proximityMatch = !proximityActive || userLocation == null ||
@@ -122,53 +180,12 @@ class EventListViewModel @Inject constructor(
     } catch (e: Exception) { false }
 
     private fun haversineKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-        val r    = 6371.0
+        val r = 6371.0
         val dLat = Math.toRadians(lat2 - lat1)
         val dLon = Math.toRadians(lon2 - lon1)
-        val a    = sin(dLat / 2).pow(2) +
+        val a = sin(dLat / 2).pow(2) +
                 cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) * sin(dLon / 2).pow(2)
         return r * 2 * atan2(sqrt(a), sqrt(1 - a))
-    }
-
-    fun onInterested(eventId: String) {
-        viewModelScope.launch {
-            if (_votedEventIds.value.contains(eventId)) {
-                repository.removeInterest(eventId)
-                _votedEventIds.update { it - eventId }
-            } else {
-                repository.addInterest(eventId)
-                _votedEventIds.update { it + eventId }
-            }
-        }
-    }
-
-    fun toggleProximityFilter() {
-        val nowActive = !_proximityActive.value
-        _proximityActive.value = nowActive
-        selectedFilter = if (nowActive) "Cerca de mí" else null
-        if (nowActive) { selectedCategory = null; selectedDate = null }
-    }
-
-    fun filterByCategory(category: Category?) {
-        selectedCategory = category
-        selectedFilter   = if (category != null) "Categoría" else null
-        if (category != null) _proximityActive.value = false
-    }
-
-    fun filterByDate(date: LocalDate?) {
-        selectedDate   = date
-        selectedFilter = if (date != null) "Fecha" else null
-        if (date != null) _proximityActive.value = false
-    }
-
-    fun onSearchQueryChanged(query: String) { searchQuery = query }
-
-    fun clearAllFilters() {
-        selectedCategory       = null
-        selectedDate           = null
-        selectedFilter         = null
-        searchQuery            = ""
-        _proximityActive.value = false
     }
 
     private fun preloadOrganizers(events: List<Event>) {

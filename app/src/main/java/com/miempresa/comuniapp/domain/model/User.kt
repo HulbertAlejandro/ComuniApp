@@ -14,5 +14,7 @@ data class User(
     val role: UserRole = UserRole.USER,
 
     // Sistema de reputación
-    val reputation: Reputation = Reputation()
+    val reputation: Reputation = Reputation(),
+
+    val interestedEventIds: Set<String> = emptySet()
 )
