@@ -1,11 +1,11 @@
 package com.miempresa.comuniapp.features.event.components
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -14,223 +14,185 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.domain.model.Event
 import com.miempresa.comuniapp.domain.model.EventStatus
+import com.miempresa.comuniapp.domain.model.User
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun EventCard(
     event: Event,
+    organizer: User?,
+    hasVoted: Boolean,          // true = el usuario ya marcó interés
     onInterestedClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
-            // Imagen del Evento con Overlay de Chips
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(180.dp)
-            ) {
+            // ── Imagen con badges ─────────────────────────────────────────────
+            Box(modifier = Modifier.fillMaxWidth().height(200.dp)) {
                 AsyncImage(
                     model = event.imageUrl,
                     contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                    placeholder = painterResource(id = R.drawable.ic_launcher_background),
-                    error = painterResource(id = R.drawable.ic_launcher_background)
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+                    contentScale = ContentScale.Crop
                 )
 
-                // Chips superiores en la misma fila (Overlay)
                 Row(
-                    modifier = Modifier
-                        .padding(12.dp)
-                        .align(Alignment.TopStart),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.padding(8.dp).align(Alignment.TopStart),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    SuggestionChip(
-                        onClick = {},
-                        label = {
-                            Text(
-                                text = event.category,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                        },
-                        colors = SuggestionChipDefaults.suggestionChipColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.9f),
-                            labelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                        ),
-                        border = null,
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.height(28.dp)
-                    )
-
-                    val isFull = event.eventStatus == EventStatus.FULL
-                    val statusText = when(event.eventStatus) {
-                        EventStatus.ACTIVE -> "ACTIVO"
-                        EventStatus.FULL -> "LLENO"
-                        EventStatus.FINISHED -> "FINALIZADO"
+                    // Badge categoría
+                    Surface(color = Color(0xFF1565C0), shape = RoundedCornerShape(4.dp)) {
+                        Text(
+                            text = event.category.name.lowercase().replaceFirstChar { it.uppercase() },
+                            color = Color.White,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                        )
                     }
-                    val statusColor = if (isFull) Color.Red else Color(0xFF4CAF50)
-                    
-                    SuggestionChip(
-                        onClick = {},
-                        label = {
-                            Text(
-                                text = statusText,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                        },
-                        colors = SuggestionChipDefaults.suggestionChipColors(
-                            containerColor = statusColor.copy(alpha = 0.9f),
-                            labelColor = Color.White
-                        ),
-                        border = null,
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.height(28.dp)
-                    )
+                    // Badge estado
+                    val (statusColor, statusLabel) = when (event.eventStatus) {
+                        EventStatus.ACTIVE   -> Color(0xFF2E7D32) to "Activo"
+                        EventStatus.FULL     -> Color(0xFFC62828) to "Lleno"
+                        EventStatus.CREATED  -> Color(0xFFE65100) to "Pendiente"
+                        EventStatus.FINISHED -> Color(0xFF424242) to "Finalizado"
+                    }
+                    Surface(color = statusColor, shape = RoundedCornerShape(4.dp)) {
+                        Text(
+                            text = statusLabel,
+                            color = Color.White,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                        )
+                    }
                 }
             }
 
-            Column(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth()
-            ) {
-                // Título
+            // ── Contenido ─────────────────────────────────────────────────────
+            Column(modifier = Modifier.padding(12.dp).fillMaxWidth()) {
+
                 Text(
                     text = event.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontSize = 17.sp, fontWeight = FontWeight.Bold
+                    ),
+                    color = Color(0xFF212121),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // Fecha
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Event,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                // Fecha formateada
+                val dateText = try {
+                    val dt = LocalDateTime.parse(
+                        event.startDate,
+                        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = event.startDate,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                    dt.format(
+                        DateTimeFormatter.ofPattern("EEE d MMM · h:mm a", Locale("es", "ES"))
+                    ).replaceFirstChar { it.uppercase() }
+                } catch (e: Exception) { event.startDate }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = dateText, fontSize = 13.sp, color = Color(0xFF757575),
+                    modifier = Modifier.padding(top = 2.dp))
 
-                // Ubicación (Coordenadas ya que no hay locationName)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Lat: ${event.location.latitude}, Lon: ${event.location.longitude}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Asistentes y Organizador en una sola línea
+                // Asistentes · organizador · nivel
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.padding(top = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Start
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    val isFull = event.eventStatus == EventStatus.FULL
-                    val attendeesText = if (isFull) "CUPOS LLENOS" else "${event.currentAttendees} / ${event.maxAttendees ?: "∞"} asistentes"
-                    val attendeesColor = if (isFull) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
-
+                    val isFull = event.maxAttendees?.let { event.currentAttendees >= it } ?: false
                     Text(
-                        text = attendeesText,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = attendeesColor
+                        text = "${event.currentAttendees} / ${event.maxAttendees ?: "∞"} asistentes",
+                        color = if (isFull) Color(0xFFC62828) else Color(0xFF2E7D32),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
+                    Text(" · ", color = Color(0xFF9E9E9E))
                     Text(
-                        text = "Org: ${event.organizerName}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1
+                        text = "Org: ${organizer?.name ?: "Usuario"}",
+                        fontSize = 12.sp, color = Color(0xFF616161)
                     )
+                    val levelName = organizer?.reputation?.level?.name
+                        ?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Nivel"
+                    Text(" · ", color = Color(0xFF9E9E9E))
+                    Text(text = levelName, color = Color(0xFFE65100),
+                        fontSize = 12.sp, fontWeight = FontWeight.Medium)
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Botones Inferiores
+                // ── Acciones ──────────────────────────────────────────────────
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val isFull = event.eventStatus == EventStatus.FULL
-                    Button(
+                    // Botón "Me interesa" — toggle completo, siempre habilitado
+                    OutlinedButton(
                         onClick = onInterestedClick,
-                        enabled = !isFull,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        shape = RoundedCornerShape(20.dp),
+                        border = BorderStroke(
+                            1.dp,
+                            if (hasVoted) Color(0xFF1565C0) else Color(0xFFBDBDBD)
                         ),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        modifier = Modifier.height(40.dp)
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                        modifier = Modifier.height(36.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (hasVoted) Color(0xFFE3F2FD) else Color.White,
+                            contentColor   = if (hasVoted) Color(0xFF1565C0) else Color(0xFF212121)
+                        )
                     ) {
-                        Text("Me interesa", style = MaterialTheme.typography.labelLarge)
+                        Icon(
+                            imageVector = if (hasVoted) Icons.Filled.Favorite
+                            else Icons.Outlined.FavoriteBorder,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = if (hasVoted) Color(0xFF1565C0) else Color(0xFF757575)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = if (hasVoted) "Me interesa ✓" else "Me interesa",
+                            fontSize = 13.sp
+                        )
                     }
 
-                    // Interacciones (Fuego y Comentarios)
+                    // Contadores
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(text = "🔥", fontSize = 16.sp)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "${event.interestCount}",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("🔥", fontSize = 14.sp)
+                            Text("${event.interestCount}", fontSize = 14.sp, color = Color(0xFFFF6F00))
                         }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(text = "💬", fontSize = 16.sp)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "${event.commentsCount}",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold
+                        Row(verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Icon(
+                                imageVector = Icons.Outlined.ChatBubbleOutline,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = Color(0xFF9E9E9E)
                             )
+                            Text("${event.commentsCount}", fontSize = 14.sp, color = Color(0xFF9E9E9E))
                         }
                     }
                 }

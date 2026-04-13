@@ -4,7 +4,7 @@ import androidx.compose.ui.graphics.Brush
 
 val AppGradientBackground = Brush.verticalGradient(
     colors = listOf(
-        BackgroundWhite,
+        BackgroundLight,
         SurfaceWhite
     )
 )

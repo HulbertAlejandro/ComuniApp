@@ -77,8 +77,8 @@ fun UserDetailScreen(
                 ) {
                     DetailItem("Nombre", it.name)
                     DetailItem("Email", it.email)
-                    DetailItem("Ciudad", it.city)
-                    DetailItem("Dirección", it.address)
+                    DetailItem("Ciudad", it.phoneNumber)
+                    DetailItem("Dirección", it.phoneNumber)
                     if (it.phoneNumber.isNotEmpty()) {
                         DetailItem("Teléfono", it.phoneNumber)
                     }

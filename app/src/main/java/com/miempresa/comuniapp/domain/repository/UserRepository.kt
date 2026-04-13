@@ -1,5 +1,6 @@
 package com.miempresa.comuniapp.domain.repository
 
+import com.miempresa.comuniapp.domain.model.Badge
 import com.miempresa.comuniapp.domain.model.User
 import kotlinx.coroutines.flow.StateFlow
 
@@ -7,7 +8,7 @@ interface UserRepository {
 
     val users: StateFlow<List<User>>
 
-    suspend fun save(user: User)
+    suspend fun saveWithPassword(user: User, password: String)
 
     suspend fun findById(id: String): User?
 
@@ -17,5 +18,33 @@ interface UserRepository {
 
     suspend fun update(user: User)
 
-    suspend fun getAll(): List<User>
+    suspend fun updatePassword(email: String, newPassword: String)
+
+    suspend fun delete(id: String)
+
+    // =============================
+    // Reputación
+    // =============================
+
+    suspend fun addPoints(userId: String, points: Int)
+
+    suspend fun updateLevel(userId: String)
+
+    suspend fun addBadge(userId: String, badge: Badge)
+
+    // =============================
+    // Roles
+    // =============================
+
+    suspend fun getModerators(): List<User>
+
+    // =============================
+    // Ubicación / Filtros
+    // =============================
+
+    suspend fun getUsersNearby(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Double
+    ): List<User>
 }

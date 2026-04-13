@@ -1,7 +1,7 @@
 package com.miempresa.comuniapp.di
 
-import com.miempresa.comuniapp.data.repository.EventRepositoryImpl
-import com.miempresa.comuniapp.data.repository.UserRepositoryImpl
+import com.miempresa.comuniapp.data.repository.memory.EventRepositoryImpl
+import com.miempresa.comuniapp.data.repository.memory.UserRepositoryImpl
 import com.miempresa.comuniapp.domain.repository.EventRepository
 import com.miempresa.comuniapp.domain.repository.UserRepository
 import dagger.Binds

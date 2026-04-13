@@ -5,31 +5,33 @@ data class Event(
     val title: String,
     val description: String,
 
-    val category: String,
+    // Categoría
+    val category: Category,
+
     val imageUrl: String,
 
-    // Ubicación unificada
+    // Ubicación obligatoria
     val location: Location,
 
     // Fechas
     val startDate: String,
     val endDate: String,
 
-    // Asistentes
-    val maxAttendees: Int?,
-    val currentAttendees: Int,
+    // Cupo
+    val maxAttendees: Int? = null,
+    val currentAttendees: Int = 0,
 
-    // Organizador
-    val organizerName: String,
-    val organizerLevel: String,
+    // Relación con usuario creador
+    val ownerId: String,
 
-    // Estados separados
-    val eventStatus: EventStatus,
-    val verificationStatus: VerificationStatus,
+    // Estados del evento
+    val eventStatus: EventStatus = EventStatus.CREATED,
 
-    // Interacción social
+    // Moderación
+    val verificationStatus: VerificationStatus = VerificationStatus.PENDING,
+    val rejectionReason: String? = null,
+
+    // Métricas sociales
     val interestCount: Int = 0,
-    val commentsCount: Int = 0,
-
-    val ownerId: String
+    val commentsCount: Int = 0
 )

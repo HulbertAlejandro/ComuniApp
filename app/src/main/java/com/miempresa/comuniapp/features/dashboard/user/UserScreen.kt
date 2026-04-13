@@ -13,23 +13,31 @@ import com.miempresa.comuniapp.features.dashboard.navigation.UserNavigation
 fun UserScreen(
     onLogout: () -> Unit
 ) {
-
     val navController = rememberNavController()
     var title by remember { mutableStateOf("Inicio usuario") }
-    var showBars by remember { mutableStateOf(true) }
+    var showTopBar by remember { mutableStateOf(true) }
+    var showBottomBar by remember { mutableStateOf(true) }
 
     LaunchedEffect(navController) {
         navController.currentBackStackEntryFlow.collect { backStackEntry ->
             val destination = backStackEntry.destination
-            // Ocultar barras en el detalle de usuario o detalle de evento
-            showBars = !destination.hasRoute<DashboardRoutes.UserDetail>() &&
-                       !destination.hasRoute<DashboardRoutes.EventDetail>()
+            
+            // La Home (EventList) y CreateEvent manejan su propia TopAppBar según el diseño
+            showTopBar = !destination.hasRoute<DashboardRoutes.EventList>() &&
+                         !destination.hasRoute<DashboardRoutes.CreateEvent>() &&
+                         !destination.hasRoute<DashboardRoutes.UserDetail>() &&
+                         !destination.hasRoute<DashboardRoutes.EventDetail>()
+            
+            // Ocultar barra inferior en pantallas de detalle o creación
+            showBottomBar = !destination.hasRoute<DashboardRoutes.UserDetail>() &&
+                            !destination.hasRoute<DashboardRoutes.EventDetail>() &&
+                            !destination.hasRoute<DashboardRoutes.CreateEvent>()
         }
     }
 
     Scaffold(
         topBar = {
-            if (showBars) {
+            if (showTopBar) {
                 TopAppBar(
                     title = title,
                     logout = onLogout
@@ -37,7 +45,7 @@ fun UserScreen(
             }
         },
         bottomBar = {
-            if (showBars) {
+            if (showBottomBar) {
                 BottomNavigationBar(
                     navController = navController,
                     titleTopBar = {
@@ -47,13 +55,10 @@ fun UserScreen(
             }
         }
     ) { padding ->
-
         UserNavigation(
             navController = navController,
             padding = padding,
             onLogout = onLogout
         )
-
     }
-
 }

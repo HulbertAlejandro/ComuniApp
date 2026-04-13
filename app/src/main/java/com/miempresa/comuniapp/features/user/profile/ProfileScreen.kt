@@ -40,8 +40,8 @@ fun ProfileScreen(
     LaunchedEffect(user) {
         user?.let {
             name = it.name
-            city = it.city
-            address = it.address
+            city = it.phoneNumber
+            address = it.phoneNumber
             phone = it.phoneNumber ?: ""
         }
     }
@@ -144,15 +144,13 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 🔥 BOTONES COMO PROFESOR
+                // BOTONES COMO PROFESOR
                 if (isEditMode) {
 
                     Button(
                         onClick = {
                             val updatedUser = currentUser.copy(
                                 name = name,
-                                city = city,
-                                address = address,
                                 phoneNumber = phone
                             )
                             viewModel.updateUser(updatedUser)

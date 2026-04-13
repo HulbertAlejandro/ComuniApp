@@ -8,21 +8,24 @@ sealed class DashboardRoutes {
     data object EventList : DashboardRoutes()
 
     @Serializable
-    data object Search : DashboardRoutes()
+    data object Map : DashboardRoutes()
+
+    @Serializable
+    data object CreateEvent : DashboardRoutes()
+
+    @Serializable
+    data object Notifications : DashboardRoutes()
 
     @Serializable
     data object Profile : DashboardRoutes()
 
     @Serializable
+    data class EventDetail(val eventId: String) : DashboardRoutes()
+
+    @Serializable
+    data object Search : DashboardRoutes()
+
+    @Serializable
     data class UserDetail(val userId: String) : DashboardRoutes()
 
-    @Serializable
-    data class EventDetail(val eventId: String) : DashboardRoutes()
-    
-    // Antiguas para compatibilidad si es necesario borrar luego
-    @Serializable
-    data object HomeUser : DashboardRoutes()
-
-    @Serializable
-    data object HomeAdmin : DashboardRoutes()
 }

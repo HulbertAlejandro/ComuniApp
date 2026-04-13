@@ -117,7 +117,7 @@ private fun MainNavigation(
     val navController = rememberNavController()
 
     val startDestination: Any = when (session.role) {
-        UserRole.ADMIN -> MainRoutes.HomeAdmin
+        UserRole.MODERATOR -> MainRoutes.HomeAdmin
         UserRole.USER -> MainRoutes.HomeUser
     }
 

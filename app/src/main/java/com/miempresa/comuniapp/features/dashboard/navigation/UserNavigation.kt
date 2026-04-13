@@ -1,16 +1,16 @@
 package com.miempresa.comuniapp.features.dashboard.navigation
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import com.miempresa.comuniapp.features.event.create.CreateEventScreen
 import com.miempresa.comuniapp.features.event.detail.EventDetailScreen
 import com.miempresa.comuniapp.features.event.list.EventListScreen
-import com.miempresa.comuniapp.features.user.detail.UserDetailScreen
 import com.miempresa.comuniapp.features.user.profile.ProfileScreen
-import com.miempresa.comuniapp.features.user.search.SearchScreen
 
 @Composable
 fun UserNavigation(
@@ -22,33 +22,35 @@ fun UserNavigation(
         navController = navController,
         startDestination = DashboardRoutes.EventList
     ) {
+
         composable<DashboardRoutes.EventList> {
             EventListScreen(
                 paddingValues = padding,
-                onEventClick = { eventId ->
-                    navController.navigate(DashboardRoutes.EventDetail(eventId = eventId))
+                onEventClick = {
+                    navController.navigate(DashboardRoutes.EventDetail(it))
                 }
             )
         }
 
-        composable<DashboardRoutes.EventDetail> { backStackEntry ->
-            val args = backStackEntry.toRoute<DashboardRoutes.EventDetail>()
-            EventDetailScreen(
-                eventId = args.eventId,
-                paddingValues = padding,
-                onNavigateBack = {
+        composable<DashboardRoutes.Map> {
+            // TODO: MapScreen()
+            Text("Mapa (pendiente)")
+        }
+
+        composable<DashboardRoutes.CreateEvent> {
+            CreateEventScreen(
+                onBack = {
+                    navController.popBackStack()
+                },
+                onEventCreated = {
                     navController.popBackStack()
                 }
             )
         }
 
-        composable<DashboardRoutes.Search> {
-            SearchScreen(
-                paddingValues = padding,
-                onUserClick = { userId ->
-                    navController.navigate(DashboardRoutes.UserDetail(userId = userId))
-                }
-            )
+        composable<DashboardRoutes.Notifications> {
+            // TODO: NotificationsScreen()
+            Text("Notificaciones")
         }
 
         composable<DashboardRoutes.Profile> {
@@ -58,10 +60,11 @@ fun UserNavigation(
             )
         }
 
-        composable<DashboardRoutes.UserDetail> { backStackEntry ->
-            val args = backStackEntry.toRoute<DashboardRoutes.UserDetail>()
-            UserDetailScreen(
-                userId = args.userId,
+        composable<DashboardRoutes.EventDetail> { backStackEntry ->
+            val args = backStackEntry.toRoute<DashboardRoutes.EventDetail>()
+
+            EventDetailScreen(
+                eventId = args.eventId,
                 paddingValues = padding,
                 onNavigateBack = {
                     navController.popBackStack()

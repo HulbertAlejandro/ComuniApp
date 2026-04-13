@@ -28,7 +28,7 @@ class UserListViewModel @Inject constructor(
             else users.filter {
                 it.name.contains(query, true) ||
                         it.email.contains(query, true) ||
-                        it.city.contains(query, true)
+                        it.phoneNumber.contains(query, true)
             }
         }.stateIn(
             viewModelScope,

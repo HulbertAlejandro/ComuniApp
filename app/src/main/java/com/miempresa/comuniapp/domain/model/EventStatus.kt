@@ -1,7 +1,8 @@
 package com.miempresa.comuniapp.domain.model
 
 enum class EventStatus {
-    ACTIVE,
-    FULL,
-    FINISHED
+    CREATED,     // Recién creado
+    ACTIVE,      // Disponible
+    FULL,        // Cupo lleno
+    FINISHED     // Finalizado
 }

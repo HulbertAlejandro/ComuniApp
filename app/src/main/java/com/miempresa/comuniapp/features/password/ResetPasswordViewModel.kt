@@ -4,17 +4,22 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.core.utils.ValidatedField
+import com.miempresa.comuniapp.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-
 import javax.inject.Inject
 
 @HiltViewModel
-class ResetPasswordViewModel @Inject constructor() : ViewModel() {
+class ResetPasswordViewModel @Inject constructor(
+    private val userRepository: UserRepository
+) : ViewModel() {
+
+    // ⚠️ Esto debe venir del flujo anterior (Fase 2 simplificado)
+    var email: String = ""
 
     val newPassword = ValidatedField("") {
         when {
@@ -39,23 +44,36 @@ class ResetPasswordViewModel @Inject constructor() : ViewModel() {
     val result: StateFlow<RequestResult?> = _result.asStateFlow()
 
     fun resetPassword() {
-        if (isFormValid) {
-            viewModelScope.launch {
+        if (!isFormValid || email.isBlank()) {
+            _result.value = RequestResult.Failure("Error en la solicitud")
+            return
+        }
 
-                _result.value = RequestResult.Loading
+        viewModelScope.launch {
+            _result.value = RequestResult.Loading
 
-                try {
-                    delay(1500)
+            try {
+                val user = userRepository.findByEmail(email)
 
+                if (user == null) {
                     _result.value =
-                        RequestResult.Success("Contraseña actualizada")
-
-                } catch (e: Exception) {
-                    _result.value =
-                        RequestResult.Failure(
-                            e.message ?: "Error al actualizar"
-                        )
+                        RequestResult.Failure("Usuario no encontrado")
+                    return@launch
                 }
+
+                // Simulación de delay
+                delay(1500)
+
+                userRepository.updatePassword(email, newPassword.value)
+
+                _result.value =
+                    RequestResult.Success("Contraseña actualizada")
+
+            } catch (e: Exception) {
+                _result.value =
+                    RequestResult.Failure(
+                        e.message ?: "Error al actualizar"
+                    )
             }
         }
     }

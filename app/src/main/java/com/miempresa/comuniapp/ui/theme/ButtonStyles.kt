@@ -5,8 +5,8 @@ import androidx.compose.runtime.Composable
 
 @Composable
 fun appPrimaryButtonColors() = ButtonDefaults.buttonColors(
-    containerColor = ButtonBackground,
-    contentColor = ButtonTextDark,
-    disabledContainerColor = ButtonBackground.copy(alpha = 0.5f),
-    disabledContentColor = ButtonTextDark.copy(alpha = 0.5f)
+    containerColor = PrimaryBlue,
+    contentColor = SurfaceWhite,
+    disabledContainerColor = PrimaryBlue.copy(alpha = 0.5f),
+    disabledContentColor = SurfaceWhite.copy(alpha = 0.5f)
 )

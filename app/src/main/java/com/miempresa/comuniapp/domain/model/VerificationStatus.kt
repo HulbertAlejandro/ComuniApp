@@ -1,7 +1,7 @@
 package com.miempresa.comuniapp.domain.model
 
 enum class VerificationStatus {
-    PENDING,
-    APPROVED,
-    REJECTED
+    PENDING,     // Sin revisar
+    APPROVED,    // Verificado
+    REJECTED     // Rechazado (requiere motivo)
 }

@@ -46,8 +46,8 @@ fun DropdownMenu(
                     text = label
                 )
             },
-            supportingText = supportingText?.let {
-                { Text(text = supportingText) }
+            supportingText = supportingText?.let { text ->
+                { Text(text = text) }
             },
             leadingIcon = icon?.let {
                 { Icon(imageVector = icon, contentDescription = null) }

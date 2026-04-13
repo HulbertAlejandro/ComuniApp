@@ -3,11 +3,16 @@ package com.miempresa.comuniapp.domain.model
 data class User(
     val id: String,
     val name: String,
-    val city: String,
-    val address: String,
     val email: String,
-    val password: String,
     val phoneNumber: String = "",
     val profilePictureUrl: String = "",
-    val role: UserRole = UserRole.USER
+
+    // Ubicación requerida por el sistema
+    val location: Location,
+
+    // Rol del sistema
+    val role: UserRole = UserRole.USER,
+
+    // Sistema de reputación
+    val reputation: Reputation = Reputation()
 )

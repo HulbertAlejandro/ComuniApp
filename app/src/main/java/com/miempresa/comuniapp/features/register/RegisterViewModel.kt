@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.core.utils.ValidatedField
-import com.miempresa.comuniapp.domain.model.User
+import com.miempresa.comuniapp.domain.model.*
 import com.miempresa.comuniapp.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -82,17 +82,25 @@ class RegisterViewModel @Inject constructor(
                         return@launch
                     }
 
+                    // Ubicación simulada (Fase 2)
+                    val location = Location(
+                        latitude = 4.6097,
+                        longitude = -74.0817
+                    )
+
                     val newUser = User(
                         id = UUID.randomUUID().toString(),
                         name = name.value,
-                        city = city.value,
-                        address = address.value,
                         email = email.value,
-                        password = password.value,
-                        profilePictureUrl = ""
+                        phoneNumber = "",
+                        profilePictureUrl = "",
+                        location = location,
+                        role = UserRole.USER,
+                        reputation = Reputation()
                     )
 
-                    repository.save(newUser)
+                    // Password NO va en el modelo de dominio
+                    repository.saveWithPassword(newUser, password.value)
 
                     _registerResult.value =
                         RequestResult.Success("Registro exitoso")

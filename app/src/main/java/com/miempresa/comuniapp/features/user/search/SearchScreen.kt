@@ -108,7 +108,7 @@ fun SearchScreen(
                             Spacer(modifier = Modifier.height(2.dp))
 
                             Text(
-                                text = "${user.city} - ${user.address}",
+                                text = "${user.phoneNumber} - ${user.phoneNumber}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
