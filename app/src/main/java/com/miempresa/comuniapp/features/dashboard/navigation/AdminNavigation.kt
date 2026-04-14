@@ -8,9 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.miempresa.comuniapp.features.event.detail.EventDetailScreen
 import com.miempresa.comuniapp.features.event.list.EventListScreen
-import com.miempresa.comuniapp.features.user.detail.UserDetailScreen
 import com.miempresa.comuniapp.features.user.profile.ProfileScreen
-import com.miempresa.comuniapp.features.user.search.SearchScreen
 
 @Composable
 fun AdminNavigation(
@@ -43,33 +41,16 @@ fun AdminNavigation(
                 }
             )
         }
-
-        composable<DashboardRoutes.Search> {
-            SearchScreen(
-                paddingValues = padding,
-                onUserClick = { userId ->
-                    navController.navigate(DashboardRoutes.UserDetail(userId))
-                }
-            )
-        }
+        
 
         composable<DashboardRoutes.Profile> {
             ProfileScreen(
                 paddingValues = padding,
-                onLogout = { /* opcional manejar */ }
+                onLogout = { /* opcional manejar */ },
+                onEditProfile = TODO(),
+                viewModel = TODO()
             )
         }
-
-        composable<DashboardRoutes.UserDetail> { backStackEntry ->
-            val args = backStackEntry.toRoute<DashboardRoutes.UserDetail>()
-
-            UserDetailScreen(
-                userId = args.userId,
-                paddingValues = padding,
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
-            )
-        }
+        
     }
 }

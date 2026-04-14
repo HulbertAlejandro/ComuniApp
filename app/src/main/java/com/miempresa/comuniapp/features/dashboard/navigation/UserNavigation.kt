@@ -10,6 +10,7 @@ import androidx.navigation.toRoute
 import com.miempresa.comuniapp.features.event.create.CreateEventScreen
 import com.miempresa.comuniapp.features.event.detail.EventDetailScreen
 import com.miempresa.comuniapp.features.event.list.EventListScreen
+import com.miempresa.comuniapp.features.user.edit.UserEditScreen
 import com.miempresa.comuniapp.features.user.profile.ProfileScreen
 
 @Composable
@@ -26,49 +27,49 @@ fun UserNavigation(
         composable<DashboardRoutes.EventList> {
             EventListScreen(
                 paddingValues = padding,
-                onEventClick = {
-                    navController.navigate(DashboardRoutes.EventDetail(it))
+                onEventClick = { eventId ->
+                    navController.navigate(DashboardRoutes.EventDetail(eventId))
                 }
             )
         }
 
         composable<DashboardRoutes.Map> {
-            // TODO: MapScreen()
             Text("Mapa (pendiente)")
         }
 
         composable<DashboardRoutes.CreateEvent> {
             CreateEventScreen(
-                onBack = {
-                    navController.popBackStack()
-                },
-                onEventCreated = {
-                    navController.popBackStack()
-                }
+                onBack = { navController.popBackStack() },
+                onEventCreated = { navController.popBackStack() }
             )
         }
 
         composable<DashboardRoutes.Notifications> {
-            // TODO: NotificationsScreen()
-            Text("Notificaciones")
+            Text("Notificaciones (pendiente)")
         }
 
         composable<DashboardRoutes.Profile> {
             ProfileScreen(
                 paddingValues = padding,
-                onLogout = onLogout
+                onLogout = onLogout,
+                onEditProfile = {
+                    navController.navigate(DashboardRoutes.UserEdit)
+                }
             )
         }
 
         composable<DashboardRoutes.EventDetail> { backStackEntry ->
             val args = backStackEntry.toRoute<DashboardRoutes.EventDetail>()
-
             EventDetailScreen(
                 eventId = args.eventId,
                 paddingValues = padding,
-                onNavigateBack = {
-                    navController.popBackStack()
-                }
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable<DashboardRoutes.UserEdit> {
+            UserEditScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

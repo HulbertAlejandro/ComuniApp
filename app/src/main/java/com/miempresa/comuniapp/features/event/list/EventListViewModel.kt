@@ -47,12 +47,30 @@ class EventListViewModel @Inject constructor(
     private val _proximityActive = MutableStateFlow(false)
     val proximityActive: StateFlow<Boolean> = _proximityActive.asStateFlow()
 
-    // ✅ ID del usuario actualmente logueado (para cambio de sesión)
     private val _currentUserId = MutableStateFlow<String?>(null)
 
-    // ✅ Intereses cargados desde el usuario de sesión (no global)
     private val _votedEventIds = MutableStateFlow<Set<String>>(emptySet())
     val votedEventIds: StateFlow<Set<String>> = _votedEventIds.asStateFlow()
+
+    private val _favoriteCategoriesFilter = MutableStateFlow(false)
+    val favoriteCategoriesFilter: StateFlow<Boolean> = _favoriteCategoriesFilter.asStateFlow()
+
+    // ✅ CLAVE: observa el repositorio reactivamente a través de flatMapLatest.
+    // Cada vez que UserEditViewModel llama a repository.update(), el MutableStateFlow
+    // de users emite → este flow recalcula → el combine de events reacciona.
+    private val _userFavoriteCategories: StateFlow<List<Category>> =
+        sessionDataStore.sessionFlow
+            .filterNotNull()
+            .flatMapLatest { session ->
+                userRepository.users.map { list ->
+                    list.find { it.id == session.userId }?.favoriteCategories ?: emptyList()
+                }
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList()
+            )
 
     private val PROXIMITY_RADIUS_KM = 5.0
 
@@ -63,14 +81,24 @@ class EventListViewModel @Inject constructor(
             preloadOrganizers(events)
         }
 
+    @Suppress("UNCHECKED_CAST")
     val events: StateFlow<List<Event>> = combine(
         approvedEventsFlow,
         snapshotFlow { selectedCategory },
         snapshotFlow { selectedDate },
         snapshotFlow { searchQuery },
-        combine(_proximityActive, _currentUserLocation) { active, loc -> active to loc }
-    ) { events, category, date, query, (proximityActive, userLocation) ->
-        applyFilters(events, category, date, query, proximityActive, userLocation)
+        combine(_proximityActive, _currentUserLocation) { active, loc -> active to loc },
+        // ✅ Ahora es un StateFlow reactivo — no un valor puntual del init
+        combine(_favoriteCategoriesFilter, _userFavoriteCategories) { active, cats -> active to cats }
+    ) { array ->
+        val events                          = array[0] as List<Event>
+        val category                        = array[1] as Category?
+        val date                            = array[2] as LocalDate?
+        val query                           = array[3] as String
+        val (proximityActive, userLocation) = array[4] as Pair<Boolean, Location?>
+        val (favActive, favCats)            = array[5] as Pair<Boolean, List<Category>>
+
+        applyFilters(events, category, date, query, proximityActive, userLocation, favActive, favCats)
             .sortedByDescending { it.interestCount }
     }.stateIn(
         scope = viewModelScope,
@@ -79,41 +107,39 @@ class EventListViewModel @Inject constructor(
     )
 
     init {
-        // ✅ Observa cambios de sesión para recargar intereses dinámicamente
         viewModelScope.launch {
             sessionDataStore.sessionFlow
                 .filterNotNull()
                 .collectLatest { session ->
                     val userId = session.userId
 
-                    // Si cambió el usuario, recargamos todo
                     if (_currentUserId.value != userId) {
                         _currentUserId.value = userId
 
-                        // Cargar ubicación del nuevo usuario
                         val user = userRepository.findById(userId)
                         _currentUserLocation.value = user?.location
 
-                        // ✅ Cargar intereses del nuevo usuario desde su propio arreglo
                         _votedEventIds.value =
                             userRepository.getUserInterestedEventIds(userId)
+
+                        // ✅ Ya no cargamos categorías aquí — lo hace _userFavoriteCategories
+                        //    reactivamente mediante flatMapLatest
                     }
                 }
         }
     }
 
-    // ✅ Toggle: agrega o quita de ambos lados (User + Event)
+    // ── Intereses ─────────────────────────────────────────────────────────────
+
     fun onInterested(eventId: String) {
         val userId = _currentUserId.value ?: return
 
         viewModelScope.launch {
             if (_votedEventIds.value.contains(eventId)) {
-                // Ya votó → quitar
                 repository.removeInterest(eventId)
                 userRepository.removeInterestFromUser(userId, eventId)
                 _votedEventIds.update { it - eventId }
             } else {
-                // No ha votado → agregar
                 repository.addInterest(eventId)
                 userRepository.addInterestToUser(userId, eventId)
                 _votedEventIds.update { it + eventId }
@@ -121,25 +147,46 @@ class EventListViewModel @Inject constructor(
         }
     }
 
-    // ── Filtros (sin cambios) ─────────────────────────────────────────────────
+    // ── Filtros ───────────────────────────────────────────────────────────────
 
     fun toggleProximityFilter() {
         val nowActive = !_proximityActive.value
         _proximityActive.value = nowActive
         selectedFilter = if (nowActive) "Cerca de mí" else null
-        if (nowActive) { selectedCategory = null; selectedDate = null }
+        if (nowActive) {
+            selectedCategory = null
+            selectedDate = null
+            _favoriteCategoriesFilter.value = false
+        }
     }
 
     fun filterByCategory(category: Category?) {
         selectedCategory = category
         selectedFilter = if (category != null) "Categoría" else null
-        if (category != null) _proximityActive.value = false
+        if (category != null) {
+            _proximityActive.value = false
+            _favoriteCategoriesFilter.value = false
+        }
     }
 
     fun filterByDate(date: LocalDate?) {
         selectedDate = date
         selectedFilter = if (date != null) "Fecha" else null
-        if (date != null) _proximityActive.value = false
+        if (date != null) {
+            _proximityActive.value = false
+            _favoriteCategoriesFilter.value = false
+        }
+    }
+
+    fun toggleFavoriteCategoriesFilter() {
+        val nowActive = !_favoriteCategoriesFilter.value
+        _favoriteCategoriesFilter.value = nowActive
+        selectedFilter = if (nowActive) "Recomendados" else null
+        if (nowActive) {
+            selectedCategory = null
+            selectedDate = null
+            _proximityActive.value = false
+        }
     }
 
     fun onSearchQueryChanged(query: String) { searchQuery = query }
@@ -150,6 +197,7 @@ class EventListViewModel @Inject constructor(
         selectedFilter = null
         searchQuery = ""
         _proximityActive.value = false
+        _favoriteCategoriesFilter.value = false
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -160,11 +208,13 @@ class EventListViewModel @Inject constructor(
         date: LocalDate?,
         query: String,
         proximityActive: Boolean,
-        userLocation: Location?
+        userLocation: Location?,
+        favoritesActive: Boolean,
+        favoriteCategories: List<Category>
     ): List<Event> = events.filter { event ->
-        val categoryMatch = category == null || event.category == category
-        val dateMatch = date == null || eventMatchesDate(event, date)
-        val queryMatch = query.isBlank() ||
+        val categoryMatch  = category == null || event.category == category
+        val dateMatch      = date == null || eventMatchesDate(event, date)
+        val queryMatch     = query.isBlank() ||
                 event.title.contains(query, ignoreCase = true) ||
                 event.description.contains(query, ignoreCase = true)
         val proximityMatch = !proximityActive || userLocation == null ||
@@ -172,7 +222,11 @@ class EventListViewModel @Inject constructor(
                     userLocation.latitude, userLocation.longitude,
                     event.location.latitude, event.location.longitude
                 ) <= PROXIMITY_RADIUS_KM
-        categoryMatch && dateMatch && queryMatch && proximityMatch
+        val favoritesMatch = !favoritesActive ||
+                favoriteCategories.isEmpty() ||
+                event.category in favoriteCategories
+
+        categoryMatch && dateMatch && queryMatch && proximityMatch && favoritesMatch
     }
 
     private fun eventMatchesDate(event: Event, date: LocalDate): Boolean = try {
@@ -180,10 +234,10 @@ class EventListViewModel @Inject constructor(
     } catch (e: Exception) { false }
 
     private fun haversineKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-        val r = 6371.0
+        val r    = 6371.0
         val dLat = Math.toRadians(lat2 - lat1)
         val dLon = Math.toRadians(lon2 - lon1)
-        val a = sin(dLat / 2).pow(2) +
+        val a    = sin(dLat / 2).pow(2) +
                 cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) * sin(dLon / 2).pow(2)
         return r * 2 * atan2(sqrt(a), sqrt(1 - a))
     }

@@ -16,38 +16,19 @@ class ProfileViewModel @Inject constructor(
     private val sessionDataStore: SessionDataStore
 ) : ViewModel() {
 
-    private val _user = MutableStateFlow<User?>(null)
-    val user: StateFlow<User?> = _user.asStateFlow()
-
-    private val _isEditMode = MutableStateFlow(false)
-    val isEditMode: StateFlow<Boolean> = _isEditMode.asStateFlow()
-
-    init {
-        loadUser()
-    }
-
-    private fun loadUser() {
-        viewModelScope.launch {
-            val session = sessionDataStore.sessionFlow.firstOrNull()
-
-            session?.let {
-                val foundUser = repository.findById(it.userId)
-                _user.value = foundUser
+    // Observa el repositorio reactivamente: cualquier update() en UserEditViewModel
+    // se refleja aquí automáticamente sin necesidad de recargar.
+    val user: StateFlow<User?> =
+        sessionDataStore.sessionFlow
+            .filterNotNull()
+            .flatMapLatest { session ->
+                repository.users.map { list -> list.find { it.id == session.userId } }
             }
-        }
-    }
-
-    fun toggleEditMode() {
-        _isEditMode.value = !_isEditMode.value
-    }
-
-    fun updateUser(updated: User) {
-        viewModelScope.launch {
-            repository.update(updated)
-            _user.value = updated
-            _isEditMode.value = false
-        }
-    }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = null
+            )
 
     fun logout() {
         viewModelScope.launch {

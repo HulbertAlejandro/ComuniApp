@@ -22,9 +22,6 @@ fun AdminScreen(
         navController.currentBackStackEntryFlow.collect { backStackEntry ->
             val destination = backStackEntry.destination
 
-            // Oculta barras en detalles (igual que usuario)
-            showBars = !destination.hasRoute<DashboardRoutes.EventDetail>() &&
-                    !destination.hasRoute<DashboardRoutes.UserDetail>()
         }
     }
 

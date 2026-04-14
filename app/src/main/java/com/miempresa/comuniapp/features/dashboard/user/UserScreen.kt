@@ -10,47 +10,41 @@ import com.miempresa.comuniapp.features.dashboard.navigation.DashboardRoutes
 import com.miempresa.comuniapp.features.dashboard.navigation.UserNavigation
 
 @Composable
-fun UserScreen(
-    onLogout: () -> Unit
-) {
+fun UserScreen(onLogout: () -> Unit) {
     val navController = rememberNavController()
-    var title by remember { mutableStateOf("Inicio usuario") }
-    var showTopBar by remember { mutableStateOf(true) }
+    var title by remember { mutableStateOf("Inicio") }
+    var showTopBar by remember { mutableStateOf(false) }
     var showBottomBar by remember { mutableStateOf(true) }
 
     LaunchedEffect(navController) {
         navController.currentBackStackEntryFlow.collect { backStackEntry ->
-            val destination = backStackEntry.destination
-            
-            // La Home (EventList) y CreateEvent manejan su propia TopAppBar según el diseño
-            showTopBar = !destination.hasRoute<DashboardRoutes.EventList>() &&
-                         !destination.hasRoute<DashboardRoutes.CreateEvent>() &&
-                         !destination.hasRoute<DashboardRoutes.UserDetail>() &&
-                         !destination.hasRoute<DashboardRoutes.EventDetail>()
-            
-            // Ocultar barra inferior en pantallas de detalle o creación
-            showBottomBar = !destination.hasRoute<DashboardRoutes.UserDetail>() &&
-                            !destination.hasRoute<DashboardRoutes.EventDetail>() &&
-                            !destination.hasRoute<DashboardRoutes.CreateEvent>()
+            val dest = backStackEntry.destination
+
+            // Pantallas con TopAppBar propia: no mostrar la global
+            showTopBar = !dest.hasRoute<DashboardRoutes.EventList>() &&
+                    !dest.hasRoute<DashboardRoutes.CreateEvent>() &&
+                    !dest.hasRoute<DashboardRoutes.EventDetail>() &&
+                    !dest.hasRoute<DashboardRoutes.Profile>() &&
+                    !dest.hasRoute<DashboardRoutes.UserEdit>()
+
+            // Ocultar BottomBar en pantallas de flujo secundario
+            showBottomBar = !dest.hasRoute<DashboardRoutes.EventDetail>() &&
+                    !dest.hasRoute<DashboardRoutes.CreateEvent>() &&
+                    !dest.hasRoute<DashboardRoutes.UserEdit>()
         }
     }
 
     Scaffold(
         topBar = {
             if (showTopBar) {
-                TopAppBar(
-                    title = title,
-                    logout = onLogout
-                )
+                TopAppBar(title = title, logout = onLogout)
             }
         },
         bottomBar = {
             if (showBottomBar) {
                 BottomNavigationBar(
                     navController = navController,
-                    titleTopBar = {
-                        title = it
-                    }
+                    titleTopBar = { title = it }
                 )
             }
         }

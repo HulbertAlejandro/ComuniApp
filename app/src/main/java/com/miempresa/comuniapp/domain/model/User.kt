@@ -16,5 +16,10 @@ data class User(
     // Sistema de reputación
     val reputation: Reputation = Reputation(),
 
-    val interestedEventIds: Set<String> = emptySet()
+    // Intereses del usuario
+    val interestedEventIds: Set<String> = emptySet(),
+
+    // Categorías favoritas del usuario
+    val favoriteCategories: List<Category> = emptyList()
+
 )

@@ -175,6 +175,14 @@ fun EventListScreen(
                     )
                 }
                 item {
+                    val favActive by viewModel.favoriteCategoriesFilter.collectAsState()
+                    EventFilterChip(
+                        label = if (favActive) "⭐ Recomendados" else "Recomendados",
+                        isSelected = favActive,
+                        onClick = { viewModel.toggleFavoriteCategoriesFilter() }
+                    )
+                }
+                item {
                     val catLabel = viewModel.selectedCategory
                         ?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Categoría"
                     EventFilterChip(

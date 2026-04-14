@@ -1,14 +1,11 @@
 package com.miempresa.comuniapp.features.register
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -18,14 +15,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.activity.compose.BackHandler
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.utils.RequestResult
+import com.miempresa.comuniapp.domain.model.Category
 import com.miempresa.comuniapp.ui.components.AppPasswordField
 import com.miempresa.comuniapp.ui.components.AppTextField
 import com.miempresa.comuniapp.ui.components.ConfirmDialog
 import com.miempresa.comuniapp.ui.theme.*
 import kotlinx.coroutines.delay
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
 
 @Composable
 fun RegisterScreen(
@@ -94,35 +98,27 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(30.dp))
 
             AppTextField(
-                viewModel.name.value,
-                { viewModel.name.onChange(it) },
-                "Nombre",
-                Icons.Default.Person,
-                viewModel.name.error
+                value = viewModel.name.value,
+                onValueChange = { viewModel.name.onChange(it) },
+                label = "Nombre",
+                icon = Icons.Default.Person,
+                error = viewModel.name.error
             )
 
             AppTextField(
-                viewModel.city.value,
-                { viewModel.city.onChange(it) },
-                "Ciudad",
-                Icons.Default.LocationOn,
-                viewModel.city.error
+                value = viewModel.phone.value,
+                onValueChange = { viewModel.phone.onChange(it) },
+                label = "Teléfono",
+                icon = Icons.Default.Person,
+                error = viewModel.phone.error
             )
 
             AppTextField(
-                viewModel.address.value,
-                { viewModel.address.onChange(it) },
-                "Dirección",
-                Icons.Default.Home,
-                viewModel.address.error
-            )
-
-            AppTextField(
-                viewModel.email.value,
-                { viewModel.email.onChange(it) },
-                "Email",
-                Icons.Default.Email,
-                viewModel.email.error
+                value = viewModel.email.value,
+                onValueChange = { viewModel.email.onChange(it) },
+                label = "Email",
+                icon = Icons.Default.Email,
+                error = viewModel.email.error
             )
 
             AppPasswordField(
@@ -143,6 +139,56 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(30.dp))
 
+            // ── Categorías favoritas (opcional) ──────────────────────────────────────
+            val selectedCategories by viewModel.selectedCategories.collectAsState()
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Categorías favoritas (opcional)",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // FlowRow de chips de categorías
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Category.entries.forEach { category ->
+                    val isSelected = selectedCategories.contains(category)
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { viewModel.toggleCategory(category) },
+                        label = {
+                            Text(
+                                text = category.name.lowercase().replaceFirstChar { it.uppercase() },
+                                fontSize = 13.sp
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFF000000),
+                            selectedLabelColor = Color.White,
+                            containerColor = Color(0xFFE0E0E0),
+                            labelColor = Color(0xFF212121)
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = isSelected,
+                            borderColor = Color.Transparent,
+                            selectedBorderColor = Color.Transparent
+                        ),
+                        shape = RoundedCornerShape(50.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Button(
                 onClick = { viewModel.register() },
                 enabled = viewModel.isFormValid,
@@ -159,10 +205,7 @@ fun RegisterScreen(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text(
-                        "Registrarse",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    Text("Registrarse")
                 }
             }
 

@@ -22,10 +22,8 @@ sealed class DashboardRoutes {
     @Serializable
     data class EventDetail(val eventId: String) : DashboardRoutes()
 
+    // Pantalla de edición de perfil
     @Serializable
-    data object Search : DashboardRoutes()
-
-    @Serializable
-    data class UserDetail(val userId: String) : DashboardRoutes()
+    data object UserEdit : DashboardRoutes()
 
 }

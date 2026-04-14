@@ -219,4 +219,17 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
     override suspend fun getUserInterestedEventIds(userId: String): Set<String> {
         return findById(userId)?.interestedEventIds ?: emptySet()
     }
+
+    // =============================
+    // Categorías favoritas
+    // =============================
+
+    override suspend fun updateFavoriteCategories(userId: String, categories: List<Category>) {
+        val user = findById(userId) ?: return
+        update(user.copy(favoriteCategories = categories))
+    }
+
+    override suspend fun getFavoriteCategories(userId: String): List<Category> {
+        return findById(userId)?.favoriteCategories ?: emptyList()
+    }
 }

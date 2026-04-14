@@ -8,9 +8,7 @@ import com.miempresa.comuniapp.core.utils.ValidatedField
 import com.miempresa.comuniapp.domain.model.*
 import com.miempresa.comuniapp.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
@@ -24,20 +22,16 @@ class RegisterViewModel @Inject constructor(
         if (it.isBlank()) "El nombre es obligatorio" else null
     }
 
-    val city = ValidatedField("") {
-        if (it.isBlank()) "La ciudad es obligatoria" else null
-    }
-
-    val address = ValidatedField("") {
-        if (it.isBlank()) "La dirección es obligatoria" else null
-    }
-
     val email = ValidatedField("") {
         when {
             it.isBlank() -> "El email es obligatorio"
             !Patterns.EMAIL_ADDRESS.matcher(it).matches() -> "Email inválido"
             else -> null
         }
+    }
+
+    val phone = ValidatedField("") {
+        if (it.isBlank()) "El teléfono es obligatorio" else null
     }
 
     val password = ValidatedField("") {
@@ -56,75 +50,73 @@ class RegisterViewModel @Inject constructor(
         }
     }
 
+    // Categorías favoritas seleccionadas durante el registro
+    private val _selectedCategories = MutableStateFlow<Set<Category>>(emptySet())
+    val selectedCategories: StateFlow<Set<Category>> = _selectedCategories.asStateFlow()
+
+    fun toggleCategory(category: Category) {
+        _selectedCategories.update { current ->
+            if (current.contains(category)) current - category else current + category
+        }
+    }
+
     val isFormValid: Boolean
         get() = name.isValid &&
-                city.isValid &&
-                address.isValid &&
                 email.isValid &&
+                phone.isValid &&
                 password.isValid &&
                 confirmPassword.isValid
 
     private val _registerResult = MutableStateFlow<RequestResult?>(null)
-    val registerResult: StateFlow<RequestResult?> = _registerResult.asStateFlow()
+    val registerResult: StateFlow<RequestResult?> = _registerResult
 
     fun register() {
-        if (isFormValid) {
-            viewModelScope.launch {
+        if (!isFormValid) return
 
-                _registerResult.value = RequestResult.Loading
+        viewModelScope.launch {
+            _registerResult.value = RequestResult.Loading
 
-                try {
-                    val existingUser = repository.findByEmail(email.value)
-
-                    if (existingUser != null) {
-                        _registerResult.value =
-                            RequestResult.Failure("El email ya está registrado")
-                        return@launch
-                    }
-
-                    // Ubicación simulada (Fase 2)
-                    val location = Location(
-                        latitude = 4.6097,
-                        longitude = -74.0817
-                    )
-
-                    val newUser = User(
-                        id = UUID.randomUUID().toString(),
-                        name = name.value,
-                        email = email.value,
-                        phoneNumber = "",
-                        profilePictureUrl = "",
-                        location = location,
-                        role = UserRole.USER,
-                        reputation = Reputation()
-                    )
-
-                    // Password NO va en el modelo de dominio
-                    repository.saveWithPassword(newUser, password.value)
-
-                    _registerResult.value =
-                        RequestResult.Success("Registro exitoso")
-
-                } catch (e: Exception) {
-                    _registerResult.value =
-                        RequestResult.Failure(
-                            e.message ?: "Error al registrar"
-                        )
+            try {
+                val exists = repository.findByEmail(email.value)
+                if (exists != null) {
+                    _registerResult.value = RequestResult.Failure("El email ya está registrado")
+                    return@launch
                 }
+
+                val user = User(
+                    id = UUID.randomUUID().toString(),
+                    name = name.value.trim(),
+                    email = email.value.trim(),
+                    phoneNumber = phone.value.trim(),
+                    profilePictureUrl = "https://i.pravatar.cc/300",
+                    location = Location(latitude = 4.6097, longitude = -74.0817),
+                    role = UserRole.USER,
+                    reputation = Reputation(
+                        points = 0,
+                        level = UserLevel.ESPECTADOR,
+                        badges = emptyList()
+                    ),
+                    // Categorías elegidas durante el registro
+                    favoriteCategories = _selectedCategories.value.toList()
+                )
+
+                repository.saveWithPassword(user, password.value)
+                _registerResult.value = RequestResult.Success("Registro exitoso")
+
+            } catch (e: Exception) {
+                _registerResult.value = RequestResult.Failure(e.message ?: "Error")
             }
         }
     }
 
-    fun resetRegisterResult() {
-        _registerResult.value = null
-    }
+    fun resetRegisterResult() { _registerResult.value = null }
 
     fun resetForm() {
         name.reset()
-        city.reset()
-        address.reset()
         email.reset()
+        phone.reset()
         password.reset()
         confirmPassword.reset()
+        _selectedCategories.value = emptySet()
     }
 }
