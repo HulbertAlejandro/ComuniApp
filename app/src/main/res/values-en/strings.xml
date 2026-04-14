@@ -1,0 +1,121 @@
+<resources>
+    <string name="app_name">ComuniApp</string>
+
+    <!-- Login -->
+    <string name="login_title">Log In</string>
+    <string name="email_label">Email</string>
+    <string name="password_label">Password</string>
+    <string name="login_button">Log In</string>
+    <string name="forgot_password">Forgot your password?</string>
+    <string name="no_account">Don\'t have an account? Sign up</string>
+    <string name="loading">Loading...</string>
+    <string name="logo_description">Logo</string>
+
+    <!-- Login Errors -->
+    <string name="email_required">Email is required</string>
+    <string name="email_invalid">Enter a valid email</string>
+    <string name="password_required">Password is required</string>
+    <string name="password_min_length">Password must be at least 6 characters</string>
+    <string name="login_success">Login successful</string>
+    <string name="invalid_credentials">Invalid credentials</string>
+    <string name="login_error">Error logging in</string>
+
+    <!-- Register -->
+    <string name="registering">Registering user...</string>
+    <string name="register_title">Create Account</string>
+    <string name="name_label">Name</string>
+    <string name="city_label">City</string>
+    <string name="address_label">Address</string>
+    <string name="confirm_password_label">Confirm password</string>
+    <string name="register_button">Sign Up</string>
+    <string name="back_button">Back</string>
+    <string name="exit_dialog_title">Are you sure you want to exit?</string>
+    <string name="exit_dialog_message">If you exit, you will lose all form data.</string>
+
+    <!-- Register Errors -->
+    <string name="name_required">Name is required</string>
+    <string name="city_required">City is required</string>
+    <string name="address_required">Address is required</string>
+    <string name="confirm_password_required">Confirm password</string>
+    <string name="passwords_not_match">Passwords do not match</string>
+    <string name="email_already_registered">Email is already registered</string>
+    <string name="register_success">Registration successful</string>
+    <string name="register_error">Error registering</string>
+
+    <!-- Home -->
+    <string name="app_description">Platform to discover, create and participate in community events.</string>
+
+    <!-- Common -->
+    <string name="confirm_button">Confirm</string>
+    <string name="cancel_button">Cancel</string>
+
+    <!-- Reset Password -->
+    <string name="passwords_not_match_short">Do not match</string>
+    <string name="request_error">Error in request</string>
+    <string name="user_not_found">User not found</string>
+    <string name="password_updated">Password updated</string>
+    <string name="update_error">Error updating</string>
+
+    <!-- Forget Password -->
+    <string name="forget_password_title">Recover Password</string>
+    <string name="sending_email">Sending email...</string>
+    <string name="send_link_button">Send link</string>
+    <string name="recovery_link_sent">Recovery link sent</string>
+    <string name="send_email_error">Error sending email</string>
+
+    <!-- Reset Password -->
+    <string name="reset_password_title">New Password</string>
+    <string name="updating_password">Updating password...</string>
+    <string name="new_password_label">New password</string>
+    <string name="update_password_button">Update password</string>
+
+    <!-- Create Event -->
+    <string name="create_event_title">Create Event</string>
+    <string name="back_description">Back</string>
+    <string name="image_section">Image</string>
+    <string name="configure_image_url">Configure Image URL</string>
+    <string name="details_section">Event Details</string>
+    <string name="title_label">EVENT TITLE</string>
+    <string name="title_placeholder">E.g: Summer Festival</string>
+    <string name="category_label">CATEGORY</string>
+    <string name="select_category">Select...</string>
+    <string name="description_label">DESCRIPTION</string>
+    <string name="description_placeholder">Tell us more...</string>
+    <string name="date_time_section">Date and Time</string>
+    <string name="start_label">START</string>
+    <string name="end_label">END</string>
+    <string name="select_date">Select date</string>
+    <string name="time_label">Time</string>
+    <string name="location_section">Location</string>
+    <string name="latitude_label">LATITUDE</string>
+    <string name="longitude_label">LONGITUDE</string>
+    <string name="attendees_section">Attendees</string>
+    <string name="max_attendees_label">AVAILABLE SPOTS</string>
+    <string name="create_event_button">Create Event</string>
+    <string name="image_url_title">Image URL</string>
+    <string name="url_placeholder">http://...</string>
+    <string name="done_button">Done</string>
+    <string name="select_category_title">Select Category</string>
+    <string name="ok_button">OK</string>
+
+    <!-- Create Event Errors -->
+    <string name="title_required">Title required</string>
+    <string name="description_required">Description required</string>
+    <string name="image_url_required">Image URL required</string>
+    <string name="image_url_invalid">Invalid URL</string>
+    <string name="min_attendees">Minimum 1</string>
+    <string name="invalid_number">Invalid number</string>
+    <string name="latitude_invalid">Invalid latitude</string>
+    <string name="longitude_invalid">Invalid longitude</string>
+    <string name="event_created_success">Event created successfully</string>
+    <string name="save_error">Error saving</string>
+
+    <!-- Profile -->
+    <string name="profile_picture_description">Profile picture</string>
+    <string name="phone_label">Phone</string>
+    <string name="role_prefix">Role:</string>
+    <string name="edit_profile_button">Edit profile</string>
+    <string name="logout_button">Log out</string>
+    <string name="save_button">Save</string>
+
+</resources>

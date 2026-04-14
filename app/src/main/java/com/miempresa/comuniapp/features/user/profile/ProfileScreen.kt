@@ -15,10 +15,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.ui.theme.appPrimaryButtonColors
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,7 +75,7 @@ fun ProfileScreen(
                     if (currentUser.profilePictureUrl.isNotEmpty()) {
                         AsyncImage(
                             model = currentUser.profilePictureUrl,
-                            contentDescription = "Foto de perfil",
+                            contentDescription = stringResource(R.string.profile_picture_description),
                             modifier = Modifier
                                 .size(120.dp)
                                 .clip(CircleShape),
@@ -93,7 +95,7 @@ fun ProfileScreen(
                 OutlinedTextField(
                     value = currentUser.email,
                     onValueChange = {},
-                    label = { Text("Email") },
+                    label = { Text(stringResource(R.string.email_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     readOnly = true,
                     enabled = false
@@ -103,7 +105,7 @@ fun ProfileScreen(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Nombre") },
+                    label = { Text(stringResource(R.string.name_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = isEditMode
                 )
@@ -112,7 +114,7 @@ fun ProfileScreen(
                 OutlinedTextField(
                     value = city,
                     onValueChange = { city = it },
-                    label = { Text("Ciudad") },
+                    label = { Text(stringResource(R.string.city_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = isEditMode
                 )
@@ -121,7 +123,7 @@ fun ProfileScreen(
                 OutlinedTextField(
                     value = address,
                     onValueChange = { address = it },
-                    label = { Text("Dirección") },
+                    label = { Text(stringResource(R.string.address_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = isEditMode
                 )
@@ -130,14 +132,14 @@ fun ProfileScreen(
                 OutlinedTextField(
                     value = phone,
                     onValueChange = { phone = it },
-                    label = { Text("Teléfono") },
+                    label = { Text(stringResource(R.string.phone_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = isEditMode
                 )
 
                 // ROL
                 Text(
-                    text = "Rol: ${currentUser.role.name}",
+                    text = stringResource(R.string.role_prefix) + " ${currentUser.role.name}",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium
                 )
@@ -163,7 +165,7 @@ fun ProfileScreen(
                             contentDescription = null,
                             modifier = Modifier.padding(end = 8.dp)
                         )
-                        Text("Guardar", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.save_button), fontWeight = FontWeight.Bold)
                     }
 
                     OutlinedButton(
@@ -175,7 +177,7 @@ fun ProfileScreen(
                             contentDescription = null,
                             modifier = Modifier.padding(end = 8.dp)
                         )
-                        Text("Cancelar", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.cancel_button), fontWeight = FontWeight.Bold)
                     }
 
                 } else {
@@ -190,7 +192,7 @@ fun ProfileScreen(
                             contentDescription = null,
                             modifier = Modifier.padding(end = 8.dp)
                         )
-                        Text("Editar perfil")
+                        Text(stringResource(R.string.edit_profile_button))
                     }
                 }
 
@@ -205,7 +207,7 @@ fun ProfileScreen(
                         containerColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text("Cerrar sesión")
+                    Text(stringResource(R.string.logout_button))
                 }
             }
 

@@ -3,7 +3,9 @@ package com.miempresa.comuniapp.features.password
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.utils.RequestResult
+import com.miempresa.comuniapp.core.utils.ResourceProvider
 import com.miempresa.comuniapp.core.utils.ValidatedField
 import com.miempresa.comuniapp.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,13 +18,14 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ForgetPasswordViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val resources: ResourceProvider
 ) : ViewModel() {
 
     val email = ValidatedField("") {
         when {
-            it.isBlank() -> "El email es obligatorio"
-            !Patterns.EMAIL_ADDRESS.matcher(it).matches() -> "Email inválido"
+            it.isBlank() -> resources.getString(R.string.email_required)
+            !Patterns.EMAIL_ADDRESS.matcher(it).matches() -> resources.getString(R.string.email_invalid)
             else -> null
         }
     }
@@ -44,7 +47,7 @@ class ForgetPasswordViewModel @Inject constructor(
 
                 if (user == null) {
                     _result.value =
-                        RequestResult.Failure("No existe un usuario con ese email")
+                        RequestResult.Failure(resources.getString(R.string.user_not_found))
                     return@launch
                 }
 
@@ -52,12 +55,12 @@ class ForgetPasswordViewModel @Inject constructor(
                 delay(1500)
 
                 _result.value =
-                    RequestResult.Success("Se envió el enlace de recuperación")
+                    RequestResult.Success(resources.getString(R.string.recovery_link_sent))
 
             } catch (e: Exception) {
                 _result.value =
                     RequestResult.Failure(
-                        e.message ?: "Error al enviar el correo"
+                        e.message ?: resources.getString(R.string.send_email_error)
                     )
             }
         }

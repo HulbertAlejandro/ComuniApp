@@ -2,98 +2,119 @@
     <string name="app_name">ComuniApp</string>
 
     <!-- Login -->
-    <string name="login_title">Log In</string>
-    <string name="email_label">Email</string>
-    <string name="password_label">Password</string>
-    <string name="login_button">Log In</string>
-    <string name="forgot_password">Forgot your password?</string>
-    <string name="no_account">Don\'t have an account? Sign up</string>
-    <string name="loading">Loading...</string>
+    <string name="login_title">Iniciar Sesión</string>
+    <string name="email_label">Correo electrónico</string>
+    <string name="password_label">Contraseña</string>
+    <string name="login_button">Ingresar</string>
+    <string name="forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="no_account">¿No tienes cuenta? Regístrate</string>
+    <string name="loading">Cargando...</string>
     <string name="logo_description">Logo</string>
 
     <!-- Login Errors -->
-    <string name="email_required">Email is required</string>
-    <string name="email_invalid">Enter a valid email</string>
-    <string name="password_required">Password is required</string>
-    <string name="password_min_length">Password must be at least 6 characters</string>
-    <string name="login_success">Login successful</string>
-    <string name="invalid_credentials">Invalid credentials</string>
-    <string name="login_error">Error logging in</string>
+    <string name="email_required">El email es obligatorio</string>
+    <string name="email_invalid">Ingresa un email válido</string>
+    <string name="password_required">La contraseña es obligatoria</string>
+    <string name="password_min_length">La contraseña debe tener al menos 6 caracteres</string>
+    <string name="login_success">Login exitoso</string>
+    <string name="invalid_credentials">Credenciales inválidas</string>
+    <string name="login_error">Error al iniciar sesión</string>
 
     <!-- Register -->
-    <string name="registering">Registering user...</string>
-    <string name="register_title">Create Account</string>
-    <string name="name_label">Name</string>
-    <string name="city_label">City</string>
-    <string name="address_label">Address</string>
-    <string name="confirm_password_label">Confirm password</string>
-    <string name="register_button">Sign Up</string>
-    <string name="back_button">Back</string>
-    <string name="exit_dialog_title">Are you sure you want to exit?</string>
-    <string name="exit_dialog_message">If you exit, you will lose all form data.</string>
+    <string name="registering">Registrando usuario...</string>
+    <string name="register_title">Crear Cuenta</string>
+    <string name="name_label">Nombre</string>
+    <string name="city_label">Ciudad</string>
+    <string name="address_label">Dirección</string>
+    <string name="confirm_password_label">Confirmar contraseña</string>
+    <string name="register_button">Registrarse</string>
+    <string name="back_button">Volver</string>
+    <string name="exit_dialog_title">¿Está seguro de salir?</string>
+    <string name="exit_dialog_message">Si sale, perderá todos los datos del formulario.</string>
 
     <!-- Register Errors -->
-    <string name="name_required">Name is required</string>
-    <string name="city_required">City is required</string>
-    <string name="address_required">Address is required</string>
-    <string name="confirm_password_required">Confirm password</string>
-    <string name="passwords_not_match">Passwords do not match</string>
-    <string name="email_already_registered">Email is already registered</string>
-    <string name="register_success">Registration successful</string>
-    <string name="register_error">Error registering</string>
+    <string name="name_required">El nombre es obligatorio</string>
+    <string name="city_required">La ciudad es obligatoria</string>
+    <string name="address_required">La dirección es obligatoria</string>
+    <string name="confirm_password_required">Confirma la contraseña</string>
+    <string name="passwords_not_match">Las contraseñas no coinciden</string>
+    <string name="email_already_registered">El email ya está registrado</string>
+    <string name="register_success">Registro exitoso</string>
+    <string name="register_error">Error al registrar</string>
 
     <!-- Home -->
-    <string name="app_description">Platform to discover, create and participate in community events.</string>
+    <string name="app_description">Plataforma para descubrir, crear y participar en eventos comunitarios.</string>
 
     <!-- Common -->
-    <string name="confirm_button">Confirm</string>
-    <string name="cancel_button">Cancel</string>
+    <string name="confirm_button">Confirmar</string>
+    <string name="cancel_button">Cancelar</string>
 
     <!-- Reset Password -->
-    <string name="passwords_not_match_short">Do not match</string>
-    <string name="request_error">Error in request</string>
-    <string name="user_not_found">User not found</string>
-    <string name="password_updated">Password updated</string>
-    <string name="update_error">Error updating</string>
+    <string name="passwords_not_match_short">No coinciden</string>
+    <string name="request_error">Error en la solicitud</string>
+    <string name="user_not_found">Usuario no encontrado</string>
+    <string name="password_updated">Contraseña actualizada</string>
+    <string name="update_error">Error al actualizar</string>
+
+    <!-- Forget Password -->
+    <string name="forget_password_title">Recuperar Contraseña</string>
+    <string name="sending_email">Enviando correo...</string>
+    <string name="send_link_button">Enviar enlace</string>
+    <string name="recovery_link_sent">Se envió el enlace de recuperación</string>
+    <string name="send_email_error">Error al enviar el correo</string>
+
+    <!-- Reset Password -->
+    <string name="reset_password_title">Nueva Contraseña</string>
+    <string name="updating_password">Actualizando contraseña...</string>
+    <string name="new_password_label">Nueva contraseña</string>
+    <string name="update_password_button">Actualizar contraseña</string>
 
     <!-- Create Event -->
-    <string name="create_event_title">Create Event</string>
-    <string name="back_description">Back</string>
-    <string name="image_section">Image</string>
-    <string name="configure_image_url">Configure Image URL</string>
-    <string name="details_section">Event Details</string>
-    <string name="title_label">EVENT TITLE</string>
-    <string name="title_placeholder">E.g: Summer Festival</string>
-    <string name="category_label">CATEGORY</string>
-    <string name="select_category">Select...</string>
-    <string name="description_label">DESCRIPTION</string>
-    <string name="description_placeholder">Tell us more...</string>
-    <string name="date_time_section">Date and Time</string>
-    <string name="start_label">START</string>
-    <string name="end_label">END</string>
-    <string name="select_date">Select date</string>
-    <string name="time_label">Time</string>
-    <string name="location_section">Location</string>
-    <string name="latitude_label">LATITUDE</string>
-    <string name="longitude_label">LONGITUDE</string>
-    <string name="attendees_section">Attendees</string>
-    <string name="max_attendees_label">AVAILABLE SPOTS</string>
-    <string name="create_event_button">Create Event</string>
-    <string name="image_url_title">Image URL</string>
+    <string name="create_event_title">Crear Evento</string>
+    <string name="back_description">Regresar</string>
+    <string name="image_section">Imagen</string>
+    <string name="configure_image_url">Configurar URL de Imagen</string>
+    <string name="details_section">Detalles del Evento</string>
+    <string name="title_label">TÍTULO DEL EVENTO</string>
+    <string name="title_placeholder">Ej: Festival de Verano</string>
+    <string name="category_label">CATEGORÍA</string>
+    <string name="select_category">Seleccionar...</string>
+    <string name="description_label">DESCRIPCIÓN</string>
+    <string name="description_placeholder">Cuéntanos más...</string>
+    <string name="date_time_section">Fecha y Hora</string>
+    <string name="start_label">INICIO</string>
+    <string name="end_label">FIN</string>
+    <string name="select_date">Seleccionar fecha</string>
+    <string name="time_label">Hora</string>
+    <string name="location_section">Ubicación</string>
+    <string name="latitude_label">LATITUD</string>
+    <string name="longitude_label">LONGITUD</string>
+    <string name="attendees_section">Asistentes</string>
+    <string name="max_attendees_label">CUPOS DISPONIBLES</string>
+    <string name="create_event_button">Crear Evento</string>
+    <string name="image_url_title">URL de la Imagen</string>
     <string name="url_placeholder">http://...</string>
-    <string name="done_button">Done</string>
-    <string name="select_category_title">Select Category</string>
+    <string name="done_button">Listo</string>
+    <string name="select_category_title">Seleccionar Categoría</string>
     <string name="ok_button">OK</string>
 
     <!-- Create Event Errors -->
-    <string name="title_required">Title required</string>
-    <string name="description_required">Description required</string>
-    <string name="image_url_required">Image URL required</string>
-    <string name="image_url_invalid">Invalid URL</string>
-    <string name="min_attendees">Minimum 1</string>
-    <string name="invalid_number">Invalid number</string>
-    <string name="latitude_invalid">Invalid latitude</string>
-    <string name="longitude_invalid">Invalid longitude</string>
-    <string name="event_created_success">Event created successfully</string>
-    <string name="save_error">Error saving</string>
+    <string name="title_required">Título obligatorio</string>
+    <string name="description_required">Descripción obligatoria</string>
+    <string name="image_url_required">URL de imagen obligatoria</string>
+    <string name="image_url_invalid">URL no válida</string>
+    <string name="min_attendees">Mínimo 1</string>
+    <string name="invalid_number">Número inválido</string>
+    <string name="latitude_invalid">Latitud inválida</string>
+    <string name="longitude_invalid">Longitud inválida</string>
+    <string name="event_created_success">Evento creado correctamente</string>
+    <string name="save_error">Error al guardar</string>
+
+    <!-- Profile -->
+    <string name="profile_picture_description">Foto de perfil</string>
+    <string name="phone_label">Teléfono</string>
+    <string name="role_prefix">Rol:</string>
+    <string name="edit_profile_button">Editar perfil</string>
+    <string name="logout_button">Cerrar sesión</string>
+    <string name="save_button">Guardar</string>
 </resources>
