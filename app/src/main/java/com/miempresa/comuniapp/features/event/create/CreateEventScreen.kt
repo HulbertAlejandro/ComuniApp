@@ -18,11 +18,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.domain.model.Category
 import java.time.Instant
@@ -67,10 +69,10 @@ fun CreateEventScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Crear Evento", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.create_event_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back_description))
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
@@ -88,7 +90,7 @@ fun CreateEventScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // SECCIÓN 1: IMAGEN
-            SectionCard(title = "Imagen") {
+            SectionCard(title = stringResource(R.string.image_section)) {
                 AsyncImage(
                     model = viewModel.imageUrl.value.ifBlank { null },
                     contentDescription = null,
@@ -99,52 +101,52 @@ fun CreateEventScreen(
                     onClick = { showImageUrlDialog = true },
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0E0E0), contentColor = Color.Black)
-                ) { Text("Configurar URL de Imagen") }
+                ) { Text(stringResource(R.string.configure_image_url)) }
             }
 
             // SECCIÓN 2: INFORMACIÓN
-            SectionCard(title = "Detalles del Evento") {
-                LabelText("TÍTULO DEL EVENTO")
-                CustomTextField(viewModel.title.value, { viewModel.title.onChange(it) }, "Ej: Festival de Verano")
+            SectionCard(title = stringResource(R.string.details_section)) {
+                LabelText(stringResource(R.string.title_label))
+                CustomTextField(viewModel.title.value, { viewModel.title.onChange(it) }, stringResource(R.string.title_placeholder))
 
                 Spacer(Modifier.height(12.dp))
-                LabelText("CATEGORÍA")
+                LabelText(stringResource(R.string.category_label))
                 OutlinedCard(onClick = { showCategoryDialog = true }, modifier = Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(viewModel.selectedCategory?.name ?: "Seleccionar...", modifier = Modifier.weight(1f))
+                        Text(viewModel.selectedCategory?.name ?: stringResource(R.string.select_category), modifier = Modifier.weight(1f))
                         Icon(Icons.Default.ArrowDropDown, null)
                     }
                 }
 
                 Spacer(Modifier.height(12.dp))
-                LabelText("DESCRIPCIÓN")
-                CustomTextField(viewModel.description.value, { viewModel.description.onChange(it) }, "Cuéntanos más...", false, 4)
+                LabelText(stringResource(R.string.description_label))
+                CustomTextField(viewModel.description.value, { viewModel.description.onChange(it) }, stringResource(R.string.description_placeholder), false, 4)
             }
 
             // SECCIÓN 3: FECHA Y HORA
-            SectionCard(title = "Fecha y Hora") {
-                DateTimeRow("INICIO", viewModel.startDateMillis, { pickingForStart = true; showDatePicker = true }, { pickingForStart = true; showTimePicker = true })
+            SectionCard(title = stringResource(R.string.date_time_section)) {
+                DateTimeRow(stringResource(R.string.start_label), viewModel.startDateMillis, { pickingForStart = true; showDatePicker = true }, { pickingForStart = true; showTimePicker = true })
                 Divider(Modifier.padding(vertical = 8.dp), thickness = 0.5.dp, color = Color.LightGray)
-                DateTimeRow("FIN", viewModel.endDateMillis, { pickingForStart = false; showDatePicker = true }, { pickingForStart = false; showTimePicker = true })
+                DateTimeRow(stringResource(R.string.end_label), viewModel.endDateMillis, { pickingForStart = false; showDatePicker = true }, { pickingForStart = false; showTimePicker = true })
             }
 
             // SECCIÓN 4: UBICACIÓN
-            SectionCard(title = "Ubicación") {
+            SectionCard(title = stringResource(R.string.location_section)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Column(Modifier.weight(1f)) {
-                        LabelText("LATITUD")
+                        LabelText(stringResource(R.string.latitude_label))
                         CustomTextField(viewModel.latitude.value, { viewModel.onLatitudeChange(it) }, "0.0")
                     }
                     Column(Modifier.weight(1f)) {
-                        LabelText("LONGITUD")
+                        LabelText(stringResource(R.string.longitude_label))
                         CustomTextField(viewModel.longitude.value, { viewModel.onLongitudeChange(it) }, "0.0")
                     }
                 }
             }
 
             // SECCIÓN 5: CAPACIDAD
-            SectionCard(title = "Asistentes") {
-                LabelText("CUPOS DISPONIBLES")
+            SectionCard(title = stringResource(R.string.attendees_section)) {
+                LabelText(stringResource(R.string.max_attendees_label))
                 CustomTextField(viewModel.maxAttendees.value, { viewModel.maxAttendees.onChange(it) }, "100")
             }
 
@@ -155,11 +157,11 @@ fun CreateEventScreen(
                 shape = RoundedCornerShape(16.dp),
                 enabled = viewModel.isFormValid
             ) {
-                Text("Crear Evento", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(stringResource(R.string.create_event_button), fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
 
             TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
-                Text("Cancelar", color = Color.Gray)
+                Text(stringResource(R.string.cancel_button), color = Color.Gray)
             }
 
             Spacer(Modifier.height(32.dp))
@@ -170,16 +172,16 @@ fun CreateEventScreen(
     if (showImageUrlDialog) {
         AlertDialog(
             onDismissRequest = { showImageUrlDialog = false },
-            title = { Text("URL de la Imagen") },
-            text = { OutlinedTextField(viewModel.imageUrl.value, { viewModel.onImageUrlChange(it) }, label = { Text("http://...") }) },
-            confirmButton = { Button(onClick = { showImageUrlDialog = false }) { Text("Listo") } }
+            title = { Text(stringResource(R.string.image_url_title)) },
+            text = { OutlinedTextField(viewModel.imageUrl.value, { viewModel.onImageUrlChange(it) }, label = { Text(stringResource(R.string.url_placeholder)) }) },
+            confirmButton = { Button(onClick = { showImageUrlDialog = false }) { Text(stringResource(R.string.done_button)) } }
         )
     }
 
     if (showCategoryDialog) {
         AlertDialog(
             onDismissRequest = { showCategoryDialog = false },
-            title = { Text("Seleccionar Categoría") },
+            title = { Text(stringResource(R.string.select_category_title)) },
             text = {
                 Column {
                     Category.entries.forEach { cat ->
@@ -201,7 +203,7 @@ fun CreateEventScreen(
                 TextButton(onClick = {
                     viewModel.updateDateTime(pickingForStart, datePickerState.selectedDateMillis, 12, 0)
                     showDatePicker = false
-                }) { Text("Confirmar") }
+                }) { Text(stringResource(R.string.confirm_button)) }
             }
         ) { DatePicker(datePickerState) }
     }
@@ -214,7 +216,7 @@ fun CreateEventScreen(
                     val current = if (pickingForStart) viewModel.startDateMillis else viewModel.endDateMillis
                     viewModel.updateDateTime(pickingForStart, current, timePickerState.hour, timePickerState.minute)
                     showTimePicker = false
-                }) { Text("OK") }
+                }) { Text(stringResource(R.string.ok_button)) }
             },
             text = { TimePicker(timePickerState) }
         )

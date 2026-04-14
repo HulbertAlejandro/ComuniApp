@@ -3,7 +3,9 @@ package com.miempresa.comuniapp.features.register
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.utils.RequestResult
+import com.miempresa.comuniapp.core.utils.ResourceProvider
 import com.miempresa.comuniapp.core.utils.ValidatedField
 import com.miempresa.comuniapp.domain.model.*
 import com.miempresa.comuniapp.domain.repository.UserRepository
@@ -17,41 +19,42 @@ import javax.inject.Inject
 
 @HiltViewModel
 class RegisterViewModel @Inject constructor(
-    private val repository: UserRepository
+    private val repository: UserRepository,
+    private val resources: ResourceProvider
 ) : ViewModel() {
 
     val name = ValidatedField("") {
-        if (it.isBlank()) "El nombre es obligatorio" else null
+        if (it.isBlank()) resources.getString(R.string.name_required) else null
     }
 
     val city = ValidatedField("") {
-        if (it.isBlank()) "La ciudad es obligatoria" else null
+        if (it.isBlank()) resources.getString(R.string.city_required) else null
     }
 
     val address = ValidatedField("") {
-        if (it.isBlank()) "La dirección es obligatoria" else null
+        if (it.isBlank()) resources.getString(R.string.address_required) else null
     }
 
     val email = ValidatedField("") {
         when {
-            it.isBlank() -> "El email es obligatorio"
-            !Patterns.EMAIL_ADDRESS.matcher(it).matches() -> "Email inválido"
+            it.isBlank() -> resources.getString(R.string.email_required)
+            !Patterns.EMAIL_ADDRESS.matcher(it).matches() -> resources.getString(R.string.email_invalid)
             else -> null
         }
     }
 
     val password = ValidatedField("") {
         when {
-            it.isBlank() -> "La contraseña es obligatoria"
-            it.length < 6 -> "Mínimo 6 caracteres"
+            it.isBlank() -> resources.getString(R.string.password_required)
+            it.length < 6 -> resources.getString(R.string.password_min_length)
             else -> null
         }
     }
 
     val confirmPassword = ValidatedField("") {
         when {
-            it.isBlank() -> "Confirma la contraseña"
-            it != password.value -> "Las contraseñas no coinciden"
+            it.isBlank() -> resources.getString(R.string.confirm_password_required)
+            it != password.value -> resources.getString(R.string.passwords_not_match)
             else -> null
         }
     }
@@ -78,7 +81,7 @@ class RegisterViewModel @Inject constructor(
 
                     if (existingUser != null) {
                         _registerResult.value =
-                            RequestResult.Failure("El email ya está registrado")
+                            RequestResult.Failure(resources.getString(R.string.email_already_registered))
                         return@launch
                     }
 
@@ -103,12 +106,12 @@ class RegisterViewModel @Inject constructor(
                     repository.saveWithPassword(newUser, password.value)
 
                     _registerResult.value =
-                        RequestResult.Success("Registro exitoso")
+                        RequestResult.Success(resources.getString(R.string.register_success))
 
                 } catch (e: Exception) {
                     _registerResult.value =
                         RequestResult.Failure(
-                            e.message ?: "Error al registrar"
+                            e.message ?: resources.getString(R.string.register_error)
                         )
                 }
             }

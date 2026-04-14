@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -31,14 +32,14 @@ fun HomeScreen(
         ) {
             Image(
                 painter = painterResource(id = R.drawable.logo_comunidad),
-                contentDescription = "Logo de la aplicación",
+                contentDescription = stringResource(R.string.logo_description),
                 modifier = Modifier.size(220.dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "ComuniApp",
+                text = stringResource(R.string.app_name),
                 style = MaterialTheme.typography.headlineLarge.copy(
                     color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.Bold
@@ -49,7 +50,7 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Plataforma para descubrir, crear y participar en eventos comunitarios.",
+                text = stringResource(R.string.app_description),
                 style = MaterialTheme.typography.bodyMedium.copy(
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.9f),
                     lineHeight = 24.sp
@@ -68,7 +69,7 @@ fun HomeScreen(
                 colors = appPrimaryButtonColors()
             ) {
                 Text(
-                    text = "Iniciar Sesión",
+                    text = stringResource(R.string.login_button),
                     style = MaterialTheme.typography.bodyLarge.copy(
                         fontWeight = FontWeight.SemiBold
                     )

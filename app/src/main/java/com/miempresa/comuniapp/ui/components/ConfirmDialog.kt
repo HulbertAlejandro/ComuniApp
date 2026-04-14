@@ -3,6 +3,8 @@ package com.miempresa.comuniapp.ui.components
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.miempresa.comuniapp.R
 
 @Composable
 fun ConfirmDialog(
@@ -24,14 +26,14 @@ fun ConfirmDialog(
             Button(
                 onClick = onConfirm
             ) {
-                Text("Confirmar")
+                Text(stringResource(R.string.confirm_button))
             }
         },
         dismissButton = {
             Button(
                 onClick = onDismiss
             ) {
-                Text("Cancelar")
+                Text(stringResource(R.string.cancel_button))
             }
         },
         modifier = modifier

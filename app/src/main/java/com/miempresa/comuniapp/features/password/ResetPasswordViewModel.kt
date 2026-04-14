@@ -2,7 +2,9 @@ package com.miempresa.comuniapp.features.password
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.utils.RequestResult
+import com.miempresa.comuniapp.core.utils.ResourceProvider
 import com.miempresa.comuniapp.core.utils.ValidatedField
 import com.miempresa.comuniapp.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,7 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ResetPasswordViewModel @Inject constructor(
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val resources: ResourceProvider
 ) : ViewModel() {
 
     // ⚠️ Esto debe venir del flujo anterior (Fase 2 simplificado)
@@ -23,16 +26,16 @@ class ResetPasswordViewModel @Inject constructor(
 
     val newPassword = ValidatedField("") {
         when {
-            it.isBlank() -> "La contraseña es obligatoria"
-            it.length < 6 -> "Mínimo 6 caracteres"
+            it.isBlank() -> resources.getString(R.string.password_required)
+            it.length < 6 -> resources.getString(R.string.password_min_length)
             else -> null
         }
     }
 
     val confirmPassword = ValidatedField("") {
         when {
-            it.isBlank() -> "Confirma la contraseña"
-            it != newPassword.value -> "No coinciden"
+            it.isBlank() -> resources.getString(R.string.confirm_password_required)
+            it != newPassword.value -> resources.getString(R.string.passwords_not_match_short)
             else -> null
         }
     }
@@ -45,7 +48,7 @@ class ResetPasswordViewModel @Inject constructor(
 
     fun resetPassword() {
         if (!isFormValid || email.isBlank()) {
-            _result.value = RequestResult.Failure("Error en la solicitud")
+            _result.value = RequestResult.Failure(resources.getString(R.string.request_error))
             return
         }
 
@@ -57,7 +60,7 @@ class ResetPasswordViewModel @Inject constructor(
 
                 if (user == null) {
                     _result.value =
-                        RequestResult.Failure("Usuario no encontrado")
+                        RequestResult.Failure(resources.getString(R.string.user_not_found))
                     return@launch
                 }
 
@@ -67,12 +70,12 @@ class ResetPasswordViewModel @Inject constructor(
                 userRepository.updatePassword(email, newPassword.value)
 
                 _result.value =
-                    RequestResult.Success("Contraseña actualizada")
+                    RequestResult.Success(resources.getString(R.string.password_updated))
 
             } catch (e: Exception) {
                 _result.value =
                     RequestResult.Failure(
-                        e.message ?: "Error al actualizar"
+                        e.message ?: resources.getString(R.string.update_error)
                     )
             }
         }

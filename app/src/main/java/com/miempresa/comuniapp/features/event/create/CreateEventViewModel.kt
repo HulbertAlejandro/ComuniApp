@@ -5,7 +5,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.utils.RequestResult
+import com.miempresa.comuniapp.core.utils.ResourceProvider
 import com.miempresa.comuniapp.core.utils.ValidatedField
 import com.miempresa.comuniapp.data.datastore.SessionDataStore
 import com.miempresa.comuniapp.domain.model.*
@@ -22,7 +24,8 @@ import javax.inject.Inject
 @HiltViewModel
 class CreateEventViewModel @Inject constructor(
     private val repository: EventRepository,
-    private val sessionDataStore: SessionDataStore
+    private val sessionDataStore: SessionDataStore,
+    private val resources: ResourceProvider
 ) : ViewModel() {
 
     private val _ownerId = MutableStateFlow<String?>(null)
@@ -37,17 +40,17 @@ class CreateEventViewModel @Inject constructor(
     }
 
     // --- Campos con Validación ---
-    val title = ValidatedField("") { if (it.isBlank()) "Título obligatorio" else null }
-    val description = ValidatedField("") { if (it.isBlank()) "Descripción obligatoria" else null }
+    val title = ValidatedField("") { if (it.isBlank()) resources.getString(R.string.title_required) else null }
+    val description = ValidatedField("") { if (it.isBlank()) resources.getString(R.string.description_required) else null }
     val imageUrl = ValidatedField("") {
-        if (it.isBlank()) "URL de imagen obligatoria"
-        else if (!it.startsWith("http")) "URL no válida" else null
+        if (it.isBlank()) resources.getString(R.string.image_url_required)
+        else if (!it.startsWith("http")) resources.getString(R.string.image_url_invalid) else null
     }
     val maxAttendees = ValidatedField("") {
-        it.toIntOrNull()?.let { num -> if (num <= 0) "Mínimo 1" else null } ?: "Número inválido"
+        it.toIntOrNull()?.let { num -> if (num <= 0) resources.getString(R.string.min_attendees) else null } ?: resources.getString(R.string.invalid_number)
     }
-    val latitude = ValidatedField("") { it.toDoubleOrNull()?.let { null } ?: "Latitud inválida" }
-    val longitude = ValidatedField("") { it.toDoubleOrNull()?.let { null } ?: "Longitud inválida" }
+    val latitude = ValidatedField("") { it.toDoubleOrNull()?.let { null } ?: resources.getString(R.string.latitude_invalid) }
+    val longitude = ValidatedField("") { it.toDoubleOrNull()?.let { null } ?: resources.getString(R.string.longitude_invalid) }
 
     // --- Categoría ---
     var selectedCategory by mutableStateOf<Category?>(null)
@@ -111,9 +114,9 @@ class CreateEventViewModel @Inject constructor(
                 )
                 repository.save(event)
                 clearForm()
-                _result.value = RequestResult.Success("Evento creado correctamente")
+                _result.value = RequestResult.Success(resources.getString(R.string.event_created_success))
             } catch (e: Exception) {
-                _result.value = RequestResult.Failure(e.message ?: "Error al guardar")
+                _result.value = RequestResult.Failure(e.message ?: resources.getString(R.string.save_error))
             }
         }
     }

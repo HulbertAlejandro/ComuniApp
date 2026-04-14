@@ -3,7 +3,9 @@ package com.miempresa.comuniapp.features.login
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.utils.RequestResult
+import com.miempresa.comuniapp.core.utils.ResourceProvider
 import com.miempresa.comuniapp.core.utils.ValidatedField
 import com.miempresa.comuniapp.domain.repository.UserRepository
 import com.miempresa.comuniapp.data.datastore.SessionDataStore
@@ -17,7 +19,8 @@ import javax.inject.Inject
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val repository: UserRepository,
-    private val sessionDataStore: SessionDataStore
+    private val sessionDataStore: SessionDataStore,
+    private val resources: ResourceProvider
 ) : ViewModel() {
 
     private val _loginResult = MutableStateFlow<RequestResult?>(null)
@@ -26,16 +29,16 @@ class LoginViewModel @Inject constructor(
 
     val email = ValidatedField("") { value ->
         when {
-            value.isEmpty() -> "El email es obligatorio"
-            !Patterns.EMAIL_ADDRESS.matcher(value).matches() -> "Ingresa un email válido"
+            value.isEmpty() -> resources.getString(R.string.email_required)
+            !Patterns.EMAIL_ADDRESS.matcher(value).matches() -> resources.getString(R.string.email_invalid)
             else -> null
         }
     }
 
     val password = ValidatedField("") { value ->
         when {
-            value.isEmpty() -> "La contraseña es obligatoria"
-            value.length < 6 -> "La contraseña debe tener al menos 6 caracteres"
+            value.isEmpty() -> resources.getString(R.string.password_required)
+            value.length < 6 -> resources.getString(R.string.password_min_length)
             else -> null
         }
     }
@@ -58,13 +61,13 @@ class LoginViewModel @Inject constructor(
                     if (user != null) {
                         // Guardar sesión
                         sessionDataStore.saveSession(user.id, user.role)
-                        _loginResult.value = RequestResult.Success("Login exitoso")
+                        _loginResult.value = RequestResult.Success(resources.getString(R.string.login_success))
                     } else {
-                        _loginResult.value = RequestResult.Failure("Credenciales inválidas")
+                        _loginResult.value = RequestResult.Failure(resources.getString(R.string.invalid_credentials))
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    _loginResult.value = RequestResult.Failure(e.message ?: "Error al iniciar sesión")
+                    _loginResult.value = RequestResult.Failure(e.message ?: resources.getString(R.string.login_error))
                 }
             }
         }
