@@ -26,4 +26,15 @@ sealed class MainRoutes {
     @Serializable
     data object HomeAdmin : MainRoutes()
 
+    @Serializable
+    data object Profile : MainRoutes()
+
+    @Serializable
+    data class ManagePublications(val filter: String = "ALL") : MainRoutes()
+
+    @Serializable
+    data class EventDetail(val id: String) : MainRoutes()
+
+    @Serializable
+    data object ModerationHistory : MainRoutes()
 }

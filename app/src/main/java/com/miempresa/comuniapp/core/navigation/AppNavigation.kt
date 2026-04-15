@@ -1,6 +1,7 @@
 package com.miempresa.comuniapp.core.navigation
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
@@ -9,14 +10,20 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.miempresa.comuniapp.data.model.UserSession
 import com.miempresa.comuniapp.domain.model.UserRole
+import com.miempresa.comuniapp.features.dashboard.admin.history.ModerationHistoryScreen
 import com.miempresa.comuniapp.features.dashboard.user.UserScreen
 import com.miempresa.comuniapp.features.dashboard.admin.AdminScreen
+import com.miempresa.comuniapp.features.dashboard.admin.publications.ManagePublicationsScreen
+import com.miempresa.comuniapp.features.dashboard.admin.publications.detail.AdminEventDetailScreen
+import com.miempresa.comuniapp.features.event.detail.EventDetailScreen
 import com.miempresa.comuniapp.features.home.HomeScreen
 import com.miempresa.comuniapp.features.login.LoginScreen
 import com.miempresa.comuniapp.features.password.ForgetPasswordScreen
@@ -134,7 +141,54 @@ private fun MainNavigation(
 
         composable<MainRoutes.HomeAdmin> {
             AdminScreen(
+                onLogout = onLogout,
+                onManagePublications = { filter ->
+                    navController.navigate(MainRoutes.ManagePublications(filter))
+                },
+                onModerationHistory = {
+                    navController.navigate(MainRoutes.ModerationHistory)
+                },
+                onNavigateToProfile = {
+                    navController.navigate(MainRoutes.Profile)
+                }
+            )
+        }
+
+        composable<MainRoutes.ModerationHistory> {
+            ModerationHistoryScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable<MainRoutes.ManagePublications> { backStackEntry ->
+            val route: MainRoutes.ManagePublications = backStackEntry.toRoute()
+            ManagePublicationsScreen(
+                initialFilter = route.filter,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onViewDetail = { eventId ->
+                    navController.navigate(MainRoutes.EventDetail(eventId))
+                }
+            )
+        }
+
+        composable<MainRoutes.Profile> {
+            com.miempresa.comuniapp.features.user.profile.ProfileScreen(
+                paddingValues = PaddingValues(0.dp),
                 onLogout = onLogout
+            )
+        }
+
+        composable<MainRoutes.EventDetail> { backStackEntry ->
+            val route: MainRoutes.EventDetail = backStackEntry.toRoute()
+            AdminEventDetailScreen(
+                eventId = route.id,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
             )
         }
     }
