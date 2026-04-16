@@ -26,12 +26,14 @@ class CreateEventViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _ownerId = MutableStateFlow<String?>(null)
+    private val _organizerName = MutableStateFlow<String?>(null)
     private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
     init {
         viewModelScope.launch {
             sessionDataStore.sessionFlow.collect { session ->
                 _ownerId.value = session?.userId ?: "user_test_123"
+                _organizerName.value = session?.name ?: "Usuario Anónimo"
             }
         }
     }
@@ -106,6 +108,7 @@ class CreateEventViewModel @Inject constructor(
                     endDate = end.format(dateFormatter),
                     maxAttendees = maxAttendees.value.toIntOrNull(),
                     ownerId = owner,
+                    organizerName = _organizerName.value ?: "Organizador",
                     eventStatus = EventStatus.CREATED,
                     verificationStatus = VerificationStatus.PENDING
                 )

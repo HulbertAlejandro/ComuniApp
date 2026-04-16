@@ -20,6 +20,8 @@ import com.miempresa.comuniapp.data.model.UserSession
 import com.miempresa.comuniapp.domain.model.UserRole
 import com.miempresa.comuniapp.features.dashboard.admin.history.ModerationHistoryScreen
 import com.miempresa.comuniapp.features.dashboard.user.UserScreen
+import com.miempresa.comuniapp.features.user.edit.UserEditScreen
+import com.miempresa.comuniapp.features.user.profile.ProfileScreen
 import com.miempresa.comuniapp.features.dashboard.admin.AdminScreen
 import com.miempresa.comuniapp.features.dashboard.admin.publications.ManagePublicationsScreen
 import com.miempresa.comuniapp.features.dashboard.admin.publications.detail.AdminEventDetailScreen
@@ -176,9 +178,20 @@ private fun MainNavigation(
         }
 
         composable<MainRoutes.Profile> {
-            com.miempresa.comuniapp.features.user.profile.ProfileScreen(
+            ProfileScreen(
                 paddingValues = PaddingValues(0.dp),
-                onLogout = onLogout
+                onLogout = onLogout,
+                onEditProfile = {
+                    navController.navigate(MainRoutes.UserEdit)
+                }
+            )
+        }
+
+        composable<MainRoutes.UserEdit> {
+            UserEditScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
             )
         }
 

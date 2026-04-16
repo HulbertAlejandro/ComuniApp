@@ -57,7 +57,7 @@ class LoginViewModel @Inject constructor(
                     val user = repository.login(email.value, password.value)
                     if (user != null) {
                         // Guardar sesión
-                        sessionDataStore.saveSession(user.id, user.role)
+                        sessionDataStore.saveSession(user.id, user.name, user.role)
                         _loginResult.value = RequestResult.Success("Login exitoso")
                     } else {
                         _loginResult.value = RequestResult.Failure("Credenciales inválidas")

@@ -22,11 +22,13 @@ class SessionDataStore @Inject constructor(
 ) {
     private object Keys {
         val USER_ID = stringPreferencesKey("user_id")
+        val NAME = stringPreferencesKey("name")
         val ROLE = stringPreferencesKey("role")
     }
 
     val sessionFlow: Flow<UserSession?> = context.dataStore.data.map { prefs ->
         val userId = prefs[Keys.USER_ID]
+        val name = prefs[Keys.NAME] ?: "Usuario"
         val roleStr = prefs[Keys.ROLE]
 
         if (userId.isNullOrEmpty() || roleStr.isNullOrEmpty()) {
@@ -35,6 +37,7 @@ class SessionDataStore @Inject constructor(
             try {
                 UserSession(
                     userId = userId,
+                    name = name,
                     role = UserRole.valueOf(roleStr)
                 )
             } catch (e: Exception) {
@@ -43,9 +46,10 @@ class SessionDataStore @Inject constructor(
         }
     }
 
-    suspend fun saveSession(userId: String, role: UserRole) {
+    suspend fun saveSession(userId: String, name: String, role: UserRole) {
         context.dataStore.edit { prefs ->
             prefs[Keys.USER_ID] = userId
+            prefs[Keys.NAME] = name
             prefs[Keys.ROLE] = role.name
         }
     }

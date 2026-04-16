@@ -26,4 +26,16 @@ sealed class DashboardRoutes {
     @Serializable
     data object UserEdit : DashboardRoutes()
 
+    // Rutas de Administración
+    @Serializable
+    data object HomeAdmin : DashboardRoutes()
+
+    @Serializable
+    data class ManagePublications(val filter: String = "ALL") : DashboardRoutes()
+
+    @Serializable
+    data class PublicationDetail(val eventId: String) : DashboardRoutes()
+
+    @Serializable
+    data object ModerationHistory : DashboardRoutes()
 }

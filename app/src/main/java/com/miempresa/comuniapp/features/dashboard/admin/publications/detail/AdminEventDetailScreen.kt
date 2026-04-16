@@ -199,7 +199,7 @@ fun AdminEventDetailScreen(
 
                     // Lista de detalles con iconos
                     DetailRow(icon = Icons.Default.Person, label = "Organizado por:", value = e.organizerName)
-                    DetailRow(icon = Icons.Default.Category, label = "Categoría:", value = e.category)
+                    DetailRow(icon = Icons.Default.Category, label = "Categoría:", value = e.category.name)
                     DetailRow(icon = Icons.Default.Event, label = "Inicia:", value = e.startDate)
                     DetailRow(icon = Icons.Default.EventAvailable, label = "Finaliza:", value = e.endDate)
                     DetailRow(icon = Icons.Default.LocationOn, label = "Lugar:", value = "Parque Central, Calle 45") // Usando ejemplo de imagen o e.location

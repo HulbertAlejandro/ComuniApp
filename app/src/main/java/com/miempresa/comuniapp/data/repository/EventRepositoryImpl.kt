@@ -2,9 +2,7 @@ package com.miempresa.comuniapp.data.repository
 
 import com.miempresa.comuniapp.domain.model.*
 import com.miempresa.comuniapp.domain.repository.EventRepository
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,7 +18,7 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 id = "1",
                 title = "Torneo de Fútbol Comunitario",
                 description = "Ven a participar en nuestro torneo relámpago de fútbol 7. Premios para los tres primeros lugares.",
-                category = "DEPORTES",
+                category = Category.DEPORTES,
                 imageUrl = "https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=800&auto=format&fit=crop",
 
                 location = Location(4.6097, -74.0817),
@@ -32,7 +30,6 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 currentAttendees = 32,
 
                 organizerName = "Junta de Acción Comunal",
-                organizerLevel = "Líder Comunitario",
 
                 eventStatus = EventStatus.ACTIVE,
                 verificationStatus = VerificationStatus.APPROVED,
@@ -48,7 +45,7 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 id = "2",
                 title = "Sesión de Yoga al Aire Libre",
                 description = "Inicia tu domingo con energía y paz mental. Clase apta para todos los niveles.",
-                category = "BIENESTAR",
+                category = Category.SOCIAL,
                 imageUrl = "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=800&auto=format&fit=crop",
 
                 location = Location(4.6100, -74.0820),
@@ -60,7 +57,6 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 currentAttendees = 20,
 
                 organizerName = "Camilo Yoga",
-                organizerLevel = "Organizador",
 
                 eventStatus = EventStatus.FULL,
                 verificationStatus = VerificationStatus.APPROVED,
@@ -76,7 +72,7 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 id = "3",
                 title = "Feria Gastronómica y Cultural",
                 description = "Disfruta de los mejores platos típicos de nuestra región, música en vivo y artesanías locales.",
-                category = "CULTURAL",
+                category = Category.CULTURA,
                 imageUrl = "https://images.unsplash.com/photo-1533777857889-4be7c70b33f7?q=80&w=800&auto=format&fit=crop",
 
                 location = Location(4.6110, -74.0830),
@@ -88,7 +84,6 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 currentAttendees = 85,
 
                 organizerName = "Alcaldía Municipal",
-                organizerLevel = "Líder Comunitario",
 
                 eventStatus = EventStatus.ACTIVE,
                 verificationStatus = VerificationStatus.PENDING,
@@ -104,7 +99,7 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 id = "4",
                 title = "Jornada de Limpieza Comunitaria",
                 description = "Únete a la limpieza del parque del barrio. Se entregarán bolsas y guantes.",
-                category = "VOLUNTARIADO",
+                category = Category.VOLUNTARIADO,
                 imageUrl = "https://images.unsplash.com/photo-1509099836639-18ba1795216d?q=80&w=800&auto=format&fit=crop",
 
                 location = Location(4.6125, -74.0845),
@@ -116,7 +111,6 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 currentAttendees = 10,
 
                 organizerName = "Fundación Verde",
-                organizerLevel = "Organizador",
 
                 eventStatus = EventStatus.ACTIVE,
                 verificationStatus = VerificationStatus.REJECTED,
@@ -130,21 +124,89 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
         )
     }
 
-    override fun save(event: Event) {
+    override suspend fun save(event: Event) {
         _events.value += event
     }
 
-    override fun findById(id: String): Event? {
+    override suspend fun findById(id: String): Event? {
         return _events.value.find { it.id == id }
     }
 
-    override fun delete(id: String) {
+    override suspend fun delete(id: String) {
         _events.value = _events.value.filterNot { it.id == id }
     }
 
-    override fun update(event: Event) {
+    override suspend fun update(event: Event) {
         _events.value = _events.value.map {
             if (it.id == event.id) event else it
+        }
+    }
+
+    override suspend fun getPendingEvents(): List<Event> {
+        return _events.value.filter { it.verificationStatus == VerificationStatus.PENDING }
+    }
+
+    override suspend fun approveEvent(eventId: String) {
+        _events.value = _events.value.map {
+            if (it.id == eventId) it.copy(verificationStatus = VerificationStatus.APPROVED) else it
+        }
+    }
+
+    override suspend fun rejectEvent(eventId: String, reason: String) {
+        _events.value = _events.value.map {
+            if (it.id == eventId) it.copy(
+                verificationStatus = VerificationStatus.REJECTED,
+                rejectionReason = reason
+            ) else it
+        }
+    }
+
+    override fun getEventsByVerificationStatus(status: VerificationStatus): Flow<List<Event>> {
+        return _events.map { list -> list.filter { it.verificationStatus == status } }
+    }
+
+    override suspend fun markAsFinished(eventId: String) {
+        _events.value = _events.value.map {
+            if (it.id == eventId) it.copy(eventStatus = EventStatus.FINISHED) else it
+        }
+    }
+
+    override suspend fun updateEventStatus(eventId: String) {
+        // Implementación lógica según sea necesario
+    }
+
+    override suspend fun getEventsByCategory(category: Category): List<Event> {
+        return _events.value.filter { it.category == category }
+    }
+
+    override suspend fun getEventsNearby(
+        latitude: Double,
+        longitude: Double,
+        radiusKm: Double
+    ): List<Event> {
+        // Implementación simplificada
+        return _events.value
+    }
+
+    override suspend fun getEventsByUser(userId: String): List<Event> {
+        return _events.value.filter { it.ownerId == userId }
+    }
+
+    override suspend fun addInterest(eventId: String) {
+        _events.value = _events.value.map {
+            if (it.id == eventId) it.copy(interestCount = it.interestCount + 1) else it
+        }
+    }
+
+    override suspend fun removeInterest(eventId: String) {
+        _events.value = _events.value.map {
+            if (it.id == eventId) it.copy(interestCount = (it.interestCount - 1).coerceAtLeast(0)) else it
+        }
+    }
+
+    override suspend fun updateAttendeesCount(eventId: String, count: Int) {
+        _events.value = _events.value.map {
+            if (it.id == eventId) it.copy(currentAttendees = count) else it
         }
     }
 }

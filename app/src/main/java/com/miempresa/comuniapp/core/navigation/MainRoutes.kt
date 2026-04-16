@@ -30,6 +30,9 @@ sealed class MainRoutes {
     data object Profile : MainRoutes()
 
     @Serializable
+    data object UserEdit : MainRoutes()
+
+    @Serializable
     data class ManagePublications(val filter: String = "ALL") : MainRoutes()
 
     @Serializable

@@ -23,6 +23,7 @@ data class Event(
 
     // Relación con usuario creador
     val ownerId: String,
+    val organizerName: String,
 
     // Estados del evento
     val eventStatus: EventStatus = EventStatus.CREATED,
@@ -30,8 +31,13 @@ data class Event(
     // Moderación
     val verificationStatus: VerificationStatus = VerificationStatus.PENDING,
     val rejectionReason: String? = null,
+    val moderationDate: String? = null,
 
     // Métricas sociales
     val interestCount: Int = 0,
-    val commentsCount: Int = 0
+    val commentsCount: Int = 0,
+
+
 )
+
+

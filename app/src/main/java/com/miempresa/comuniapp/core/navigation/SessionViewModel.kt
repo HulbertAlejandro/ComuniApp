@@ -39,9 +39,9 @@ class SessionViewModel @Inject constructor(
             initialValue = SessionState.Loading
         )
 
-    fun login(userId: String, role: UserRole) {
+    fun login(userId: String, name: String, role: UserRole) {
         viewModelScope.launch {
-            sessionDataStore.saveSession(userId, role)
+            sessionDataStore.saveSession(userId, name, role)
         }
     }
 
