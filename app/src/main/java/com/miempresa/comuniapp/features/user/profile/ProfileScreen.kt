@@ -1,6 +1,7 @@
 package com.miempresa.comuniapp.features.user.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -31,9 +32,16 @@ fun ProfileScreen(
     paddingValues: PaddingValues,
     onLogout: () -> Unit,
     onEditProfile: () -> Unit,
+    onMyEvents: () -> Unit,
+    onSavedEvents: () -> Unit,
+    onAchievements: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val user by viewModel.user.collectAsState()
+    val createdCount by viewModel.createdEventsCount.collectAsState()
+    val attendedCount by viewModel.attendedEventsCount.collectAsState()
+    val savedCount by viewModel.savedEventsCount.collectAsState()
+    val points by viewModel.points.collectAsState()
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     Box(
@@ -167,10 +175,10 @@ fun ProfileScreen(
                             .padding(16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        StatItem("12", "CREADOS")
-                        StatItem("45", "ASISTIDOS")
-                        StatItem("8", "GUARDADOS")
-                        StatItem(u.reputation.points.toString(), "PUNTOS")
+                        StatItem(createdCount.toString(), "CREADOS")
+                        StatItem(attendedCount.toString(), "ASISTIDOS")
+                        StatItem(savedCount.toString(), "GUARDADOS")
+                        StatItem(points.toString(), "PUNTOS")
                     }
                 }
 
@@ -183,13 +191,19 @@ fun ProfileScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column {
-                        OptionItem("Mis eventos", Icons.Outlined.Event)
+                        OptionItem("Mis eventos", Icons.Outlined.Event) {
+                            onMyEvents()
+                        }
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-                        OptionItem("Eventos guardados", Icons.Outlined.BookmarkBorder)
+                        OptionItem("Eventos guardados", Icons.Outlined.BookmarkBorder) {
+                            onSavedEvents()
+                        }
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-                        OptionItem("Logros", Icons.Outlined.StarBorder)
+                        OptionItem("Logros", Icons.Outlined.StarBorder) {
+                            onAchievements()
+                        }
                     }
                 }
 
@@ -256,13 +270,15 @@ fun StatItem(value: String, label: String) {
 @Composable
 fun OptionItem(
     text: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 16.dp)
+            .clickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(icon, contentDescription = null, tint = TextGray)

@@ -99,6 +99,9 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
     override suspend fun getEventsByUser(userId: String): List<Event> =
         _events.value.filter { it.ownerId == userId }
 
+    override suspend fun getEventsByCreator(userId: String): List<Event> =
+        _events.value.filter { it.ownerId == userId }
+
     // =============================
     // Interacción
     // =============================
@@ -174,8 +177,8 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 maxAttendees     = 50,
                 currentAttendees = 32,
                 ownerId             = "1",
-                eventStatus         = EventStatus.ACTIVE,
-                verificationStatus  = VerificationStatus.APPROVED
+                eventStatus         = EventStatus.CREATED,
+                verificationStatus  = VerificationStatus.PENDING
             ),
 
             // ── DENTRO (~0.3 km) ───────────────────────────────────────────
@@ -190,7 +193,7 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 endDate   = "2026-05-26 09:00",
                 maxAttendees     = 20,
                 currentAttendees = 20,
-                ownerId             = "2",
+                ownerId             = "1",
                 eventStatus         = EventStatus.FULL,
                 verificationStatus  = VerificationStatus.APPROVED
             ),
@@ -207,9 +210,9 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 endDate   = "2026-06-01 20:00",
                 maxAttendees     = 200,
                 currentAttendees = 85,
-                ownerId             = "3",
-                eventStatus         = EventStatus.ACTIVE,
-                verificationStatus  = VerificationStatus.PENDING
+                ownerId             = "1",
+                eventStatus         = EventStatus.FINISHED,
+                verificationStatus  = VerificationStatus.APPROVED
             ),
 
             // ── FUERA (~12 km) ─────────────────────────────────────────────
@@ -333,4 +336,7 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
             )
         )
     }
+
+    override suspend fun getEventsByIds(ids: List<String>): List<Event> =
+        _events.value.filter { it.id in ids }
 }

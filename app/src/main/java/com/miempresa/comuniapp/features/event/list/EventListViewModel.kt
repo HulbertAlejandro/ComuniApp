@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.miempresa.comuniapp.data.datastore.SessionDataStore
 import com.miempresa.comuniapp.domain.model.Category
 import com.miempresa.comuniapp.domain.model.Event
+import com.miempresa.comuniapp.domain.model.EventStatus
 import com.miempresa.comuniapp.domain.model.Location
 import com.miempresa.comuniapp.domain.model.User
 import com.miempresa.comuniapp.domain.model.VerificationStatus
@@ -49,8 +50,20 @@ class EventListViewModel @Inject constructor(
 
     private val _currentUserId = MutableStateFlow<String?>(null)
 
-    private val _votedEventIds = MutableStateFlow<Set<String>>(emptySet())
-    val votedEventIds: StateFlow<Set<String>> = _votedEventIds.asStateFlow()
+    // ✅ REACTIVO: Observa interestedEventIds desde UserRepository directamente
+    val votedEventIds: StateFlow<Set<String>> =
+        sessionDataStore.sessionFlow
+            .filterNotNull()
+            .flatMapLatest { session ->
+                userRepository.users.map { users ->
+                    users.find { it.id == session.userId }?.interestedEventIds ?: emptySet()
+                }
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptySet()
+            )
 
     private val _favoriteCategoriesFilter = MutableStateFlow(false)
     val favoriteCategoriesFilter: StateFlow<Boolean> = _favoriteCategoriesFilter.asStateFlow()
@@ -74,8 +87,12 @@ class EventListViewModel @Inject constructor(
 
     private val PROXIMITY_RADIUS_KM = 5.0
 
+    // ✅ REGLA: Filtrar eventos aprobados que NO sean FULL ni FINISHED
     private val approvedEventsFlow = repository
         .getEventsByVerificationStatus(VerificationStatus.APPROVED)
+        .map { events ->
+            events.filterNot { it.eventStatus == EventStatus.FULL || it.eventStatus == EventStatus.FINISHED }
+        }
         .onEach { events ->
             _isLoading.value = false
             preloadOrganizers(events)
@@ -119,9 +136,6 @@ class EventListViewModel @Inject constructor(
                         val user = userRepository.findById(userId)
                         _currentUserLocation.value = user?.location
 
-                        _votedEventIds.value =
-                            userRepository.getUserInterestedEventIds(userId)
-
                         // ✅ Ya no cargamos categorías aquí — lo hace _userFavoriteCategories
                         //    reactivamente mediante flatMapLatest
                     }
@@ -135,14 +149,12 @@ class EventListViewModel @Inject constructor(
         val userId = _currentUserId.value ?: return
 
         viewModelScope.launch {
-            if (_votedEventIds.value.contains(eventId)) {
+            if (votedEventIds.value.contains(eventId)) {
                 repository.removeInterest(eventId)
                 userRepository.removeInterestFromUser(userId, eventId)
-                _votedEventIds.update { it - eventId }
             } else {
                 repository.addInterest(eventId)
                 userRepository.addInterestToUser(userId, eventId)
-                _votedEventIds.update { it + eventId }
             }
         }
     }

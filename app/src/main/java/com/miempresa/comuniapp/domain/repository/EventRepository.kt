@@ -56,6 +56,11 @@ interface EventRepository {
 
     suspend fun getEventsByUser(userId: String): List<Event>
 
+    /**
+     * Obtiene eventos creados por un usuario (para "Mis Eventos")
+     */
+    suspend fun getEventsByCreator(userId: String): List<Event>
+
     // =============================
     // Interacción social
     // =============================
@@ -70,4 +75,5 @@ interface EventRepository {
 
     suspend fun updateAttendeesCount(eventId: String, count: Int)
 
+    suspend fun getEventsByIds(ids: List<String>): List<Event>
 }

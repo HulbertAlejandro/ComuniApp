@@ -50,6 +50,9 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
     override suspend fun findByEmail(email: String): User? =
         _users.value.find { it.email == email }
 
+    override suspend fun getUsersByIds(ids: List<String>): List<User> =
+        _users.value.filter { it.id in ids }
+
     override suspend fun update(user: User) {
         _users.value = _users.value.map {
             if (it.id == user.id) user else it

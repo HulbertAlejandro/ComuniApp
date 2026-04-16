@@ -54,7 +54,8 @@ fun EventDetailScreen(
 ) {
     val event    by viewModel.event.collectAsState()
     val organizer by viewModel.organizer.collectAsState()
-    val interestedEventIds by viewModel.interestedEventIds.collectAsState() // ✅ CAMBIAR NOMBRE
+    val interestedEventIds by viewModel.interestedEventIds.collectAsState()
+    val isAttending by viewModel.isAttending.collectAsState() // ✅ NUEVO
 
     LaunchedEffect(eventId) { viewModel.loadEvent(eventId) }
 
@@ -168,79 +169,94 @@ fun EventDetailScreen(
             HorizontalDivider(color = Divider)
 
             // ── 3. Fila de acciones: Asistir · Me interesa · Comentarios ─────
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Asistir (placeholder — sin implementar aún)
-                OutlinedButton(
-                    onClick = { /* TODO: implementar asistencia */ },
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBDBDBD)),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                    modifier = Modifier.height(38.dp)
+            if (ev.eventStatus != EventStatus.CREATED && ev.eventStatus != EventStatus.FINISHED) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("Asistir", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    // ✅ Asistir (IMPLEMENTADO)
+                    OutlinedButton(
+                        onClick = { viewModel.toggleAttendance() },
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (isAttending) GreenLight else Color.White,
+                            contentColor = if (isAttending) GreenPrimary else TextPrimary,
+                            disabledContainerColor = if (isFull && !isAttending) Color(0xFFFFEBEE) else if (isAttending) GreenLight else Color.White,
+                            disabledContentColor = if (isFull && !isAttending) Color(0xFFC62828) else if (isAttending) GreenPrimary else TextPrimary
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (isAttending) GreenPrimary else if (isFull && !isAttending) Color(0xFFC62828) else Color(0xFFBDBDBD)
+                        ),
+                        enabled = !isFull || isAttending, // Deshabilitado si está lleno Y no está asistiendo
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                        modifier = Modifier.height(38.dp)
+                    ) {
+                        Text(
+                            text = if (isAttending) "✓ Asistiendo" else if (isFull) "Lleno" else "Asistir",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    // Me interesa (SOLO VISUAL)
+                    OutlinedButton(
+                        onClick = { /* No action */ },
+                        enabled = false,
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.White,
+                            contentColor = TextPrimary,
+                            disabledContainerColor = Color.White,
+                            disabledContentColor = TextPrimary
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            Color(0xFFBDBDBD)
+                        ),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+                        modifier = Modifier.height(38.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isInterested) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = "Me interesa ${ev.interestCount}",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    // Comentarios (placeholder)
+                    OutlinedButton(
+                        onClick = { /* TODO: ir a comentarios */ },
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBDBDBD)),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+                        modifier = Modifier.height(38.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.Comment,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = "Comentarios ${ev.commentsCount}",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
 
-                // Me interesa (SOLO VISUAL - DESHABILITADO)
-                OutlinedButton(
-                    onClick = {}, // no hace nada
-                    enabled = false, // 👈 ESTO ES CLAVE
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = if (isInterested) GreenLight else Color.White,
-                        contentColor   = if (isInterested) GreenPrimary else TextPrimary,
-                        disabledContainerColor = if (isInterested) GreenLight else Color.White,
-                        disabledContentColor   = if (isInterested) GreenPrimary else TextPrimary
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        if (isInterested) GreenPrimary else Color(0xFFBDBDBD)
-                    ),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
-                    modifier = Modifier.height(38.dp)
-                ) {
-                    Icon(
-                        imageVector = if (isInterested) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = "Me interesa ${ev.interestCount}",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                // Comentarios (placeholder)
-                OutlinedButton(
-                    onClick = { /* TODO: ir a comentarios */ },
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBDBDBD)),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
-                    modifier = Modifier.height(38.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.Comment,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = "Comentarios ${ev.commentsCount}",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+                HorizontalDivider(color = Divider)
             }
-
-            HorizontalDivider(color = Divider)
 
             // ── 4. Descripción ────────────────────────────────────────────────
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
@@ -352,54 +368,56 @@ fun EventDetailScreen(
             HorizontalDivider(color = Divider)
 
             // ── 8. Comentarios destacados (cajón placeholder) ─────────────────
-            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
-                SectionTitle("COMENTARIOS DESTACADOS")
-                Spacer(Modifier.height(12.dp))
+            if (ev.eventStatus != EventStatus.CREATED) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
+                    SectionTitle("COMENTARIOS DESTACADOS")
+                    Spacer(Modifier.height(12.dp))
 
-                if (ev.commentsCount == 0) {
-                    // Estado vacío — cajón listo para cuando se implementen comentarios
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(CardBg)
-                            .border(1.dp, Divider, RoundedCornerShape(10.dp))
-                            .padding(20.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Sé el primero en comentar este evento",
-                            fontSize = 14.sp,
-                            color = TextSecondary
-                        )
-                    }
-                } else {
-                    // Placeholder con comentarios de ejemplo
-                    // (reemplazar por lista real cuando se implemente el módulo de comentarios)
-                    repeat(minOf(ev.commentsCount, 2)) { index ->
-                        CommentPlaceholderItem(
-                            userName = if (index == 0) "Laura M." else "Pedro G.",
-                            timeAgo  = if (index == 0) "Hace 2h" else "Hace 5h",
-                            text     = if (index == 0)
-                                "¿Saben si se puede llevar equipo propio o ellos lo proveen todo?"
-                            else
-                                "Excelente iniciativa, nos vamos ahí con el equipo."
-                        )
-                        if (index == 0) Spacer(Modifier.height(8.dp))
-                    }
-
-                    if (ev.commentsCount > 2) {
-                        Spacer(Modifier.height(10.dp))
-                        TextButton(
-                            onClick = { /* TODO: navegar a lista completa de comentarios */ },
-                            modifier = Modifier.align(Alignment.End)
+                    if (ev.commentsCount == 0) {
+                        // Estado vacío — cajón listo para cuando se implemente comentarios
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(CardBg)
+                                .border(1.dp, Divider, RoundedCornerShape(10.dp))
+                                .padding(20.dp),
+                            contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                "Ver los ${ev.commentsCount} comentarios",
-                                color = GreenPrimary,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 13.sp
+                                text = "Sé el primero en comentar este evento",
+                                fontSize = 14.sp,
+                                color = TextSecondary
                             )
+                        }
+                    } else {
+                        // Placeholder con comentarios de ejemplo
+                        // (reemplazar por lista real cuando se implemente el módulo de comentarios)
+                        repeat(minOf(ev.commentsCount, 2)) { index ->
+                            CommentPlaceholderItem(
+                                userName = if (index == 0) "Laura M." else "Pedro G.",
+                                timeAgo  = if (index == 0) "Hace 2h" else "Hace 5h",
+                                text     = if (index == 0)
+                                    "¿Saben si se puede llevar equipo propio o ellos lo proveen todo?"
+                                else
+                                    "Excelente iniciativa, nos vamos ahí con el equipo."
+                            )
+                            if (index == 0) Spacer(Modifier.height(8.dp))
+                        }
+
+                        if (ev.commentsCount > 2) {
+                            Spacer(Modifier.height(10.dp))
+                            TextButton(
+                                onClick = { /* TODO: navegar a lista completa de comentarios */ },
+                                modifier = Modifier.align(Alignment.End)
+                            ) {
+                                Text(
+                                    "Ver los ${ev.commentsCount} comentarios",
+                                    color = GreenPrimary,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 13.sp
+                                )
+                            }
                         }
                     }
                 }
