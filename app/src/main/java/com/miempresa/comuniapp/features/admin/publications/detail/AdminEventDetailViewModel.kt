@@ -1,4 +1,4 @@
-package com.miempresa.comuniapp.features.dashboard.admin.publications.detail
+package com.miempresa.comuniapp.features.admin.publications.detail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

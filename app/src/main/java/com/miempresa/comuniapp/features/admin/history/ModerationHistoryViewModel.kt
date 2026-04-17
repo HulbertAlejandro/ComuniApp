@@ -1,4 +1,4 @@
-package com.miempresa.comuniapp.features.dashboard.admin.history
+package com.miempresa.comuniapp.features.admin.history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,7 +8,6 @@ import com.miempresa.comuniapp.domain.model.VerificationStatus
 import com.miempresa.comuniapp.domain.repository.EventRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 enum class HistoryFilter {

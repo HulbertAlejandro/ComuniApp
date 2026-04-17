@@ -177,6 +177,7 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 maxAttendees     = 50,
                 currentAttendees = 32,
                 ownerId             = "1",
+                organizerName       = "Junta de Acción Comunal",
                 eventStatus         = EventStatus.CREATED,
                 verificationStatus  = VerificationStatus.PENDING
             ),
@@ -194,6 +195,7 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 maxAttendees     = 20,
                 currentAttendees = 20,
                 ownerId             = "1",
+                organizerName       = "Camilo Yoga",
                 eventStatus         = EventStatus.FULL,
                 verificationStatus  = VerificationStatus.APPROVED
             ),
@@ -211,6 +213,7 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 maxAttendees     = 200,
                 currentAttendees = 85,
                 ownerId             = "1",
+                organizerName       = "Alcaldía Municipal",
                 eventStatus         = EventStatus.FINISHED,
                 verificationStatus  = VerificationStatus.APPROVED
             ),
@@ -228,6 +231,7 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 maxAttendees     = null,
                 currentAttendees = 10,
                 ownerId             = "4",
+                organizerName       = "Fundación Verde",
                 eventStatus         = EventStatus.ACTIVE,
                 verificationStatus  = VerificationStatus.REJECTED,
                 rejectionReason     = "Evento duplicado"
@@ -246,6 +250,7 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 maxAttendees     = 30,
                 currentAttendees = 12,
                 ownerId             = "2",
+                organizerName       = "Centro de Programación",
                 eventStatus         = EventStatus.ACTIVE,
                 verificationStatus  = VerificationStatus.APPROVED
             ),
@@ -263,6 +268,7 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 maxAttendees     = 100,
                 currentAttendees = 60,
                 ownerId             = "1",
+                organizerName       = "Asociación Ciclista",
                 eventStatus         = EventStatus.ACTIVE,
                 verificationStatus  = VerificationStatus.APPROVED
             ),
@@ -280,6 +286,7 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 maxAttendees     = 40,
                 currentAttendees = 25,
                 ownerId             = "3",
+                organizerName       = "Cámara de Comercio",
                 eventStatus         = EventStatus.ACTIVE,
                 verificationStatus  = VerificationStatus.PENDING
             ),
@@ -297,6 +304,7 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 maxAttendees     = 150,
                 currentAttendees = 90,
                 ownerId             = "2",
+                organizerName       = "Asociación de Emprendedores",
                 eventStatus         = EventStatus.ACTIVE,
                 verificationStatus  = VerificationStatus.APPROVED
             ),
@@ -314,6 +322,7 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 maxAttendees     = 80,
                 currentAttendees = 40,
                 ownerId             = "1",
+                organizerName       = "Centro Cultural",
                 eventStatus         = EventStatus.ACTIVE,
                 verificationStatus  = VerificationStatus.APPROVED
             ),
@@ -331,6 +340,7 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 maxAttendees     = null,
                 currentAttendees = 15,
                 ownerId             = "3",
+                organizerName       = "Cruz Roja",
                 eventStatus         = EventStatus.ACTIVE,
                 verificationStatus  = VerificationStatus.PENDING
             )

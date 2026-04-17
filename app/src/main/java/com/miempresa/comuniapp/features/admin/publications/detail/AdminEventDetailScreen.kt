@@ -1,6 +1,5 @@
-package com.miempresa.comuniapp.features.dashboard.admin.publications.detail
+package com.miempresa.comuniapp.features.admin.publications.detail
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
 import com.miempresa.comuniapp.core.utils.RequestResult
-import com.miempresa.comuniapp.domain.model.Event
 import com.miempresa.comuniapp.domain.model.VerificationStatus
 
 import androidx.compose.ui.text.style.TextAlign
@@ -244,7 +243,7 @@ fun AdminEventDetailScreen(
                                 .fillMaxWidth()
                                 .height(56.dp),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFF44336)),
-                            border = ButtonDefaults.outlinedButtonBorder(true).copy(brush = androidx.compose.ui.graphics.SolidColor(Color(0xFFF44336))),
+                            border = ButtonDefaults.outlinedButtonBorder(true).copy(brush = SolidColor(Color(0xFFF44336))),
                             shape = RoundedCornerShape(28.dp)
                         ) {
                             Text("Rechazar publicación", fontSize = 16.sp, fontWeight = FontWeight.Bold)

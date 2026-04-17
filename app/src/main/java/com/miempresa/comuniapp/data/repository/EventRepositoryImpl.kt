@@ -209,4 +209,12 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
             if (it.id == eventId) it.copy(currentAttendees = count) else it
         }
     }
+
+    override suspend fun getEventsByCreator(userId: String): List<Event> {
+        return _events.value.filter { it.ownerId == userId }
+    }
+
+    override suspend fun getEventsByIds(ids: List<String>): List<Event> {
+        return _events.value.filter { it.id in ids }
+    }
 }

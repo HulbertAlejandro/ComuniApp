@@ -18,14 +18,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.miempresa.comuniapp.data.model.UserSession
 import com.miempresa.comuniapp.domain.model.UserRole
-import com.miempresa.comuniapp.features.dashboard.admin.history.ModerationHistoryScreen
+import com.miempresa.comuniapp.features.admin.history.ModerationHistoryScreen
 import com.miempresa.comuniapp.features.dashboard.user.UserScreen
 import com.miempresa.comuniapp.features.user.edit.UserEditScreen
 import com.miempresa.comuniapp.features.user.profile.ProfileScreen
 import com.miempresa.comuniapp.features.dashboard.admin.AdminScreen
-import com.miempresa.comuniapp.features.dashboard.admin.publications.ManagePublicationsScreen
-import com.miempresa.comuniapp.features.dashboard.admin.publications.detail.AdminEventDetailScreen
-import com.miempresa.comuniapp.features.event.detail.EventDetailScreen
+import com.miempresa.comuniapp.features.admin.publications.ManagePublicationsScreen
+import com.miempresa.comuniapp.features.admin.publications.detail.AdminEventDetailScreen
 import com.miempresa.comuniapp.features.home.HomeScreen
 import com.miempresa.comuniapp.features.login.LoginScreen
 import com.miempresa.comuniapp.features.password.ForgetPasswordScreen
@@ -143,16 +142,7 @@ private fun MainNavigation(
 
         composable<MainRoutes.HomeAdmin> {
             AdminScreen(
-                onLogout = onLogout,
-                onManagePublications = { filter ->
-                    navController.navigate(MainRoutes.ManagePublications(filter))
-                },
-                onModerationHistory = {
-                    navController.navigate(MainRoutes.ModerationHistory)
-                },
-                onNavigateToProfile = {
-                    navController.navigate(MainRoutes.Profile)
-                }
+                onLogout = onLogout
             )
         }
 
@@ -183,7 +173,11 @@ private fun MainNavigation(
                 onLogout = onLogout,
                 onEditProfile = {
                     navController.navigate(MainRoutes.UserEdit)
-                }
+                },
+                onMyEvents = {},
+                onSavedEvents = {},
+                onAchievements = {},
+                onHistory = {}
             )
         }
 
