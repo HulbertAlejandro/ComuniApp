@@ -22,18 +22,30 @@ import coil3.compose.AsyncImage
 import com.miempresa.comuniapp.domain.model.Event
 import com.miempresa.comuniapp.domain.model.EventStatus
 import com.miempresa.comuniapp.domain.model.User
+import com.miempresa.comuniapp.domain.model.UserLevel // Asegúrate de importar tu enum/clase de nivel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+
+// Función auxiliar para los emojis de nivel sugerida por Claude
+fun levelEmoji(level: UserLevel?): String {
+    return when (level?.name) {
+        "NOVATO" -> "🌱"
+        "PARTICIPANTE" -> "⭐"
+        "EXPERTO" -> "🔥"
+        "LEYENDA" -> "👑"
+        else -> "👤"
+    }
+}
 
 @Composable
 fun EventCard(
     event: Event,
     organizer: User?,
-    hasVoted: Boolean,          // true = el usuario ya marcó interés
+    hasVoted: Boolean,
     onInterestedClick: () -> Unit,
     modifier: Modifier = Modifier,
-    showInterestButton: Boolean = true  // ✅ NUEVO: Controla visibilidad del botón
+    showInterestButton: Boolean = true
 ) {
     Card(
         modifier = modifier
@@ -59,7 +71,6 @@ fun EventCard(
                     modifier = Modifier.padding(8.dp).align(Alignment.TopStart),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    // Badge categoría
                     Surface(color = Color(0xFF1565C0), shape = RoundedCornerShape(4.dp)) {
                         Text(
                             text = event.category.name.lowercase().replaceFirstChar { it.uppercase() },
@@ -69,7 +80,7 @@ fun EventCard(
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                         )
                     }
-                    // Badge estado
+
                     val (statusColor, statusLabel) = when (event.eventStatus) {
                         EventStatus.ACTIVE   -> Color(0xFF2E7D32) to "Activo"
                         EventStatus.FULL     -> Color(0xFFC62828) to "Lleno"
@@ -101,7 +112,6 @@ fun EventCard(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                // Fecha formateada
                 val dateText = try {
                     val dt = LocalDateTime.parse(
                         event.startDate,
@@ -115,38 +125,66 @@ fun EventCard(
                 Text(text = dateText, fontSize = 13.sp, color = Color(0xFF757575),
                     modifier = Modifier.padding(top = 2.dp))
 
-                // Asistentes · organizador · nivel
+                // ── Fila de Info Actualizada con Diseño de Claude ────────────────
                 Row(
-                    modifier = Modifier.padding(top = 6.dp),
+                    modifier = Modifier.padding(top = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    // Badge de Asistentes
                     val isFull = event.maxAttendees?.let { event.currentAttendees >= it } ?: false
-                    Text(
-                        text = "${event.currentAttendees} / ${event.maxAttendees ?: "∞"} asistentes",
-                        color = if (isFull) Color(0xFFC62828) else Color(0xFF2E7D32),
+                    Surface(
+                        color = if (isFull) Color(0xFFFFEBEE) else Color(0xFFE8F5E9),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = "${event.currentAttendees} / ${event.maxAttendees ?: "∞"}",
+                            color = if (isFull) Color(0xFFC62828) else Color(0xFF2E7D32),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+
+                    Text("·", color = Color(0xFFBDBDBD))
+
+                    // Info del Organizador y Nivel
+                    organizer?.let { org ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = org.name,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF424242)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Surface(
+                                color = Color(0xFFF5F5F5),
+                                shape = RoundedCornerShape(8.dp),
+                                border = BorderStroke(0.5.dp, Color(0xFFE0E0E0))
+                            ) {
+                                Text(
+                                    text = "${levelEmoji(org.reputation.level)} ${org.reputation.level.name.lowercase().replaceFirstChar { it.uppercase() }}",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF616161),
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
+                                )
+                            }
+                        }
+                    } ?: Text(
+                        text = "Usuario",
                         fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold
+                        color = Color(0xFF757575)
                     )
-                    Text(" · ", color = Color(0xFF9E9E9E))
-                    Text(
-                        text = "Org: ${organizer?.name ?: "Usuario"}",
-                        fontSize = 12.sp, color = Color(0xFF616161)
-                    )
-                    val levelName = organizer?.reputation?.level?.name
-                        ?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Nivel"
-                    Text(" · ", color = Color(0xFF9E9E9E))
-                    Text(text = levelName, color = Color(0xFFE65100),
-                        fontSize = 12.sp, fontWeight = FontWeight.Medium)
                 }
 
                 // ── Acciones ──────────────────────────────────────────────────
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Botón "Me interesa" — toggle completo, siempre habilitado
                     if (showInterestButton) {
                         OutlinedButton(
                             onClick = onInterestedClick,
@@ -185,7 +223,7 @@ fun EventCard(
                         Row(verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text("🔥", fontSize = 14.sp)
-                            Text("${event.interestCount}", fontSize = 14.sp, color = Color(0xFFFF6F00))
+                            Text("${event.interestCount}", fontSize = 14.sp, color = Color(0xFFFF6F00), fontWeight = FontWeight.Bold)
                         }
                         Row(verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -195,7 +233,7 @@ fun EventCard(
                                 modifier = Modifier.size(16.dp),
                                 tint = Color(0xFF9E9E9E)
                             )
-                            Text("${event.commentsCount}", fontSize = 14.sp, color = Color(0xFF9E9E9E))
+                            Text("${event.commentsCount}", fontSize = 14.sp, color = Color(0xFF9E9E9E), fontWeight = FontWeight.Bold)
                         }
                     }
                 }
