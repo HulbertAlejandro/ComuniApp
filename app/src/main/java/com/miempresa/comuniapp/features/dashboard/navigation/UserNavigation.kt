@@ -13,6 +13,7 @@ import com.miempresa.comuniapp.features.event.edit.EditEventScreen
 import com.miempresa.comuniapp.features.event.list.EventListScreen
 import com.miempresa.comuniapp.features.user.achievements.AchievementsScreen
 import com.miempresa.comuniapp.features.user.edit.UserEditScreen
+import com.miempresa.comuniapp.features.user.history.HistoryScreen
 import com.miempresa.comuniapp.features.user.myevents.MyEventsScreen
 import com.miempresa.comuniapp.features.user.profile.ProfileScreen
 import com.miempresa.comuniapp.features.user.savedevents.SavedEventsScreen
@@ -61,7 +62,8 @@ fun UserNavigation(
                 },
                 onMyEvents = { navController.navigate(DashboardRoutes.MyEvents) },
                 onSavedEvents = { navController.navigate(DashboardRoutes.SavedEvents) },
-                onAchievements = { navController.navigate(DashboardRoutes.Achievements) }
+                onAchievements = { navController.navigate(DashboardRoutes.Achievements) },
+                onHistory = { navController.navigate(DashboardRoutes.History) }
             )
         }
 
@@ -112,6 +114,16 @@ fun UserNavigation(
             EditEventScreen(
                 eventId = args.eventId,
                 onSuccess = { navController.popBackStack() }
+            )
+        }
+
+        composable<DashboardRoutes.History> {
+            HistoryScreen(
+                paddingValues = padding,
+                onEventClick = { eventId ->
+                    navController.navigate(DashboardRoutes.EventDetail(eventId))
+                },
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

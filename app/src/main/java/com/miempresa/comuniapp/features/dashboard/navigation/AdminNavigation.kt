@@ -54,7 +54,8 @@ fun AdminNavigation(
                 onEditProfile = { /* opcional manejar */ },
                 onMyEvents = { navController.navigate(DashboardRoutes.MyEvents) },
                 onSavedEvents = { navController.navigate(DashboardRoutes.SavedEvents) },
-                onAchievements = { navController.navigate(DashboardRoutes.Achievements) }
+                onAchievements = { navController.navigate(DashboardRoutes.Achievements) },
+                onHistory = {} // Admin no tiene navegación a History
             )
         }
         

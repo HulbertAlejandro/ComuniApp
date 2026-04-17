@@ -39,4 +39,8 @@ sealed class DashboardRoutes {
     // Pantalla de edición de evento
     @Serializable
     data class EditEvent(val eventId: String) : DashboardRoutes()
+
+    // Historial de eventos asistidos finalizados
+    @Serializable
+    data object History : DashboardRoutes()
 }

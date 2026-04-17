@@ -35,6 +35,7 @@ fun ProfileScreen(
     onMyEvents: () -> Unit,
     onSavedEvents: () -> Unit,
     onAchievements: () -> Unit,
+    onHistory: () -> Unit,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val user by viewModel.user.collectAsState()
@@ -203,6 +204,11 @@ fun ProfileScreen(
 
                         OptionItem("Logros", Icons.Outlined.StarBorder) {
                             onAchievements()
+                        }
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                        OptionItem("Historial", Icons.Outlined.History) {
+                            onHistory()
                         }
                     }
                 }

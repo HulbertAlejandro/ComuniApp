@@ -29,7 +29,8 @@ fun UserScreen(onLogout: () -> Unit) {
                     !dest.hasRoute<DashboardRoutes.MyEvents>() &&
                     !dest.hasRoute<DashboardRoutes.SavedEvents>() &&
                     !dest.hasRoute<DashboardRoutes.Achievements>() &&
-                    !dest.hasRoute<DashboardRoutes.EditEvent>()
+                    !dest.hasRoute<DashboardRoutes.EditEvent>() &&
+                    !dest.hasRoute<DashboardRoutes.History>()
 
             // Ocultar BottomBar en pantallas de flujo secundario
             showBottomBar = !dest.hasRoute<DashboardRoutes.EventDetail>() &&
@@ -38,14 +39,15 @@ fun UserScreen(onLogout: () -> Unit) {
                     !dest.hasRoute<DashboardRoutes.MyEvents>() &&
                     !dest.hasRoute<DashboardRoutes.SavedEvents>() &&
                     !dest.hasRoute<DashboardRoutes.Achievements>() &&
-                    !dest.hasRoute<DashboardRoutes.EditEvent>()
+                    !dest.hasRoute<DashboardRoutes.EditEvent>() &&
+                    !dest.hasRoute<DashboardRoutes.History>()
         }
     }
 
     Scaffold(
         topBar = {
             if (showTopBar) {
-                TopAppBar(title = title, logout = onLogout)
+                TopAppBar(title = title, onLogout = onLogout)
             }
         },
         bottomBar = {

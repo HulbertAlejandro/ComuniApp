@@ -30,7 +30,7 @@ fun AdminScreen(
             if (showBars) {
                 TopAppBar(
                     title = title,
-                    logout = onLogout
+                    onLogout = onLogout
                 )
             }
         },
