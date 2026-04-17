@@ -11,6 +11,7 @@ import com.miempresa.comuniapp.domain.model.Category
 import com.miempresa.comuniapp.domain.model.Event
 import com.miempresa.comuniapp.domain.model.EventStatus
 import com.miempresa.comuniapp.domain.model.Location
+import com.miempresa.comuniapp.domain.model.ReputationPoints
 import com.miempresa.comuniapp.domain.model.User
 import com.miempresa.comuniapp.domain.model.VerificationStatus
 import com.miempresa.comuniapp.domain.repository.CommentRepository
@@ -174,11 +175,30 @@ class EventListViewModel @Inject constructor(
 
         viewModelScope.launch {
             if (votedEventIds.value.contains(eventId)) {
+                // Quitar interés → restar puntos al creador
                 repository.removeInterest(eventId)
                 userRepository.removeInterestFromUser(userId, eventId)
+
+                // Buscar el creador y restarle puntos
+                val event = repository.findById(eventId)
+                event?.ownerId?.let { ownerId ->
+                    if (ownerId != userId) {             // no auto-puntuarse
+                        userRepository.addPoints(ownerId, ReputationPoints.INTEREST_REMOVED)
+                        userRepository.updateLevel(ownerId)
+                    }
+                }
             } else {
+                // Dar interés → sumar puntos al creador
                 repository.addInterest(eventId)
                 userRepository.addInterestToUser(userId, eventId)
+
+                val event = repository.findById(eventId)
+                event?.ownerId?.let { ownerId ->
+                    if (ownerId != userId) {
+                        userRepository.addPoints(ownerId, ReputationPoints.INTEREST_ADDED)
+                        userRepository.updateLevel(ownerId)
+                    }
+                }
             }
         }
     }

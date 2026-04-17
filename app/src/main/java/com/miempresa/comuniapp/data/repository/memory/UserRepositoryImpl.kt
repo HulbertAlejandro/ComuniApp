@@ -235,4 +235,12 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
     override suspend fun getFavoriteCategories(userId: String): List<Category> {
         return findById(userId)?.favoriteCategories ?: emptyList()
     }
+
+    override suspend fun getApprovedEventsCountByUser(userId: String): Int {
+        // Se inyecta el EventRepository para consultar. Pero para evitar
+        // dependencia circular, este dato lo pasa el ViewModel al repositorio.
+        // Ver nota en ModerationViewModel — el conteo llega como parámetro.
+        // Este método lo implementa el llamador; aquí devolvemos 0 como stub.
+        return 0
+    }
 }

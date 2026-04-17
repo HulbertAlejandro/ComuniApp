@@ -8,6 +8,7 @@ import com.miempresa.comuniapp.domain.model.AttendanceStatus
 import com.miempresa.comuniapp.domain.model.Comment
 import com.miempresa.comuniapp.domain.model.Event
 import com.miempresa.comuniapp.domain.model.EventStatus
+import com.miempresa.comuniapp.domain.model.ReputationPoints
 import com.miempresa.comuniapp.domain.model.User
 import com.miempresa.comuniapp.domain.repository.AttendanceRepository
 import com.miempresa.comuniapp.domain.repository.CommentRepository
@@ -120,23 +121,30 @@ class EventDetailViewModel @Inject constructor(
         }
     }
 
-    fun postComment(content: String) {
-        val eventId = _eventId.value ?: return
-        val userId = _currentUserId.value ?: return
-        if (content.isBlank()) return
+    // Reemplazar la función postComment() existente:
 
-        // Verificación: No permitir comentarios en eventos finalizados
+    fun postComment(content: String) {
+        val eventId  = _eventId.value ?: return
+        val userId   = _currentUserId.value ?: return
+        if (content.isBlank()) return
         if (event.value?.eventStatus == EventStatus.FINISHED) return
 
         viewModelScope.launch {
             val comment = Comment(
-                id = UUID.randomUUID().toString(),
-                eventId = eventId,
-                authorId = userId,
-                content = content,
+                id        = UUID.randomUUID().toString(),
+                eventId   = eventId,
+                authorId  = userId,
+                content   = content,
                 timestamp = System.currentTimeMillis()
             )
             commentRepository.addComment(comment)
+
+            // Sumar puntos al CREADOR del evento (no a quien comenta)
+            val ownerId = event.value?.ownerId
+            if (ownerId != null && ownerId != userId) {
+                userRepository.addPoints(ownerId, ReputationPoints.COMMENT_ADDED)
+                userRepository.updateLevel(ownerId)
+            }
         }
     }
 
