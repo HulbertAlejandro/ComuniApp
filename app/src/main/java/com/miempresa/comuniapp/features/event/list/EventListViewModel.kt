@@ -13,6 +13,7 @@ import com.miempresa.comuniapp.domain.model.EventStatus
 import com.miempresa.comuniapp.domain.model.Location
 import com.miempresa.comuniapp.domain.model.User
 import com.miempresa.comuniapp.domain.model.VerificationStatus
+import com.miempresa.comuniapp.domain.repository.CommentRepository
 import com.miempresa.comuniapp.domain.repository.EventRepository
 import com.miempresa.comuniapp.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +27,7 @@ import kotlin.math.*
 class EventListViewModel @Inject constructor(
     private val repository: EventRepository,
     private val userRepository: UserRepository,
+    private val commentRepository: CommentRepository,
     private val sessionDataStore: SessionDataStore
 ) : ViewModel() {
 
@@ -68,6 +70,20 @@ class EventListViewModel @Inject constructor(
     private val _favoriteCategoriesFilter = MutableStateFlow(false)
     val favoriteCategoriesFilter: StateFlow<Boolean> = _favoriteCategoriesFilter.asStateFlow()
 
+    // ✅ NUEVO: Observa comentarios reactivamente para calcular conteos por evento
+    // Estructura: Map<eventId, commentCount> — se actualiza cuando se agregan/eliminan comentarios
+    val commentCountsByEvent: StateFlow<Map<String, Int>> =
+        commentRepository.comments
+            .map { comments ->
+                comments.groupingBy { it.eventId }
+                    .eachCount()
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyMap()
+            )
+
     // ✅ CLAVE: observa el repositorio reactivamente a través de flatMapLatest.
     // Cada vez que UserEditViewModel llama a repository.update(), el MutableStateFlow
     // de users emite → este flow recalcula → el combine de events reacciona.
@@ -106,7 +122,9 @@ class EventListViewModel @Inject constructor(
         snapshotFlow { searchQuery },
         combine(_proximityActive, _currentUserLocation) { active, loc -> active to loc },
         // ✅ Ahora es un StateFlow reactivo — no un valor puntual del init
-        combine(_favoriteCategoriesFilter, _userFavoriteCategories) { active, cats -> active to cats }
+        combine(_favoriteCategoriesFilter, _userFavoriteCategories) { active, cats -> active to cats },
+        // ✅ NUEVO: Combina con conteo de comentarios para actualizar dinámicamente
+        commentCountsByEvent
     ) { array ->
         val events                          = array[0] as List<Event>
         val category                        = array[1] as Category?
@@ -114,8 +132,14 @@ class EventListViewModel @Inject constructor(
         val query                           = array[3] as String
         val (proximityActive, userLocation) = array[4] as Pair<Boolean, Location?>
         val (favActive, favCats)            = array[5] as Pair<Boolean, List<Category>>
+        val commentCounts                   = array[6] as Map<String, Int>
 
-        applyFilters(events, category, date, query, proximityActive, userLocation, favActive, favCats)
+        // ✅ Actualiza el commentsCount dinámicamente desde el repositorio
+        val eventsWithCommentCounts = events.map { event ->
+            event.copy(commentsCount = commentCounts[event.id] ?: 0)
+        }
+
+        applyFilters(eventsWithCommentCounts, category, date, query, proximityActive, userLocation, favActive, favCats)
             .sortedByDescending { it.interestCount }
     }.stateIn(
         scope = viewModelScope,
