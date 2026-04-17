@@ -33,6 +33,9 @@ import com.miempresa.comuniapp.domain.model.User
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Colores del tema
@@ -54,7 +57,14 @@ fun EventDetailScreen(
 ) {
     val event    by viewModel.event.collectAsState()
     val organizer by viewModel.organizer.collectAsState()
-    val interestedEventIds by viewModel.interestedEventIds.collectAsState() // ✅ CAMBIAR NOMBRE
+    val interestedEventIds by viewModel.interestedEventIds.collectAsState()
+    val isAttending by viewModel.isAttending.collectAsState()
+    val comments by viewModel.comments.collectAsState() // Comentarios
+    val currentUser by viewModel.currentUser.collectAsState() // Usuario actual
+    val commentsCount    by viewModel.commentsCount.collectAsState()
+    val commentAuthorsMap by viewModel.commentAuthorsMap.collectAsState()
+
+    var newCommentText by remember { mutableStateOf("") }
 
     LaunchedEffect(eventId) { viewModel.loadEvent(eventId) }
 
@@ -168,79 +178,95 @@ fun EventDetailScreen(
             HorizontalDivider(color = Divider)
 
             // ── 3. Fila de acciones: Asistir · Me interesa · Comentarios ─────
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Asistir (placeholder — sin implementar aún)
-                OutlinedButton(
-                    onClick = { /* TODO: implementar asistencia */ },
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBDBDBD)),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
-                    modifier = Modifier.height(38.dp)
+            if (ev.eventStatus != EventStatus.CREATED && ev.eventStatus != EventStatus.FINISHED) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("Asistir", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    // ✅ Asistir (IMPLEMENTADO)
+                    OutlinedButton(
+                        onClick = { viewModel.toggleAttendance() },
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (isAttending) GreenLight else Color.White,
+                            contentColor = if (isAttending) GreenPrimary else TextPrimary,
+                            disabledContainerColor = if (isFull && !isAttending) Color(0xFFFFEBEE) else if (isAttending) GreenLight else Color.White,
+                            disabledContentColor = if (isFull && !isAttending) Color(0xFFC62828) else if (isAttending) GreenPrimary else TextPrimary
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (isAttending) GreenPrimary else if (isFull && !isAttending) Color(0xFFC62828) else Color(0xFFBDBDBD)
+                        ),
+                        enabled = !isFull || isAttending, // Deshabilitado si está lleno Y no está asistiendo
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                        modifier = Modifier.height(38.dp)
+                    ) {
+                        Text(
+                            text = if (isAttending) "✓ Asistiendo" else if (isFull) "Lleno" else "Asistir",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    // Me interesa (SOLO VISUAL)
+                    OutlinedButton(
+                        onClick = { /* No action */ },
+                        enabled = false,
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.White,
+                            contentColor = TextPrimary,
+                            disabledContainerColor = Color.White,
+                            disabledContentColor = TextPrimary
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            Color(0xFFBDBDBD)
+                        ),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+                        modifier = Modifier.height(38.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (isInterested) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = "Me interesa ${ev.interestCount}",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    // Comentarios:
+                    OutlinedButton(
+                        onClick = { /* TODO: ir a comentarios */ },
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBDBDBD)),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+                        modifier = Modifier.height(38.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Outlined.Comment,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        // ✅ BUG 2 FIX: commentsCount viene del Flow real, no del modelo estático
+                        Text(
+                            text = "Comentarios $commentsCount",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
 
-                // Me interesa (SOLO VISUAL - DESHABILITADO)
-                OutlinedButton(
-                    onClick = {}, // no hace nada
-                    enabled = false, // 👈 ESTO ES CLAVE
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = if (isInterested) GreenLight else Color.White,
-                        contentColor   = if (isInterested) GreenPrimary else TextPrimary,
-                        disabledContainerColor = if (isInterested) GreenLight else Color.White,
-                        disabledContentColor   = if (isInterested) GreenPrimary else TextPrimary
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        if (isInterested) GreenPrimary else Color(0xFFBDBDBD)
-                    ),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
-                    modifier = Modifier.height(38.dp)
-                ) {
-                    Icon(
-                        imageVector = if (isInterested) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = "Me interesa ${ev.interestCount}",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                // Comentarios (placeholder)
-                OutlinedButton(
-                    onClick = { /* TODO: ir a comentarios */ },
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBDBDBD)),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
-                    modifier = Modifier.height(38.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.Comment,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = "Comentarios ${ev.commentsCount}",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+                HorizontalDivider(color = Divider)
             }
-
-            HorizontalDivider(color = Divider)
 
             // ── 4. Descripción ────────────────────────────────────────────────
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
@@ -351,61 +377,82 @@ fun EventDetailScreen(
 
             HorizontalDivider(color = Divider)
 
-            // ── 8. Comentarios destacados (cajón placeholder) ─────────────────
-            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
-                SectionTitle("COMENTARIOS DESTACADOS")
-                Spacer(Modifier.height(12.dp))
-
-                if (ev.commentsCount == 0) {
-                    // Estado vacío — cajón listo para cuando se implementen comentarios
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(CardBg)
-                            .border(1.dp, Divider, RoundedCornerShape(10.dp))
-                            .padding(20.dp),
-                        contentAlignment = Alignment.Center
+            // ── 8. Publicar comentario ─────────────────────────────────────────
+            if (ev.eventStatus != EventStatus.CREATED && ev.eventStatus != EventStatus.FINISHED) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
+                    SectionTitle("COMENTAR")
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.Bottom
                     ) {
-                        Text(
-                            text = "Sé el primero en comentar este evento",
-                            fontSize = 14.sp,
-                            color = TextSecondary
+                        OutlinedTextField(
+                            value = newCommentText,
+                            onValueChange = { newCommentText = it },
+                            placeholder = { Text("Escribe un comentario...", fontSize = 13.sp) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = GreenPrimary,
+                                unfocusedBorderColor = Divider
+                            ),
+                            maxLines = 3
                         )
-                    }
-                } else {
-                    // Placeholder con comentarios de ejemplo
-                    // (reemplazar por lista real cuando se implemente el módulo de comentarios)
-                    repeat(minOf(ev.commentsCount, 2)) { index ->
-                        CommentPlaceholderItem(
-                            userName = if (index == 0) "Laura M." else "Pedro G.",
-                            timeAgo  = if (index == 0) "Hace 2h" else "Hace 5h",
-                            text     = if (index == 0)
-                                "¿Saben si se puede llevar equipo propio o ellos lo proveen todo?"
-                            else
-                                "Excelente iniciativa, nos vamos ahí con el equipo."
-                        )
-                        if (index == 0) Spacer(Modifier.height(8.dp))
-                    }
-
-                    if (ev.commentsCount > 2) {
-                        Spacer(Modifier.height(10.dp))
-                        TextButton(
-                            onClick = { /* TODO: navegar a lista completa de comentarios */ },
-                            modifier = Modifier.align(Alignment.End)
+                        Button(
+                            onClick = {
+                                viewModel.postComment(newCommentText)
+                                newCommentText = ""
+                            },
+                            enabled = newCommentText.isNotBlank(),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
+                            modifier = Modifier.height(48.dp)
                         ) {
-                            Text(
-                                "Ver los ${ev.commentsCount} comentarios",
-                                color = GreenPrimary,
-                                fontWeight = FontWeight.SemiBold,
-                                fontSize = 13.sp
-                            )
+                            Text("Enviar", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                         }
                     }
                 }
+
+                HorizontalDivider(color = Divider)
             }
 
-            Spacer(Modifier.height(24.dp))
+            // ── 9. Comentarios destacados ─────────────────────────────────────
+            if (ev.eventStatus != EventStatus.CREATED) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
+                    SectionTitle("COMENTARIOS DESTACADOS")
+                    Spacer(Modifier.height(12.dp))
+
+                    if (comments.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(CardBg)
+                                .border(1.dp, Divider, RoundedCornerShape(10.dp))
+                                .padding(20.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Sé el primero en comentar este evento",
+                                fontSize = 14.sp,
+                                color = TextSecondary
+                            )
+                        }
+                    } else {
+                        // Pasar commentAuthorsMap a cada CommentItem
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            comments.forEach { comment ->
+                                CommentItem(
+                                    comment = comment,
+                                    authorsMap = commentAuthorsMap  // ← mapa completo, no solo currentUser
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(24.dp))
+            }
         }
     }
 }
@@ -554,5 +601,77 @@ private fun CommentPlaceholderItem(userName: String, timeAgo: String, text: Stri
             Spacer(Modifier.height(2.dp))
             Text(text, fontSize = 13.sp, color = TextPrimary, lineHeight = 18.sp)
         }
+    }
+}
+
+@Composable
+private fun CommentItem(
+    comment: com.miempresa.comuniapp.domain.model.Comment,
+    authorsMap: Map<String, com.miempresa.comuniapp.domain.model.User>
+) {
+    // ✅ BUG 1 FIX: resolver nombre desde el mapa completo de autores
+    val author = authorsMap[comment.authorId]
+    val userName = author?.name ?: "Usuario ${comment.authorId.take(5)}"
+    val timeAgo = formatTimeAgo(comment.timestamp)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(CardBg)
+            .padding(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(Color(0xFFE0E0E0)),
+            contentAlignment = Alignment.Center
+        ) {
+            if (!author?.profilePictureUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = author?.profilePictureUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = null,
+                    tint = Color(0xFF9E9E9E),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+
+        Column {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(userName, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = TextPrimary)
+                Text(timeAgo, fontSize = 11.sp, color = TextSecondary)
+            }
+            Spacer(Modifier.height(2.dp))
+            Text(comment.content, fontSize = 13.sp, color = TextPrimary, lineHeight = 18.sp)
+        }
+    }
+}
+
+private fun formatTimeAgo(timestamp: Long): String {
+    val now = System.currentTimeMillis()
+    val diff = now - timestamp
+    val minutes = diff / (1000 * 60)
+    val hours = diff / (1000 * 60 * 60)
+    val days = diff / (1000 * 60 * 60 * 24)
+
+    return when {
+        minutes < 1 -> "Ahora"
+        minutes < 60 -> "Hace ${minutes}m"
+        hours < 24 -> "Hace ${hours}h"
+        days < 7 -> "Hace ${days}d"
+        else -> "Hace mucho tiempo"
     }
 }

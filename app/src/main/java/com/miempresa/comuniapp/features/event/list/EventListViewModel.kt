@@ -9,9 +9,11 @@ import androidx.lifecycle.viewModelScope
 import com.miempresa.comuniapp.data.datastore.SessionDataStore
 import com.miempresa.comuniapp.domain.model.Category
 import com.miempresa.comuniapp.domain.model.Event
+import com.miempresa.comuniapp.domain.model.EventStatus
 import com.miempresa.comuniapp.domain.model.Location
 import com.miempresa.comuniapp.domain.model.User
 import com.miempresa.comuniapp.domain.model.VerificationStatus
+import com.miempresa.comuniapp.domain.repository.CommentRepository
 import com.miempresa.comuniapp.domain.repository.EventRepository
 import com.miempresa.comuniapp.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,6 +27,7 @@ import kotlin.math.*
 class EventListViewModel @Inject constructor(
     private val repository: EventRepository,
     private val userRepository: UserRepository,
+    private val commentRepository: CommentRepository,
     private val sessionDataStore: SessionDataStore
 ) : ViewModel() {
 
@@ -49,11 +52,37 @@ class EventListViewModel @Inject constructor(
 
     private val _currentUserId = MutableStateFlow<String?>(null)
 
-    private val _votedEventIds = MutableStateFlow<Set<String>>(emptySet())
-    val votedEventIds: StateFlow<Set<String>> = _votedEventIds.asStateFlow()
+    // ✅ REACTIVO: Observa interestedEventIds desde UserRepository directamente
+    val votedEventIds: StateFlow<Set<String>> =
+        sessionDataStore.sessionFlow
+            .filterNotNull()
+            .flatMapLatest { session ->
+                userRepository.users.map { users ->
+                    users.find { it.id == session.userId }?.interestedEventIds ?: emptySet()
+                }
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptySet()
+            )
 
     private val _favoriteCategoriesFilter = MutableStateFlow(false)
     val favoriteCategoriesFilter: StateFlow<Boolean> = _favoriteCategoriesFilter.asStateFlow()
+
+    // ✅ NUEVO: Observa comentarios reactivamente para calcular conteos por evento
+    // Estructura: Map<eventId, commentCount> — se actualiza cuando se agregan/eliminan comentarios
+    val commentCountsByEvent: StateFlow<Map<String, Int>> =
+        commentRepository.comments
+            .map { comments ->
+                comments.groupingBy { it.eventId }
+                    .eachCount()
+            }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyMap()
+            )
 
     // ✅ CLAVE: observa el repositorio reactivamente a través de flatMapLatest.
     // Cada vez que UserEditViewModel llama a repository.update(), el MutableStateFlow
@@ -74,8 +103,12 @@ class EventListViewModel @Inject constructor(
 
     private val PROXIMITY_RADIUS_KM = 5.0
 
+    // ✅ REGLA: Filtrar eventos aprobados que NO sean FULL ni FINISHED
     private val approvedEventsFlow = repository
         .getEventsByVerificationStatus(VerificationStatus.APPROVED)
+        .map { events ->
+            events.filterNot { it.eventStatus == EventStatus.FULL || it.eventStatus == EventStatus.FINISHED }
+        }
         .onEach { events ->
             _isLoading.value = false
             preloadOrganizers(events)
@@ -89,7 +122,9 @@ class EventListViewModel @Inject constructor(
         snapshotFlow { searchQuery },
         combine(_proximityActive, _currentUserLocation) { active, loc -> active to loc },
         // ✅ Ahora es un StateFlow reactivo — no un valor puntual del init
-        combine(_favoriteCategoriesFilter, _userFavoriteCategories) { active, cats -> active to cats }
+        combine(_favoriteCategoriesFilter, _userFavoriteCategories) { active, cats -> active to cats },
+        // ✅ NUEVO: Combina con conteo de comentarios para actualizar dinámicamente
+        commentCountsByEvent
     ) { array ->
         val events                          = array[0] as List<Event>
         val category                        = array[1] as Category?
@@ -97,8 +132,14 @@ class EventListViewModel @Inject constructor(
         val query                           = array[3] as String
         val (proximityActive, userLocation) = array[4] as Pair<Boolean, Location?>
         val (favActive, favCats)            = array[5] as Pair<Boolean, List<Category>>
+        val commentCounts                   = array[6] as Map<String, Int>
 
-        applyFilters(events, category, date, query, proximityActive, userLocation, favActive, favCats)
+        // ✅ Actualiza el commentsCount dinámicamente desde el repositorio
+        val eventsWithCommentCounts = events.map { event ->
+            event.copy(commentsCount = commentCounts[event.id] ?: 0)
+        }
+
+        applyFilters(eventsWithCommentCounts, category, date, query, proximityActive, userLocation, favActive, favCats)
             .sortedByDescending { it.interestCount }
     }.stateIn(
         scope = viewModelScope,
@@ -119,9 +160,6 @@ class EventListViewModel @Inject constructor(
                         val user = userRepository.findById(userId)
                         _currentUserLocation.value = user?.location
 
-                        _votedEventIds.value =
-                            userRepository.getUserInterestedEventIds(userId)
-
                         // ✅ Ya no cargamos categorías aquí — lo hace _userFavoriteCategories
                         //    reactivamente mediante flatMapLatest
                     }
@@ -135,14 +173,12 @@ class EventListViewModel @Inject constructor(
         val userId = _currentUserId.value ?: return
 
         viewModelScope.launch {
-            if (_votedEventIds.value.contains(eventId)) {
+            if (votedEventIds.value.contains(eventId)) {
                 repository.removeInterest(eventId)
                 userRepository.removeInterestFromUser(userId, eventId)
-                _votedEventIds.update { it - eventId }
             } else {
                 repository.addInterest(eventId)
                 userRepository.addInterestToUser(userId, eventId)
-                _votedEventIds.update { it + eventId }
             }
         }
     }

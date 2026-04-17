@@ -1,91 +1,101 @@
 package com.miempresa.comuniapp.features.dashboard.navigation
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
-import com.miempresa.comuniapp.features.user.edit.UserEditScreen
+import com.miempresa.comuniapp.features.event.detail.EventDetailScreen
+import com.miempresa.comuniapp.features.event.edit.EditEventScreen
+import com.miempresa.comuniapp.features.event.list.EventListScreen
+import com.miempresa.comuniapp.features.user.achievements.AchievementsScreen
+import com.miempresa.comuniapp.features.user.myevents.MyEventsScreen
 import com.miempresa.comuniapp.features.user.profile.ProfileScreen
-import com.miempresa.comuniapp.features.dashboard.admin.AdminScreen
-import com.miempresa.comuniapp.features.dashboard.admin.history.ModerationHistoryScreen
-import com.miempresa.comuniapp.features.dashboard.admin.publications.ManagePublicationsScreen
-import com.miempresa.comuniapp.features.dashboard.admin.publications.detail.AdminEventDetailScreen
+import com.miempresa.comuniapp.features.user.savedevents.SavedEventsScreen
 
 @Composable
 fun AdminNavigation(
     navController: NavHostController,
-    padding: PaddingValues,
-    onLogout: () -> Unit
+    padding: PaddingValues
 ) {
+
     NavHost(
         navController = navController,
-        startDestination = DashboardRoutes.HomeAdmin,
-        modifier = Modifier.padding(padding)
+        startDestination = DashboardRoutes.EventList
     ) {
-        composable<DashboardRoutes.HomeAdmin> {
-            AdminScreen(
-                onLogout = onLogout,
-                onManagePublications = { filter ->
-                    navController.navigate(DashboardRoutes.ManagePublications(filter))
-                },
-                onModerationHistory = {
-                    navController.navigate(DashboardRoutes.ModerationHistory)
-                },
-                onNavigateToProfile = {
-                    navController.navigate(DashboardRoutes.Profile)
+
+        composable<DashboardRoutes.EventList> {
+            EventListScreen(
+                paddingValues = padding,
+                onEventClick = { eventId ->
+                    navController.navigate(DashboardRoutes.EventDetail(eventId))
                 }
             )
         }
 
-        composable<DashboardRoutes.ManagePublications> { backStackEntry ->
-            val route: DashboardRoutes.ManagePublications = backStackEntry.toRoute()
-            ManagePublicationsScreen(
-                initialFilter = route.filter,
-                onNavigateBack = { navController.popBackStack() },
-                onViewDetail = { eventId ->
-                    navController.navigate(DashboardRoutes.PublicationDetail(eventId))
-                }
-            )
-        }
+        composable<DashboardRoutes.EventDetail> { backStackEntry ->
+            val args = backStackEntry.toRoute<DashboardRoutes.EventDetail>()
 
-        composable<DashboardRoutes.PublicationDetail> { backStackEntry ->
-            val route: DashboardRoutes.PublicationDetail = backStackEntry.toRoute()
-            AdminEventDetailScreen(
-                eventId = route.eventId,
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
-
-        composable<DashboardRoutes.ModerationHistory> {
-            ModerationHistoryScreen(
-                onNavigateBack = { navController.popBackStack() }
-            )
-        }
-
-        composable<DashboardRoutes.Profile> {
-            ProfileScreen(
-                paddingValues = PaddingValues(),
-                onLogout = onLogout,
-                onEditProfile = {
-                    navController.navigate(DashboardRoutes.UserEdit)
-                }
-            )
-        }
-
-        composable<DashboardRoutes.UserEdit> {
-            UserEditScreen(
+            EventDetailScreen(
+                eventId = args.eventId,
+                paddingValues = padding,
                 onNavigateBack = {
                     navController.popBackStack()
                 }
             )
         }
+        
+
+        composable<DashboardRoutes.Profile> {
+            ProfileScreen(
+                paddingValues = padding,
+                onLogout = { /* opcional manejar */ },
+                onEditProfile = { /* opcional manejar */ },
+                onMyEvents = { navController.navigate(DashboardRoutes.MyEvents) },
+                onSavedEvents = { navController.navigate(DashboardRoutes.SavedEvents) },
+                onAchievements = { navController.navigate(DashboardRoutes.Achievements) },
+                onHistory = {} // Admin no tiene navegación a History
+            )
+        }
+        
+        composable<DashboardRoutes.Achievements> {
+            AchievementsScreen(
+                paddingValues = padding
+            )
+        }
+
+        composable<DashboardRoutes.MyEvents> {
+            MyEventsScreen(
+                paddingValues = padding,
+                onEventClick = { eventId ->
+                    navController.navigate(DashboardRoutes.EventDetail(eventId))
+                },
+                onEditEvent = { eventId ->
+                    navController.navigate(DashboardRoutes.EditEvent(eventId))
+                }
+            )
+        }
+
+        composable<DashboardRoutes.SavedEvents> {
+            SavedEventsScreen(
+                paddingValues = padding,
+                onEventClick = { eventId ->
+                    navController.navigate(DashboardRoutes.EventDetail(eventId))
+                }
+            )
+        }
+
+        composable<DashboardRoutes.EditEvent> { backStackEntry ->
+            val args = backStackEntry.toRoute<DashboardRoutes.EditEvent>()
+
+            EditEventScreen(
+                eventId = args.eventId,
+                onSuccess = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
     }
 }

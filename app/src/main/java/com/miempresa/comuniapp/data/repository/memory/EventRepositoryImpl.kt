@@ -99,6 +99,9 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
     override suspend fun getEventsByUser(userId: String): List<Event> =
         _events.value.filter { it.ownerId == userId }
 
+    override suspend fun getEventsByCreator(userId: String): List<Event> =
+        _events.value.filter { it.ownerId == userId }
+
     // =============================
     // Interacción
     // =============================
@@ -174,9 +177,8 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 maxAttendees     = 50,
                 currentAttendees = 32,
                 ownerId             = "1",
-                organizerName       = "Juan",
-                eventStatus         = EventStatus.ACTIVE,
-                verificationStatus  = VerificationStatus.APPROVED
+                eventStatus         = EventStatus.CREATED,
+                verificationStatus  = VerificationStatus.PENDING
             ),
 
             // ── DENTRO (~0.3 km) ───────────────────────────────────────────
@@ -191,8 +193,7 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 endDate   = "2026-05-26 09:00",
                 maxAttendees     = 20,
                 currentAttendees = 20,
-                ownerId             = "2",
-                organizerName       = "Ana",
+                ownerId             = "1",
                 eventStatus         = EventStatus.FULL,
                 verificationStatus  = VerificationStatus.APPROVED
             ),
@@ -209,10 +210,9 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 endDate   = "2026-06-01 20:00",
                 maxAttendees     = 200,
                 currentAttendees = 85,
-                ownerId             = "3",
-                organizerName       = "Carlos",
-                eventStatus         = EventStatus.ACTIVE,
-                verificationStatus  = VerificationStatus.PENDING
+                ownerId             = "1",
+                eventStatus         = EventStatus.FINISHED,
+                verificationStatus  = VerificationStatus.APPROVED
             ),
 
             // ── FUERA (~12 km) ─────────────────────────────────────────────
@@ -228,7 +228,6 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 maxAttendees     = null,
                 currentAttendees = 10,
                 ownerId             = "4",
-                organizerName       = "Marta",
                 eventStatus         = EventStatus.ACTIVE,
                 verificationStatus  = VerificationStatus.REJECTED,
                 rejectionReason     = "Evento duplicado"
@@ -247,7 +246,6 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 maxAttendees     = 30,
                 currentAttendees = 12,
                 ownerId             = "2",
-                organizerName       = "Ana",
                 eventStatus         = EventStatus.ACTIVE,
                 verificationStatus  = VerificationStatus.APPROVED
             ),
@@ -265,7 +263,6 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 maxAttendees     = 100,
                 currentAttendees = 60,
                 ownerId             = "1",
-                organizerName       = "Juan",
                 eventStatus         = EventStatus.ACTIVE,
                 verificationStatus  = VerificationStatus.APPROVED
             ),
@@ -283,7 +280,6 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 maxAttendees     = 40,
                 currentAttendees = 25,
                 ownerId             = "3",
-                organizerName       = "Carlos",
                 eventStatus         = EventStatus.ACTIVE,
                 verificationStatus  = VerificationStatus.PENDING
             ),
@@ -301,7 +297,6 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 maxAttendees     = 150,
                 currentAttendees = 90,
                 ownerId             = "2",
-                organizerName       = "Ana",
                 eventStatus         = EventStatus.ACTIVE,
                 verificationStatus  = VerificationStatus.APPROVED
             ),
@@ -319,7 +314,6 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 maxAttendees     = 80,
                 currentAttendees = 40,
                 ownerId             = "1",
-                organizerName       = "Juan",
                 eventStatus         = EventStatus.ACTIVE,
                 verificationStatus  = VerificationStatus.APPROVED
             ),
@@ -337,10 +331,12 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 maxAttendees     = null,
                 currentAttendees = 15,
                 ownerId             = "3",
-                organizerName       = "Carlos",
                 eventStatus         = EventStatus.ACTIVE,
                 verificationStatus  = VerificationStatus.PENDING
             )
         )
     }
+
+    override suspend fun getEventsByIds(ids: List<String>): List<Event> =
+        _events.value.filter { it.id in ids }
 }

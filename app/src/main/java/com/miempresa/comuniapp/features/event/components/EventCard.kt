@@ -32,7 +32,8 @@ fun EventCard(
     organizer: User?,
     hasVoted: Boolean,          // true = el usuario ya marcó interés
     onInterestedClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showInterestButton: Boolean = true  // ✅ NUEVO: Controla visibilidad del botón
 ) {
     Card(
         modifier = modifier
@@ -146,32 +147,34 @@ fun EventCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Botón "Me interesa" — toggle completo, siempre habilitado
-                    OutlinedButton(
-                        onClick = onInterestedClick,
-                        shape = RoundedCornerShape(20.dp),
-                        border = BorderStroke(
-                            1.dp,
-                            if (hasVoted) Color(0xFF1565C0) else Color(0xFFBDBDBD)
-                        ),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                        modifier = Modifier.height(36.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = if (hasVoted) Color(0xFFE3F2FD) else Color.White,
-                            contentColor   = if (hasVoted) Color(0xFF1565C0) else Color(0xFF212121)
-                        )
-                    ) {
-                        Icon(
-                            imageVector = if (hasVoted) Icons.Filled.Favorite
-                            else Icons.Outlined.FavoriteBorder,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint = if (hasVoted) Color(0xFF1565C0) else Color(0xFF757575)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            text = if (hasVoted) "Me interesa ✓" else "Me interesa",
-                            fontSize = 13.sp
-                        )
+                    if (showInterestButton) {
+                        OutlinedButton(
+                            onClick = onInterestedClick,
+                            shape = RoundedCornerShape(20.dp),
+                            border = BorderStroke(
+                                1.dp,
+                                if (hasVoted) Color(0xFF1565C0) else Color(0xFFBDBDBD)
+                            ),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                            modifier = Modifier.height(36.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = if (hasVoted) Color(0xFFE3F2FD) else Color.White,
+                                contentColor   = if (hasVoted) Color(0xFF1565C0) else Color(0xFF212121)
+                            )
+                        ) {
+                            Icon(
+                                imageVector = if (hasVoted) Icons.Filled.Favorite
+                                else Icons.Outlined.FavoriteBorder,
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                                tint = if (hasVoted) Color(0xFF1565C0) else Color(0xFF757575)
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                text = if (hasVoted) "Me interesa ✓" else "Me interesa",
+                                fontSize = 13.sp
+                            )
+                        }
                     }
 
                     // Contadores
