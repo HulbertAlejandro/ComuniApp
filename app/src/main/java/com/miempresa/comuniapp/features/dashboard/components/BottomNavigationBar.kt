@@ -2,10 +2,13 @@ package com.miempresa.comuniapp.features.dashboard.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.AddCircleOutline
+import androidx.compose.material.icons.outlined.Dashboard
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Notifications
@@ -25,58 +28,56 @@ import com.miempresa.comuniapp.features.dashboard.navigation.DashboardRoutes
 @Composable
 fun BottomNavigationBar(
     navController: NavHostController,
-    titleTopBar: (String) -> Unit
-){
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    titleTopBar: (String) -> Unit,
+    items: List<Destination> = Destination.userItems
+) {
+    val navBackStackEntry  by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
     LaunchedEffect(currentDestination) {
-        val destination = Destination.items.find {
-            currentDestination?.hasRoute(it.route::class) == true
-        }
-        if (destination != null) {
-            titleTopBar(destination.label)
-        }
+        items.find { currentDestination?.hasRoute(it.route::class) == true }
+            ?.let { titleTopBar(it.label) }
     }
 
     NavigationBar(
-        modifier = Modifier.fillMaxWidth(),
+        modifier       = Modifier.fillMaxWidth(),
         containerColor = Color.White,
         tonalElevation = 0.dp
-    ){
-        Destination.items.forEach { destination ->
+    ) {
+        items.forEach { destination ->
             val isSelected = currentDestination?.hasRoute(destination.route::class) == true
 
             NavigationBarItem(
-                label = { 
+                label = {
                     Text(
-                        text = destination.label,
+                        text  = destination.label,
                         fontSize = 10.sp,
                         color = if (isSelected) Color(0xFF1565C0) else Color(0xFF9E9E9E)
-                    ) 
+                    )
                 },
                 onClick = {
-                    navController.navigate(destination.route){
+                    navController.navigate(destination.route) {
                         popUpTo(navController.graph.findStartDestination().id) {
                             saveState = true
                         }
                         launchSingleTop = true
-                        restoreState = true
+                        restoreState    = true
                     }
                 },
                 icon = {
                     Icon(
-                        imageVector = if (isSelected) destination.selectedIcon else destination.unselectedIcon,
+                        imageVector        = if (isSelected) destination.selectedIcon
+                        else destination.unselectedIcon,
                         contentDescription = destination.label
                     )
                 },
                 selected = isSelected,
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color(0xFF1565C0),
+                colors   = NavigationBarItemDefaults.colors(
+                    selectedIconColor   = Color(0xFF1565C0),
                     unselectedIconColor = Color(0xFF9E9E9E),
-                    selectedTextColor = Color(0xFF1565C0),
+                    selectedTextColor   = Color(0xFF1565C0),
                     unselectedTextColor = Color(0xFF9E9E9E),
-                    indicatorColor = Color.Transparent
+                    indicatorColor      = Color.Transparent
                 )
             )
         }
@@ -84,47 +85,50 @@ fun BottomNavigationBar(
 }
 
 sealed class Destination(
-    val route: Any,
-    val label: String,
-    val selectedIcon: ImageVector,
+    val route         : Any,
+    val label         : String,
+    val selectedIcon  : ImageVector,
     val unselectedIcon: ImageVector
-){
-    data object HOME : Destination(
-        DashboardRoutes.EventList,
-        "Inicio",
-        Icons.Default.Home,
-        Icons.Outlined.Home
+) {
+    data object Home : Destination(
+        DashboardRoutes.EventList, "Inicio",
+        Icons.Default.Home, Icons.Outlined.Home
     )
-
-    data object MAP : Destination(
-        DashboardRoutes.Map,
-        "Mapa",
-        Icons.Outlined.Map,
-        Icons.Outlined.Map
+    data object Map : Destination(
+        DashboardRoutes.Map, "Mapa",
+        Icons.Outlined.Map, Icons.Outlined.Map
     )
-
-    data object CREATE : Destination(
-        DashboardRoutes.CreateEvent,
-        "Crear",
-        Icons.Default.AddCircle,
-        Icons.Outlined.AddCircleOutline
+    data object Create : Destination(
+        DashboardRoutes.CreateEvent, "Crear",
+        Icons.Default.AddCircle, Icons.Outlined.AddCircleOutline
     )
-
-    data object NOTIFICATIONS : Destination(
-        DashboardRoutes.Notifications,
-        "Alertas",
-        Icons.Outlined.Notifications,
-        Icons.Outlined.Notifications
+    data object Notifications : Destination(
+        DashboardRoutes.Notifications, "Alertas",
+        Icons.Outlined.Notifications, Icons.Outlined.Notifications
     )
-
-    data object PROFILE : Destination(
-        DashboardRoutes.Profile,
-        "Perfil",
-        Icons.Outlined.AccountCircle,
-        Icons.Outlined.AccountCircle
+    data object Profile : Destination(
+        DashboardRoutes.Profile, "Perfil",
+        Icons.Outlined.AccountCircle, Icons.Outlined.AccountCircle
+    )
+    data object AdminHome : Destination(
+        DashboardRoutes.AdminDashboard, "Panel",
+        Icons.Outlined.Dashboard, Icons.Outlined.Dashboard
+    )
+    data object AdminPublications : Destination(
+        DashboardRoutes.ManagePublications, "Publicaciones",
+        Icons.AutoMirrored.Outlined.LibraryBooks, Icons.AutoMirrored.Outlined.LibraryBooks
+    )
+    data object AdminHistory : Destination(
+        DashboardRoutes.ModerationHistory, "Historial",
+        Icons.Outlined.History, Icons.Outlined.History
+    )
+    data object AdminProfile : Destination(
+        DashboardRoutes.Profile, "Perfil",
+        Icons.Outlined.AccountCircle, Icons.Outlined.AccountCircle
     )
 
     companion object {
-        val items = listOf(HOME, MAP, CREATE, NOTIFICATIONS, PROFILE)
+        val userItems  = listOf(Home, Map, Create, Notifications, Profile)
+        val adminItems = listOf(AdminHome, AdminPublications, AdminHistory, AdminProfile)
     }
 }

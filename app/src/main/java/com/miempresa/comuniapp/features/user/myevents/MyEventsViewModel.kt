@@ -20,30 +20,46 @@ import javax.inject.Inject
 class MyEventsViewModel @Inject constructor(
     private val eventRepository: EventRepository,
     private val userRepository: UserRepository,
+    private val commentRepository: com.miempresa.comuniapp.domain.repository.CommentRepository, // ✅ Inyectado para contar comentarios
     private val sessionDataStore: SessionDataStore
 ) : ViewModel() {
 
-    // Sesión actual como StateFlow
     private val currentSession = sessionDataStore.sessionFlow.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    // Eventos creados (CREATED) - pendientes de confirmación
+    // 1. CREADOS: Ahora solo muestra los que están en proceso de verificación (PENDING)
     val createdEvents: StateFlow<List<Event>> =
         sessionDataStore.sessionFlow
             .filterNotNull()
             .flatMapLatest { session ->
                 eventRepository.events.map { events ->
-                    events.filter { it.ownerId == session.userId && it.eventStatus == EventStatus.CREATED }
-                        .sortedByDescending { it.startDate }
+                    events.filter {
+                        it.ownerId == session.userId &&
+                                it.eventStatus == EventStatus.CREATED &&
+                                it.verificationStatus == VerificationStatus.PENDING // ✅ Solo pendientes
+                    }.sortedByDescending { it.startDate }
                 }
             }
+            .flatMapLatest { events -> attachCommentCounts(events) } // ✅ Cargar contadores
             .onEach { preloadOrganizers(it) }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyList()
-            )
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Eventos activos (ACTIVE o FULL) - disponibles o en curso
+    // 2. RECHAZADOS: Nueva sección para eventos con status REJECTED
+    val rejectedEvents: StateFlow<List<Event>> =
+        sessionDataStore.sessionFlow
+            .filterNotNull()
+            .flatMapLatest { session ->
+                eventRepository.events.map { events ->
+                    events.filter {
+                        it.ownerId == session.userId &&
+                                it.verificationStatus == VerificationStatus.REJECTED
+                    }.sortedByDescending { it.startDate }
+                }
+            }
+            .flatMapLatest { events -> attachCommentCounts(events) }
+            .onEach { preloadOrganizers(it) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // 3. ACTIVOS: Solo aprobados
     val activeEvents: StateFlow<List<Event>> =
         sessionDataStore.sessionFlow
             .filterNotNull()
@@ -51,34 +67,40 @@ class MyEventsViewModel @Inject constructor(
                 eventRepository.events.map { events ->
                     events.filter {
                         it.ownerId == session.userId &&
-                        it.verificationStatus == VerificationStatus.APPROVED &&
-                        (it.eventStatus == EventStatus.ACTIVE || it.eventStatus == EventStatus.FULL)
+                                it.verificationStatus == VerificationStatus.APPROVED &&
+                                (it.eventStatus == EventStatus.ACTIVE || it.eventStatus == EventStatus.FULL)
                     }.sortedByDescending { it.startDate }
                 }
             }
+            .flatMapLatest { events -> attachCommentCounts(events) }
             .onEach { preloadOrganizers(it) }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyList()
-            )
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Eventos finalizados (FINISHED) - historial
+    // 4. FINALIZADOS: Incluye mapeo de comentarios
     val finishedEvents: StateFlow<List<Event>> =
         sessionDataStore.sessionFlow
             .filterNotNull()
             .flatMapLatest { session ->
                 eventRepository.events.map { events ->
-                    events.filter { it.ownerId == session.userId && it.eventStatus == EventStatus.FINISHED }
-                        .sortedByDescending { it.startDate }
+                    events.filter {
+                        it.ownerId == session.userId &&
+                                it.eventStatus == EventStatus.FINISHED
+                    }.sortedByDescending { it.startDate }
                 }
             }
+            .flatMapLatest { events -> attachCommentCounts(events) } // ✅ Corregido el contador
             .onEach { preloadOrganizers(it) }
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyList()
-            )
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // ✅ Función auxiliar para actualizar el contador de comentarios en la lista
+    private fun attachCommentCounts(events: List<Event>): Flow<List<Event>> = flow {
+        val updatedEvents = events.map { event ->
+            // ✅ .first() obtiene la lista actual de comentarios y permite sacar el .size (Int)
+            val comments = commentRepository.getCommentsByEvent(event.id).first()
+            event.copy(commentsCount = comments.size)
+        }
+        emit(updatedEvents)
+    }
 
     // Intereses del usuario actual (para verificar estado)
     private val _currentUserId = MutableStateFlow<String?>(null)

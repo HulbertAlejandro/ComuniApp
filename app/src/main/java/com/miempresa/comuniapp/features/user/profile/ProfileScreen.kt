@@ -36,6 +36,7 @@ fun ProfileScreen(
     onSavedEvents: () -> Unit,
     onAchievements: () -> Unit,
     onHistory: () -> Unit,
+    isAdmin        : Boolean = false,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val user by viewModel.user.collectAsState()
@@ -122,38 +123,40 @@ fun ProfileScreen(
 
                 Spacer(Modifier.height(16.dp))
 
+                // ── NOMBRE Y EMAIL ────────────────────────────────────────────────────────
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = u.name,
+                        text  = u.name,
                         style = MaterialTheme.typography.titleLarge,
                         color = TextMain
                     )
-
                     Text(
-                        text = "@${u.email.substringBefore("@")}",
+                        text  = "@${u.email.substringBefore("@")}",
                         color = TextGray
                     )
-
-                    Text(
-                        text = "Nivel ${u.reputation.level.ordinal + 1} - ${
-                            u.reputation.level.name.lowercase()
-                                .replaceFirstChar { it.uppercase() }
-                        }",
-                        color = TextGray,
-                        fontSize = 13.sp
-                    )
+                    // ✅ El nivel solo se muestra para usuarios normales
+                    if (!isAdmin) {
+                        Text(
+                            text     = "Nivel ${u.reputation.level.ordinal + 1} - ${
+                                u.reputation.level.name.lowercase()
+                                    .replaceFirstChar { it.uppercase() }
+                            }",
+                            color    = TextGray,
+                            fontSize = 13.sp
+                        )
+                    }
                 }
 
                 Spacer(Modifier.height(20.dp))
 
-                // ✏️ EDITAR PERFIL
+                // ✏️ EDITAR PERFIL (presente para ambos roles)
                 Button(
                     onClick = onEditProfile,
-                    colors = appPrimaryButtonColors(),
-                    shape = RoundedCornerShape(30.dp),
+                    colors  = appPrimaryButtonColors(),
+                    shape   = RoundedCornerShape(30.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(Icons.Outlined.Edit, contentDescription = null)
@@ -163,66 +166,54 @@ fun ProfileScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // 📊 STATS
-                Surface(
-                    shape = RoundedCornerShape(24.dp),
-                    color = SurfaceWhite,
-                    tonalElevation = 1.dp,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                // ✅ Estadísticas y opciones SOLO para usuario normal
+                if (!isAdmin) {
+                    Surface(
+                        shape         = RoundedCornerShape(24.dp),
+                        color         = SurfaceWhite,
+                        tonalElevation = 1.dp,
+                        modifier      = Modifier.fillMaxWidth()
                     ) {
-                        StatItem(createdCount.toString(), "CREADOS")
-                        StatItem(attendedCount.toString(), "ASISTIDOS")
-                        StatItem(savedCount.toString(), "GUARDADOS")
-                        StatItem(points.toString(), "PUNTOS")
-                    }
-                }
-
-                Spacer(Modifier.height(16.dp))
-
-                // 📋 OPCIONES
-                Surface(
-                    shape = RoundedCornerShape(24.dp),
-                    color = SurfaceWhite,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column {
-                        OptionItem("Mis eventos", Icons.Outlined.Event) {
-                            onMyEvents()
-                        }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-                        OptionItem("Eventos guardados", Icons.Outlined.BookmarkBorder) {
-                            onSavedEvents()
-                        }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-                        OptionItem("Logros", Icons.Outlined.StarBorder) {
-                            onAchievements()
-                        }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-                        OptionItem("Historial", Icons.Outlined.History) {
-                            onHistory()
+                        Row(
+                            modifier              = Modifier.fillMaxWidth().padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            StatItem(createdCount.toString(), "CREADOS")
+                            StatItem(attendedCount.toString(), "ASISTIDOS")
+                            StatItem(savedCount.toString(), "GUARDADOS")
+                            StatItem(points.toString(), "PUNTOS")
                         }
                     }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Surface(
+                        shape    = RoundedCornerShape(24.dp),
+                        color    = SurfaceWhite,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column {
+                            OptionItem("Mis eventos", Icons.Outlined.Event) { onMyEvents() }
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                            OptionItem("Eventos guardados", Icons.Outlined.BookmarkBorder) { onSavedEvents() }
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                            OptionItem("Logros", Icons.Outlined.StarBorder) { onAchievements() }
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                            OptionItem("Historial", Icons.Outlined.History) { onHistory() }
+                        }
+                    }
+
+                    Spacer(Modifier.height(20.dp))
                 }
 
-                Spacer(Modifier.height(20.dp))
-
-                // 🚪 LOGOUT
+                // 🚪 CERRAR SESIÓN (presente para ambos roles)
                 Button(
                     onClick = { showLogoutDialog = true },
-                    colors = ButtonDefaults.buttonColors(
+                    colors  = ButtonDefaults.buttonColors(
                         containerColor = ErrorRed.copy(alpha = 0.1f),
-                        contentColor = ErrorRed
+                        contentColor   = ErrorRed
                     ),
-                    shape = RoundedCornerShape(30.dp),
+                    shape    = RoundedCornerShape(30.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = null)

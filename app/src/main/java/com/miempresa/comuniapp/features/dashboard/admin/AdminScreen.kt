@@ -5,23 +5,24 @@ import androidx.compose.runtime.*
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.rememberNavController
 import com.miempresa.comuniapp.features.dashboard.components.BottomNavigationBar
+import com.miempresa.comuniapp.features.dashboard.components.Destination
 import com.miempresa.comuniapp.features.dashboard.components.TopAppBar
 import com.miempresa.comuniapp.features.dashboard.navigation.AdminNavigation
 import com.miempresa.comuniapp.features.dashboard.navigation.DashboardRoutes
 
 @Composable
-fun AdminScreen(
-    onLogout: () -> Unit
-) {
-
+fun AdminScreen(onLogout: () -> Unit) {
     val navController = rememberNavController()
-    var title by remember { mutableStateOf("Panel Admin") }
-    var showBars by remember { mutableStateOf(true) }
+    var title         by remember { mutableStateOf("Panel Admin") }
+    var showBars      by remember { mutableStateOf(true) }
 
     LaunchedEffect(navController) {
         navController.currentBackStackEntryFlow.collect { backStackEntry ->
-            val destination = backStackEntry.destination
+            val dest = backStackEntry.destination
 
+            // Ocultar barras en pantallas de detalle (tienen su propio TopAppBar)
+            showBars = !dest.hasRoute<DashboardRoutes.AdminEventDetail>() &&
+                    !dest.hasRoute<DashboardRoutes.EventDetail>()
         }
     }
 
@@ -29,8 +30,9 @@ fun AdminScreen(
         topBar = {
             if (showBars) {
                 TopAppBar(
-                    title = title,
-                    onLogout = onLogout
+                    title      = title,
+                    showLogout = true,
+                    onLogout   = onLogout
                 )
             }
         },
@@ -38,18 +40,16 @@ fun AdminScreen(
             if (showBars) {
                 BottomNavigationBar(
                     navController = navController,
-                    titleTopBar = {
-                        title = it
-                    }
+                    titleTopBar   = { title = it },
+                    items         = Destination.adminItems  // ✅ barra exclusiva del admin
                 )
             }
         }
     ) { padding ->
-
         AdminNavigation(
             navController = navController,
-            padding = padding
+            padding       = padding,
+            onLogout      = onLogout
         )
-
     }
 }

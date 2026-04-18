@@ -23,129 +23,111 @@ class EditEventViewModel @Inject constructor(
     private val repository: EventRepository
 ) : ViewModel() {
 
-    // =========================
-    // STATE
-    // =========================
-
     private var currentEvent: Event? = null
 
-    val title = ValidatedField("") {
-        if (it.isBlank()) "Título obligatorio" else null
+    // Campos validados alineados con CreateEvent
+    val title = ValidatedField("") { if (it.isBlank()) "Título obligatorio" else null }
+    val description = ValidatedField("") { if (it.isBlank()) "Descripción obligatoria" else null }
+    val imageUrl = ValidatedField("") {
+        if (it.isBlank()) "URL obligatoria" else if (!it.startsWith("http")) "URL no válida" else null
     }
-
-    val description = ValidatedField("") {
-        if (it.isBlank()) "Descripción obligatoria" else null
-    }
+    val latitude = ValidatedField("") { it.toDoubleOrNull()?.let { null } ?: "Latitud inválida" }
+    val longitude = ValidatedField("") { it.toDoubleOrNull()?.let { null } ?: "Longitud inválida" }
 
     var category by mutableStateOf(Category.DEPORTES)
-
     var maxAttendees by mutableStateOf("")
-
     var startDateMillis by mutableStateOf<Long?>(null)
     var endDateMillis by mutableStateOf<Long?>(null)
-
-    // =========================
-    // RESULT
-    // =========================
 
     private val _result = MutableStateFlow<RequestResult?>(null)
     val result: StateFlow<RequestResult?> = _result.asStateFlow()
 
-    // =========================
-    // LOAD EVENT
-    // =========================
-
     fun loadEvent(eventId: String) {
+        if (currentEvent != null) return // Evita recargas infinitas
+
         viewModelScope.launch {
-            val event = repository.findById(eventId)
+            repository.findById(eventId)?.let { ev ->
+                currentEvent = ev
 
-            event?.let {
-                currentEvent = it
+                // Usamos onChange para que el ValidatedField sepa que el valor cambió
+                title.onChange(ev.title)
+                description.onChange(ev.description)
+                imageUrl.onChange(ev.imageUrl)
+                latitude.onChange(ev.location.latitude.toString())
+                longitude.onChange(ev.location.longitude.toString())
 
-                title.onChange(it.title)
-                description.onChange(it.description)
-                category = it.category
-                maxAttendees = it.maxAttendees?.toString() ?: ""
+                category = ev.category
+                maxAttendees = ev.maxAttendees?.toString() ?: ""
 
-                startDateMillis = parseDate(it.startDate)
-                endDateMillis = parseDate(it.endDate)
+                startDateMillis = parseDate(ev.startDate)
+                endDateMillis = parseDate(ev.endDate)
             }
         }
     }
 
-    // =========================
-    // VALIDATION
-    // =========================
-
     val isFormValid: Boolean
         get() {
-            val max = maxAttendees.toIntOrNull()
-            val validMax = max == null || max > 0
+            // Log para debug si fuera necesario:
+            // println("T:${title.value.isNotBlank()} D:${description.value.isNotBlank()} I:${imageUrl.value.startsWith("http")} L:${latitude.value.isNotBlank()} DT:${startDateMillis != null}")
 
-            val validDates =
-                startDateMillis != null &&
-                        endDateMillis != null &&
-                        endDateMillis!! > startDateMillis!!
+            val hasTitle = title.value.isNotBlank()
+            val hasDesc = description.value.isNotBlank()
+            val hasUrl = imageUrl.value.startsWith("http")
+            val hasLat = latitude.value.isNotBlank() && latitude.value.toDoubleOrNull() != null
+            val hasLng = longitude.value.isNotBlank() && longitude.value.toDoubleOrNull() != null
 
-            return title.isValid &&
-                    description.isValid &&
-                    validMax &&
-                    validDates
+            val validDates = startDateMillis != null &&
+                    endDateMillis != null &&
+                    endDateMillis!! > startDateMillis!!
+
+            // Verificamos que los campos obligatorios tengan contenido
+            return hasTitle && hasDesc && hasUrl && hasLat && hasLng && validDates
         }
-
-    // =========================
-    // UPDATE
-    // =========================
 
     fun updateEvent() {
         val event = currentEvent ?: return
-
         if (!isFormValid) return
 
         viewModelScope.launch {
             _result.value = RequestResult.Loading
-
             try {
                 val updatedEvent = event.copy(
                     title = title.value,
                     description = description.value,
+                    imageUrl = imageUrl.value,
                     category = category,
+                    location = Location(latitude.value.toDouble(), longitude.value.toDouble()),
                     maxAttendees = maxAttendees.toIntOrNull(),
                     startDate = formatDate(startDateMillis!!),
                     endDate = formatDate(endDateMillis!!)
                 )
-
                 repository.update(updatedEvent)
-
-                _result.value = RequestResult.Success("Evento actualizado")
-
+                _result.value = RequestResult.Success("Evento actualizado con éxito")
             } catch (e: Exception) {
-                _result.value = RequestResult.Failure(
-                    e.message ?: "Error al actualizar"
-                )
+                _result.value = RequestResult.Failure(e.message ?: "Error al actualizar")
             }
         }
     }
 
-    fun resetResult() {
-        _result.value = null
-    }
-
-    // =========================
-    // DATE HELPERS
-    // =========================
-
-    private fun formatDate(millis: Long): String {
-        val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-        return sdf.format(Date(millis))
-    }
-
-    private fun parseDate(date: String): Long? {
-        return try {
-            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
-            sdf.parse(date)?.time
-        } catch (e: Exception) {
-            null
+    fun deleteEvent() {
+        val id = currentEvent?.id ?: return
+        viewModelScope.launch {
+            _result.value = RequestResult.Loading
+            try {
+                repository.delete(id)
+                _result.value = RequestResult.Success("Evento eliminado correctamente")
+            } catch (e: Exception) {
+                _result.value = RequestResult.Failure("No se pudo eliminar el evento")
+            }
         }
     }
+
+    fun resetResult() { _result.value = null }
+
+    private fun formatDate(millis: Long): String =
+        SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(millis))
+
+    private fun parseDate(date: String): Long? = try {
+        SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).parse(date)?.time
+    } catch (e: Exception) { null }
 }

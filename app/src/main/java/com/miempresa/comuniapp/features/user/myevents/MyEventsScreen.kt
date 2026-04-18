@@ -31,37 +31,29 @@ fun MyEventsScreen(
     val createdEvents by viewModel.createdEvents.collectAsState()
     val activeEvents by viewModel.activeEvents.collectAsState()
     val finishedEvents by viewModel.finishedEvents.collectAsState()
+    val rejectedEvents by viewModel.rejectedEvents.collectAsState() // ✅ Nuevo
     val userInterests by viewModel.userInterests.collectAsState()
 
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("Creados", "Activos", "Finalizados")
+    val tabs = listOf("Creados", "Activos", "Finalizados", "Rechazados") // ✅ 4 Tabs
 
     Scaffold(
         topBar = {
-            Column(
-                modifier = Modifier
-                    .background(Color.White)
-                    .statusBarsPadding()
-            ) {
+            Column(modifier = Modifier.background(Color.White).statusBarsPadding()) {
                 Text(
                     text = "Mis Eventos",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold
-                    ),
+                    style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold),
                     color = Color(0xFF212121),
                     textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp, bottom = 8.dp)
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp)
                 )
 
-                // TabRow
-                TabRow(
+                ScrollableTabRow( // ✅ Cambiado a Scrollable por ser 4 pestañas
                     selectedTabIndex = selectedTabIndex,
                     modifier = Modifier.fillMaxWidth(),
                     containerColor = Color.White,
-                    contentColor = MaterialTheme.colorScheme.primary
+                    contentColor = MaterialTheme.colorScheme.primary,
+                    edgePadding = 16.dp
                 ) {
                     tabs.forEachIndexed { index, title ->
                         Tab(
@@ -75,42 +67,65 @@ fun MyEventsScreen(
         },
         containerColor = Color.White
     ) { innerPadding ->
-
         Column(modifier = Modifier.padding(innerPadding)) {
             when (selectedTabIndex) {
-                0 -> MyEventsTabContent(
-                    events = createdEvents,
-                    tabName = "Creados",
-                    onEventClick = onEventClick,
-                    onEditEvent = onEditEvent,
-                    onFinishEvent = { viewModel.finishEvent(it) },
-                    showEditButton = true,
-                    viewModel = viewModel,
-                    showInterestButton = false,
-                    userInterests = userInterests
-                )
-                1 -> MyEventsTabContent(
-                    events = activeEvents,
-                    tabName = "Activos",
-                    onEventClick = onEventClick,
-                    onEditEvent = onEditEvent,
-                    onFinishEvent = { viewModel.finishEvent(it) },
-                    showEditButton = false,
-                    viewModel = viewModel,
-                    showFinishButton = true,
-                    userInterests = userInterests
-                )
-                2 -> MyEventsTabContent(
-                    events = finishedEvents,
-                    tabName = "Finalizados",
-                    onEventClick = onEventClick,
-                    onEditEvent = onEditEvent,
-                    onFinishEvent = { viewModel.finishEvent(it) },
-                    showEditButton = false,
-                    viewModel = viewModel,
-                    showInterestButton = false,
-                    userInterests = userInterests
-                )
+                0 -> MyEventsTabContent(events = createdEvents, tabName = "Creados", onEventClick = onEventClick, onEditEvent = onEditEvent, onFinishEvent = { viewModel.finishEvent(it) }, showEditButton = true, viewModel = viewModel, showInterestButton = false, userInterests = userInterests)
+                1 -> MyEventsTabContent(events = activeEvents, tabName = "Activos", onEventClick = onEventClick, onEditEvent = onEditEvent, onFinishEvent = { viewModel.finishEvent(it) }, showEditButton = false, viewModel = viewModel, showFinishButton = true, userInterests = userInterests)
+                2 -> MyEventsTabContent(events = finishedEvents, tabName = "Finalizados", onEventClick = onEventClick, onEditEvent = onEditEvent, onFinishEvent = { viewModel.finishEvent(it) }, showEditButton = false, viewModel = viewModel, showInterestButton = false, userInterests = userInterests)
+                3 -> MyEventsTabContent(events = rejectedEvents, tabName = "Rechazados", onEventClick = onEventClick, onEditEvent = onEditEvent, onFinishEvent = {}, showEditButton = false, viewModel = viewModel, showInterestButton = false, userInterests = userInterests, isRejectedTab = true) // ✅ Tab de rechazados
+            }
+        }
+    }
+}
+
+@Composable
+fun MyEventsTabContent(
+    events: List<Event>,
+    tabName: String,
+    onEventClick: (String) -> Unit,
+    onEditEvent: (String) -> Unit,
+    onFinishEvent: (String) -> Unit,
+    showEditButton: Boolean,
+    viewModel: MyEventsViewModel,
+    showInterestButton: Boolean = true,
+    showFinishButton: Boolean = false,
+    userInterests: Set<String>,
+    isRejectedTab: Boolean = false // ✅ Nuevo parámetro
+) {
+    if (events.isEmpty()) {
+        Box(modifier = Modifier.fillMaxSize().padding(vertical = 48.dp), contentAlignment = Alignment.Center) {
+            Text(text = "No hay eventos $tabName", fontSize = 15.sp, color = Color(0xFF9E9E9E))
+        }
+    } else {
+        LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 80.dp)) {
+            items(events, key = { it.id }) { event ->
+                Column {
+                    MyEventCardWrapper(
+                        event = event,
+                        onEventClick = { onEventClick(event.id) },
+                        onEditClick = { onEditEvent(event.id) },
+                        showEditButton = showEditButton,
+                        viewModel = viewModel,
+                        showInterestButton = showInterestButton,
+                        userInterests = userInterests,
+                        onFinishEvent = onFinishEvent,
+                        showFinishButton = showFinishButton
+                    )
+
+                    // ✅ Mostrar motivo de rechazo si estamos en esa pestaña
+                    if (isRejectedTab && !event.rejectionReason.isNullOrBlank()) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                            color = Color(0xFFFFEBEE),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text(text = "Motivo: ", fontWeight = FontWeight.Bold, color = Color(0xFFC62828), fontSize = 12.sp)
+                                Text(text = event.rejectionReason!!, color = Color(0xFFC62828), fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
             }
         }
     }

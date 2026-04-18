@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// ✅ Eventos de UI tipados — la Screen los consume una sola vez
 sealed interface UserEditUiEvent {
     data class ShowMessage(val message: String) : UserEditUiEvent
     data object NavigateBack : UserEditUiEvent
@@ -23,7 +22,6 @@ class UserEditViewModel @Inject constructor(
     private val sessionDataStore: SessionDataStore
 ) : ViewModel() {
 
-    // ✅ Usuario observado reactivamente desde el repositorio
     val user: StateFlow<User?> =
         sessionDataStore.sessionFlow
             .filterNotNull()
@@ -35,16 +33,13 @@ class UserEditViewModel @Inject constructor(
     private val _isSaving = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
 
-    // ✅ Categorías seleccionadas en pantalla — se inicializan desde el usuario
     private val _selectedCategories = MutableStateFlow<Set<Category>>(emptySet())
     val selectedCategories: StateFlow<Set<Category>> = _selectedCategories.asStateFlow()
 
-    // ✅ SharedFlow: replay=0 garantiza que el evento se consuma una sola vez
     private val _uiEvents = MutableSharedFlow<UserEditUiEvent>(replay = 0)
     val uiEvents: SharedFlow<UserEditUiEvent> = _uiEvents.asSharedFlow()
 
     init {
-        // Inicializar categorías desde el usuario actual al abrir la pantalla
         viewModelScope.launch {
             user.filterNotNull().first().let { u ->
                 _selectedCategories.value = u.favoriteCategories.toSet()
@@ -60,10 +55,8 @@ class UserEditViewModel @Inject constructor(
 
     fun saveUser(name: String, phone: String, photo: String) {
         val current = user.value ?: return
-
         viewModelScope.launch {
             _isSaving.value = true
-
             try {
                 repository.update(
                     current.copy(
@@ -73,15 +66,26 @@ class UserEditViewModel @Inject constructor(
                         favoriteCategories = _selectedCategories.value.toList()
                     )
                 )
-
-                // ✅ Emitir mensaje de éxito y luego navegar atrás
                 _uiEvents.emit(UserEditUiEvent.ShowMessage("Perfil actualizado con éxito"))
                 _uiEvents.emit(UserEditUiEvent.NavigateBack)
-
             } catch (e: Exception) {
                 _uiEvents.emit(UserEditUiEvent.ShowMessage("Error al guardar: ${e.message}"))
             } finally {
                 _isSaving.value = false
+            }
+        }
+    }
+
+    // ✅ Nueva funcionalidad para eliminar cuenta
+    fun deleteAccount() {
+        val current = user.value ?: return
+        viewModelScope.launch {
+            try {
+                repository.delete(current.id)
+                sessionDataStore.clearSession() // Al limpiar sesión, el NavHost redirige al Login
+                _uiEvents.emit(UserEditUiEvent.ShowMessage("Cuenta eliminada correctamente"))
+            } catch (e: Exception) {
+                _uiEvents.emit(UserEditUiEvent.ShowMessage("Error: ${e.message}"))
             }
         }
     }

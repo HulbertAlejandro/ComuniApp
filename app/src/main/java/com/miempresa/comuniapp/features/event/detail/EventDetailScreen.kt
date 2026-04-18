@@ -33,9 +33,6 @@ import com.miempresa.comuniapp.domain.model.User
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Colores del tema
@@ -55,14 +52,14 @@ fun EventDetailScreen(
     onNavigateBack: () -> Unit,
     viewModel: EventDetailViewModel = hiltViewModel()
 ) {
-    val event    by viewModel.event.collectAsState()
+    val event by viewModel.event.collectAsState()
     val organizer by viewModel.organizer.collectAsState()
     val interestedEventIds by viewModel.interestedEventIds.collectAsState()
     val isAttending by viewModel.isAttending.collectAsState()
-    val comments by viewModel.comments.collectAsState() // Comentarios
-    val currentUser by viewModel.currentUser.collectAsState() // Usuario actual
-    val commentsCount    by viewModel.commentsCount.collectAsState()
+    val comments by viewModel.comments.collectAsState()
+    val commentsCount by viewModel.commentsCount.collectAsState()
     val commentAuthorsMap by viewModel.commentAuthorsMap.collectAsState()
+    val isAdmin by viewModel.isAdmin.collectAsState() // ✅ Permisos de admin
 
     var newCommentText by remember { mutableStateOf("") }
 
@@ -76,17 +73,15 @@ fun EventDetailScreen(
     }
 
     val ev = event!!
+    val isInterested = interestedEventIds.contains(ev.id)
 
-    val isInterested = interestedEventIds.contains(ev.id) // ✅ USAR interestedEventIds
-
-    // Fecha formateada: "Sáb 8 Mar · 9:00 AM"
+    // Fecha formateada
     val dateFormatted = try {
         val dt = LocalDateTime.parse(ev.startDate, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
         dt.format(DateTimeFormatter.ofPattern("EEE d MMM · h:mm a", Locale("es", "ES")))
             .replaceFirstChar { it.uppercase() }
     } catch (e: Exception) { ev.startDate }
 
-    // Progreso de cupo
     val attendeesProgress = if ((ev.maxAttendees ?: 0) > 0)
         ev.currentAttendees.toFloat() / (ev.maxAttendees ?: 1).toFloat()
     else 0f
@@ -97,26 +92,13 @@ fun EventDetailScreen(
         containerColor = Color.White,
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        "Detalle del evento",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp,
-                        color = TextPrimary
-                    )
-                },
+                title = { Text("Detalle del evento", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver",
-                            tint = TextPrimary
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = TextPrimary)
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color.White
-                )
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
             )
         }
     ) { innerPadding ->
@@ -129,19 +111,13 @@ fun EventDetailScreen(
         ) {
 
             // ── 1. Imagen con badges ──────────────────────────────────────────
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(230.dp)
-            ) {
+            Box(modifier = Modifier.fillMaxWidth().height(230.dp)) {
                 AsyncImage(
                     model = ev.imageUrl,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-
-                // Badges superpuestos (esquina top-left)
                 Row(
                     modifier = Modifier.padding(12.dp).align(Alignment.TopStart),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -151,120 +127,85 @@ fun EventDetailScreen(
                 }
             }
 
-            // ── 2. Título, fecha y lugar ──────────────────────────────────────
+            // ── 2. Título y meta-info ─────────────────────────────────────────
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
-                Text(
-                    text = ev.title,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
-                    lineHeight = 28.sp
-                )
+                Text(text = ev.title, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = TextPrimary, lineHeight = 28.sp)
                 Spacer(Modifier.height(4.dp))
-                Text(
-                    text = dateFormatted,
-                    fontSize = 14.sp,
-                    color = TextSecondary
-                )
+                Text(text = dateFormatted, fontSize = 14.sp, color = TextSecondary)
                 Spacer(Modifier.height(2.dp))
-                // Lugar: usamos lat/lon hasta implementar geocoding
-                Text(
-                    text = "${"%.4f".format(ev.location.latitude)}, ${"%.4f".format(ev.location.longitude)}",
-                    fontSize = 14.sp,
-                    color = TextSecondary
-                )
+                Text(text = "${"%.4f".format(ev.location.latitude)}, ${"%.4f".format(ev.location.longitude)}", fontSize = 14.sp, color = TextSecondary)
             }
 
             HorizontalDivider(color = Divider)
 
-            // ── 3. Fila de acciones: Asistir · Me interesa · Comentarios ─────
-            if (ev.eventStatus != EventStatus.CREATED && ev.eventStatus != EventStatus.FINISHED) {
+            // ── 3. Fila de acciones (Lógica condicional por Rol) ──────────────
+
+            // ✅ El admin nunca ve los botones de interacción social (Asistir/Interés).
+            if (!isAdmin &&
+                ev.eventStatus != EventStatus.CREATED &&
+                ev.eventStatus != EventStatus.FINISHED
+            ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // ✅ Asistir (IMPLEMENTADO)
                     OutlinedButton(
                         onClick = { viewModel.toggleAttendance() },
                         shape = RoundedCornerShape(20.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
                             containerColor = if (isAttending) GreenLight else Color.White,
-                            contentColor = if (isAttending) GreenPrimary else TextPrimary,
-                            disabledContainerColor = if (isFull && !isAttending) Color(0xFFFFEBEE) else if (isAttending) GreenLight else Color.White,
-                            disabledContentColor = if (isFull && !isAttending) Color(0xFFC62828) else if (isAttending) GreenPrimary else TextPrimary
+                            contentColor = if (isAttending) GreenPrimary else TextPrimary
                         ),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            if (isAttending) GreenPrimary else if (isFull && !isAttending) Color(0xFFC62828) else Color(0xFFBDBDBD)
-                        ),
-                        enabled = !isFull || isAttending, // Deshabilitado si está lleno Y no está asistiendo
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, if (isAttending) GreenPrimary else Color(0xFFBDBDBD)),
+                        enabled = !isFull || isAttending,
                         modifier = Modifier.height(38.dp)
                     ) {
-                        Text(
-                            text = if (isAttending) "✓ Asistiendo" else if (isFull) "Lleno" else "Asistir",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        Text(if (isAttending) "✓ Asistiendo" else if (isFull) "Lleno" else "Asistir", fontSize = 13.sp)
                     }
 
-                    // Me interesa (SOLO VISUAL)
                     OutlinedButton(
-                        onClick = { /* No action */ },
+                        onClick = { },
                         enabled = false,
                         shape = RoundedCornerShape(20.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = Color.White,
-                            contentColor = TextPrimary,
-                            disabledContainerColor = Color.White,
-                            disabledContentColor = TextPrimary
-                        ),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            Color(0xFFBDBDBD)
-                        ),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(disabledContentColor = TextPrimary),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBDBDBD)),
                         modifier = Modifier.height(38.dp)
                     ) {
-                        Icon(
-                            imageVector = if (isInterested) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp)
-                        )
+                        Icon(if (isInterested) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, null, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text(
-                            text = "Me interesa ${ev.interestCount}",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        Text("Me interesa ${ev.interestCount}", fontSize = 13.sp)
                     }
 
-                    // Comentarios:
                     OutlinedButton(
-                        onClick = { /* TODO: ir a comentarios */ },
+                        onClick = { },
                         shape = RoundedCornerShape(20.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary),
                         border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBDBDBD)),
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
                         modifier = Modifier.height(38.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.Comment,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp)
-                        )
+                        Icon(Icons.AutoMirrored.Outlined.Comment, null, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
-                        // ✅ BUG 2 FIX: commentsCount viene del Flow real, no del modelo estático
-                        Text(
-                            text = "Comentarios $commentsCount",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        Text("Comentarios $commentsCount", fontSize = 13.sp)
                     }
                 }
+                HorizontalDivider(color = Divider)
+            }
 
+            // ✅ Si es admin, mostrar solo el contador de comentarios en modo lectura
+            if (isAdmin) {
+                Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    OutlinedButton(
+                        onClick = { },
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBDBDBD)),
+                        modifier = Modifier.height(38.dp)
+                    ) {
+                        Icon(Icons.AutoMirrored.Outlined.Comment, null, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Comentarios $commentsCount", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    }
+                }
                 HorizontalDivider(color = Divider)
             }
 
@@ -272,38 +213,23 @@ fun EventDetailScreen(
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
                 SectionTitle("DESCRIPCIÓN")
                 Spacer(Modifier.height(8.dp))
-                Text(
-                    text = ev.description,
-                    fontSize = 15.sp,
-                    color = TextPrimary,
-                    lineHeight = 22.sp
-                )
+                Text(text = ev.description, fontSize = 15.sp, color = TextPrimary, lineHeight = 22.sp)
             }
 
             HorizontalDivider(color = Divider)
 
-            // ── 5. Cupos disponibles ──────────────────────────────────────────
+            // ── 5. Cupos ──────────────────────────────────────────────────────
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
                 SectionTitle("CUPOS DISPONIBLES")
                 Spacer(Modifier.height(10.dp))
-
-                // Barra de progreso
                 LinearProgressIndicator(
                     progress = { attendeesProgress.coerceIn(0f, 1f) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp)),
+                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
                     color = if (isFull) Color(0xFFC62828) else GreenPrimary,
                     trackColor = Color(0xFFE0E0E0)
                 )
                 Spacer(Modifier.height(6.dp))
-                Text(
-                    text = "${ev.currentAttendees} / ${ev.maxAttendees ?: "∞"} asistentes",
-                    fontSize = 13.sp,
-                    color = if (isFull) Color(0xFFC62828) else TextSecondary,
-                    fontWeight = FontWeight.Medium
-                )
+                Text("${ev.currentAttendees} / ${ev.maxAttendees ?: "∞"} asistentes", fontSize = 13.sp, color = if (isFull) Color(0xFFC62828) else TextSecondary)
             }
 
             HorizontalDivider(color = Divider)
@@ -315,138 +241,70 @@ fun EventDetailScreen(
 
             HorizontalDivider(color = Divider)
 
-            // ── 7. Ubicación (lat/lon hasta implementar mapa) ─────────────────
+            // ── 7. Ubicación ──────────────────────────────────────────────────
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
                 SectionTitle("UBICACIÓN")
                 Spacer(Modifier.height(10.dp))
-
-                // Placeholder del mapa con coordenadas visibles
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(140.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFEEEEEE))
-                        .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(12.dp)),
+                    modifier = Modifier.fillMaxWidth().height(140.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFFEEEEEE)).border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.LocationOn,
-                            contentDescription = null,
-                            tint = Color(0xFFC62828),
-                            modifier = Modifier.size(36.dp)
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            text = "${"%.5f".format(ev.location.latitude)}, ${"%.5f".format(ev.location.longitude)}",
-                            fontSize = 13.sp,
-                            color = TextSecondary,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-
-                Spacer(Modifier.height(10.dp))
-
-                // Botones debajo del mapa
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = { /* TODO: abrir mapa */ },
-                        modifier = Modifier.weight(1f).height(40.dp),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBDBDBD))
-                    ) {
-                        Text("Ver en mapa", fontSize = 13.sp)
-                    }
-                    OutlinedButton(
-                        onClick = { /* TODO: abrir navegación */ },
-                        modifier = Modifier.weight(1f).height(40.dp),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBDBDBD))
-                    ) {
-                        Text("Cómo llegar", fontSize = 13.sp)
+                        Icon(Icons.Default.LocationOn, null, tint = Color(0xFFC62828), modifier = Modifier.size(36.dp))
+                        Text("${"%.5f".format(ev.location.latitude)}, ${"%.5f".format(ev.location.longitude)}", fontSize = 13.sp, color = TextSecondary)
                     }
                 }
             }
 
             HorizontalDivider(color = Divider)
 
-            // ── 8. Publicar comentario ─────────────────────────────────────────
-            if (ev.eventStatus != EventStatus.CREATED && ev.eventStatus != EventStatus.FINISHED) {
+            // ── 8. Publicar comentario (Solo Usuarios) ────────────────────────
+            // ✅ El admin nunca puede escribir comentarios
+            if (!isAdmin &&
+                ev.eventStatus != EventStatus.CREATED &&
+                ev.eventStatus != EventStatus.FINISHED
+            ) {
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
                     SectionTitle("COMENTAR")
                     Spacer(Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.Bottom
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
                         OutlinedTextField(
                             value = newCommentText,
                             onValueChange = { newCommentText = it },
                             placeholder = { Text("Escribe un comentario...", fontSize = 13.sp) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(10.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = GreenPrimary,
-                                unfocusedBorderColor = Divider
-                            ),
-                            maxLines = 3
+                            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = GreenPrimary, unfocusedBorderColor = Divider)
                         )
                         Button(
-                            onClick = {
-                                viewModel.postComment(newCommentText)
-                                newCommentText = ""
-                            },
+                            onClick = { viewModel.postComment(newCommentText); newCommentText = "" },
                             enabled = newCommentText.isNotBlank(),
                             shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
                             modifier = Modifier.height(48.dp)
                         ) {
-                            Text("Enviar", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                            Text("Enviar", fontSize = 13.sp)
                         }
                     }
                 }
-
                 HorizontalDivider(color = Divider)
             }
 
-            // ── 9. Comentarios destacados ─────────────────────────────────────
-            if (ev.eventStatus != EventStatus.CREATED) {
+            // ── 9. Comentarios (Lista) ────────────────────────────────────────
+            // ✅ El admin SÍ ve comentarios aunque el evento sea PENDING o CREATED
+            if (isAdmin || ev.eventStatus != EventStatus.CREATED) {
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
                     SectionTitle("COMENTARIOS DESTACADOS")
                     Spacer(Modifier.height(12.dp))
 
                     if (comments.isEmpty()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(CardBg)
-                                .border(1.dp, Divider, RoundedCornerShape(10.dp))
-                                .padding(20.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Sé el primero en comentar este evento",
-                                fontSize = 14.sp,
-                                color = TextSecondary
-                            )
+                        Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(CardBg).border(1.dp, Divider, RoundedCornerShape(10.dp)).padding(20.dp), Alignment.Center) {
+                            Text("No hay comentarios disponibles", fontSize = 14.sp, color = TextSecondary)
                         }
                     } else {
-                        // Pasar commentAuthorsMap a cada CommentItem
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             comments.forEach { comment ->
-                                CommentItem(
-                                    comment = comment,
-                                    authorsMap = commentAuthorsMap  // ← mapa completo, no solo currentUser
-                                )
+                                CommentItem(comment = comment, authorsMap = commentAuthorsMap)
                             }
                         }
                     }
@@ -458,220 +316,89 @@ fun EventDetailScreen(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Componentes internos
+// Componentes Internos
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 private fun SectionTitle(text: String) {
-    Text(
-        text = text,
-        fontSize = 11.sp,
-        fontWeight = FontWeight.Bold,
-        color = TextSecondary,
-        letterSpacing = 1.sp
-    )
+    Text(text = text, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondary, letterSpacing = 1.sp)
 }
 
 @Composable
 private fun CategoryBadge(category: Category) {
     Surface(color = Color(0xFF1565C0), shape = RoundedCornerShape(4.dp)) {
-        Text(
-            text = category.name.uppercase(),
-            color = Color.White,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-        )
+        Text(category.name.uppercase(), color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
     }
 }
 
 @Composable
-private fun StatusBadge(status: com.miempresa.comuniapp.domain.model.EventStatus) {
+private fun StatusBadge(status: EventStatus) {
     val (color, label) = when (status) {
-        com.miempresa.comuniapp.domain.model.EventStatus.ACTIVE   -> Color(0xFF2E7D32) to "ACTIVO"
-        com.miempresa.comuniapp.domain.model.EventStatus.FULL     -> Color(0xFFC62828) to "LLENO"
-        com.miempresa.comuniapp.domain.model.EventStatus.CREATED  -> Color(0xFFE65100) to "PENDIENTE"
-        com.miempresa.comuniapp.domain.model.EventStatus.FINISHED -> Color(0xFF424242) to "FINALIZADO"
+        EventStatus.ACTIVE   -> Color(0xFF2E7D32) to "ACTIVO"
+        EventStatus.FULL     -> Color(0xFFC62828) to "LLENO"
+        EventStatus.CREATED  -> Color(0xFFE65100) to "PENDIENTE"
+        EventStatus.FINISHED -> Color(0xFF424242) to "FINALIZADO"
     }
     Surface(color = color, shape = RoundedCornerShape(4.dp)) {
-        Text(
-            text = label,
-            color = Color.White,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-        )
+        Text(label, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
     }
 }
 
 @Composable
 private fun OrganizerRow(organizer: User?, ownerId: String) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        // Avatar
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFE8F5E9)),
-            contentAlignment = Alignment.Center
-        ) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Box(modifier = Modifier.size(44.dp).clip(CircleShape).background(Color(0xFFE8F5E9)), Alignment.Center) {
             if (!organizer?.profilePictureUrl.isNullOrBlank()) {
-                AsyncImage(
-                    model = organizer?.profilePictureUrl,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+                AsyncImage(model = organizer?.profilePictureUrl, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             } else {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = null,
-                    tint = GreenPrimary,
-                    modifier = Modifier.size(24.dp)
-                )
+                Icon(Icons.Default.Person, null, tint = GreenPrimary, modifier = Modifier.size(24.dp))
             }
         }
-
-        // Nombre y rol
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = organizer?.name ?: "ID: $ownerId",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = TextPrimary
-            )
-            Text(
-                text = "Organizador",
-                fontSize = 12.sp,
-                color = TextSecondary
-            )
+            Text(organizer?.name ?: "Usuario", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+            Text("Organizador", fontSize = 12.sp, color = TextSecondary)
         }
-
-        // Rating (puntos de reputación convertidos a escala 5.0)
-        val rating = organizer?.reputation?.points?.let { pts ->
-            // Escala: 0–600+ pts → 0.0–5.0
-            (pts.coerceAtMost(600) / 600f * 5f)
-                .let { "%.1f".format(it) }
-        } ?: "–"
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
-            Icon(Icons.Default.Star, contentDescription = null,
-                tint = Color(0xFFFFC107), modifier = Modifier.size(16.dp))
-            Text(text = rating, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+        val rating = organizer?.reputation?.points?.let { pts -> (pts.coerceAtMost(600) / 600f * 5f).let { "%.1f".format(it) } } ?: "–"
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+            Icon(Icons.Default.Star, null, tint = Color(0xFFFFC107), modifier = Modifier.size(16.dp))
+            Text(rating, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
         }
     }
 }
 
 @Composable
-private fun CommentPlaceholderItem(userName: String, timeAgo: String, text: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(CardBg)
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        // Avatar pequeño
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFE0E0E0)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(Icons.Default.Person, contentDescription = null,
-                tint = Color(0xFF9E9E9E), modifier = Modifier.size(20.dp))
-        }
-
-        Column {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(userName, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = TextPrimary)
-                Text(timeAgo, fontSize = 11.sp, color = TextSecondary)
-            }
-            Spacer(Modifier.height(2.dp))
-            Text(text, fontSize = 13.sp, color = TextPrimary, lineHeight = 18.sp)
-        }
-    }
-}
-
-@Composable
-private fun CommentItem(
-    comment: com.miempresa.comuniapp.domain.model.Comment,
-    authorsMap: Map<String, com.miempresa.comuniapp.domain.model.User>
-) {
-    // ✅ BUG 1 FIX: resolver nombre desde el mapa completo de autores
+private fun CommentItem(comment: com.miempresa.comuniapp.domain.model.Comment, authorsMap: Map<String, User>) {
     val author = authorsMap[comment.authorId]
-    val userName = author?.name ?: "Usuario ${comment.authorId.take(5)}"
+    val userName = author?.name ?: "Usuario"
     val timeAgo = formatTimeAgo(comment.timestamp)
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
-            .background(CardBg)
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFE0E0E0)),
-            contentAlignment = Alignment.Center
-        ) {
+    Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(CardBg).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(Color(0xFFE0E0E0)), Alignment.Center) {
             if (!author?.profilePictureUrl.isNullOrBlank()) {
-                AsyncImage(
-                    model = author?.profilePictureUrl,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+                AsyncImage(model = author?.profilePictureUrl, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             } else {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = null,
-                    tint = Color(0xFF9E9E9E),
-                    modifier = Modifier.size(20.dp)
-                )
+                Icon(Icons.Default.Person, null, tint = Color(0xFF9E9E9E), modifier = Modifier.size(20.dp))
             }
         }
-
         Column {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(userName, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = TextPrimary)
                 Text(timeAgo, fontSize = 11.sp, color = TextSecondary)
             }
-            Spacer(Modifier.height(2.dp))
             Text(comment.content, fontSize = 13.sp, color = TextPrimary, lineHeight = 18.sp)
         }
     }
 }
 
 private fun formatTimeAgo(timestamp: Long): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestamp
-    val minutes = diff / (1000 * 60)
-    val hours = diff / (1000 * 60 * 60)
-    val days = diff / (1000 * 60 * 60 * 24)
-
+    val diff = System.currentTimeMillis() - timestamp
+    val minutes = diff / 60000
+    val hours = minutes / 60
+    val days = hours / 24
     return when {
         minutes < 1 -> "Ahora"
         minutes < 60 -> "Hace ${minutes}m"
         hours < 24 -> "Hace ${hours}h"
-        days < 7 -> "Hace ${days}d"
-        else -> "Hace mucho tiempo"
+        else -> "Hace ${days}d"
     }
 }

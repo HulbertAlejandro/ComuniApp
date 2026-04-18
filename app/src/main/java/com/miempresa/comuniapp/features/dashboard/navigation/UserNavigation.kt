@@ -111,9 +111,14 @@ fun UserNavigation(
 
         composable<DashboardRoutes.EditEvent> { backStackEntry ->
             val args = backStackEntry.toRoute<DashboardRoutes.EditEvent>()
+
             EditEventScreen(
                 eventId = args.eventId,
-                onSuccess = { navController.popBackStack() }
+                onBack = {
+                    // Esto se ejecutará tanto si el usuario cancela,
+                    // como si el evento se actualiza o se elimina con éxito.
+                    navController.popBackStack()
+                }
             )
         }
 

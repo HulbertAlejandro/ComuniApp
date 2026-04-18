@@ -6,8 +6,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.domain.model.Event
 import com.miempresa.comuniapp.domain.model.VerificationStatus
 
@@ -24,20 +23,14 @@ import com.miempresa.comuniapp.domain.model.VerificationStatus
 @Composable
 fun ModerationHistoryScreen(
     onNavigateBack: () -> Unit,
+    // ✅ Agregamos el parámetro que faltaba
+    bottomPadding: PaddingValues = PaddingValues(0.dp),
     viewModel: ModerationHistoryViewModel = hiltViewModel()
 ) {
     val searchText by viewModel.searchText.collectAsState()
     val activeFilter by viewModel.activeFilter.collectAsState()
     val events by viewModel.filteredEvents.collectAsState()
-    val result by viewModel.result.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    LaunchedEffect(result) {
-        if (result is RequestResult.Failure) {
-            snackbarHostState.showSnackbar((result as RequestResult.Failure).errorMessage)
-            viewModel.resetResult()
-        }
-    }
+    val organizersMap by viewModel.organizersMap.collectAsState()
 
     Scaffold(
         topBar = {
@@ -49,15 +42,13 @@ fun ModerationHistoryScreen(
                     }
                 }
             )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            // Buscador
             OutlinedTextField(
                 value = searchText,
                 onValueChange = viewModel::onSearchTextChange,
@@ -70,28 +61,33 @@ fun ModerationHistoryScreen(
                 singleLine = true
             )
 
-            // Filtros
             FilterRow(
                 activeFilter = activeFilter,
                 onFilterSelected = viewModel::onFilterSelected
             )
 
-            // Contenido
-            if (result is RequestResult.Loading) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-            } else if (events.isEmpty()) {
+            if (events.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("No hay publicaciones", style = MaterialTheme.typography.bodyLarge)
                 }
             } else {
                 LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    // ✅ Combinamos el padding de 16.dp con el padding de la barra inferior
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        top = 16.dp,
+                        end = 16.dp,
+                        bottom = 16.dp + bottomPadding.calculateBottomPadding()
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    items(events) { event ->
-                        HistoryCard(event = event, currentFilter = activeFilter)
+                    items(events, key = { it.id }) { event ->
+                        HistoryCard(
+                            event = event,
+                            organizerName = organizersMap[event.ownerId] ?: "ID: ${event.ownerId}",
+                            currentFilter = activeFilter
+                        )
                     }
                 }
             }
@@ -101,24 +97,23 @@ fun ModerationHistoryScreen(
 
 @Composable
 private fun FilterRow(
-    activeFilter: HistoryFilter,
-    onFilterSelected: (HistoryFilter) -> Unit
+    activeFilter     : HistoryFilter,
+    onFilterSelected : (HistoryFilter) -> Unit
 ) {
     val filters = listOf(
-        HistoryFilter.ALL to "Todas",
+        HistoryFilter.ALL      to "Todas",
         HistoryFilter.VERIFIED to "Verificadas",
         HistoryFilter.REJECTED to "Rechazadas"
     )
-
     LazyRow(
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        contentPadding        = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(filters) { (filter, label) ->
             FilterChip(
                 selected = activeFilter == filter,
-                onClick = { onFilterSelected(filter) },
-                label = { Text(label) }
+                onClick  = { onFilterSelected(filter) },
+                label    = { Text(label) }
             )
         }
     }
@@ -126,56 +121,54 @@ private fun FilterRow(
 
 @Composable
 private fun HistoryCard(
-    event: Event,
-    currentFilter: HistoryFilter
+    event         : Event,
+    organizerName : String,
+    currentFilter : HistoryFilter
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier  = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors    = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Badge (solo si no es filtro específico que ya lo sobreentienda, 
-            // aunque el prompt pide Badge en Todas y Rechazadas)
             if (currentFilter == HistoryFilter.ALL || currentFilter == HistoryFilter.REJECTED) {
                 StatusBadge(status = event.verificationStatus)
                 Spacer(modifier = Modifier.height(8.dp))
             }
-
             Text(
-                text = event.title,
-                style = MaterialTheme.typography.titleMedium,
+                text       = event.title,
+                style      = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-            
+            // ✅ nombre resuelto desde el mapa
             Text(
-                text = "Autor: ${event.organizerName}",
+                text  = organizerName,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
             Text(
-                text = event.startDate,
+                text  = event.startDate,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-
-            if (currentFilter == HistoryFilter.REJECTED && !event.rejectionReason.isNullOrBlank()) {
+            if (currentFilter == HistoryFilter.REJECTED &&
+                !event.rejectionReason.isNullOrBlank()
+            ) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Surface(
-                    color = MaterialTheme.colorScheme.errorContainer,
-                    shape = MaterialTheme.shapes.small,
+                    color    = MaterialTheme.colorScheme.errorContainer,
+                    shape    = MaterialTheme.shapes.small,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(8.dp)) {
                         Text(
-                            text = "MOTIVO DEL RECHAZO:",
-                            style = MaterialTheme.typography.labelSmall,
+                            text       = "MOTIVO DEL RECHAZO:",
+                            style      = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onErrorContainer
+                            color      = MaterialTheme.colorScheme.onErrorContainer
                         )
                         Text(
-                            text = event.rejectionReason,
+                            text  = event.rejectionReason,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
@@ -189,24 +182,14 @@ private fun HistoryCard(
 @Composable
 private fun StatusBadge(status: VerificationStatus) {
     val (label, color, icon) = when (status) {
-        VerificationStatus.APPROVED -> Triple("VERIFICADO", MaterialTheme.colorScheme.primary, Icons.Default.CheckCircle)
-        VerificationStatus.REJECTED -> Triple("RECHAZADO", MaterialTheme.colorScheme.error, Icons.Default.Cancel)
-        VerificationStatus.PENDING -> Triple("PENDIENTE", MaterialTheme.colorScheme.tertiary, Icons.Default.Search)
+        VerificationStatus.APPROVED -> Triple("VERIFICADO", MaterialTheme.colorScheme.primary,   Icons.Default.CheckCircle)
+        VerificationStatus.REJECTED -> Triple("RECHAZADO",  MaterialTheme.colorScheme.error,     Icons.Default.Cancel)
+        VerificationStatus.PENDING  -> Triple("PENDIENTE",  MaterialTheme.colorScheme.tertiary,  Icons.Default.Search)
     }
-
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = color,
-            modifier = Modifier.size(16.dp)
-        )
+        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
         Spacer(modifier = Modifier.width(4.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = color,
-            fontWeight = FontWeight.Bold
-        )
+        Text(text = label, style = MaterialTheme.typography.labelMedium,
+            color = color, fontWeight = FontWeight.Bold)
     }
 }

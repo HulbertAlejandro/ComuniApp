@@ -38,9 +38,4 @@ interface UserRepository {
     suspend fun updateFavoriteCategories(userId: String, categories: List<Category>)
     suspend fun getFavoriteCategories(userId: String): List<Category>
 
-    /**
-     * Devuelve cuántos eventos aprobados ha creado el usuario.
-     * Se usa para evaluar la insignia "Constante" (10 eventos).
-     */
-    suspend fun getApprovedEventsCountByUser(userId: String): Int
 }

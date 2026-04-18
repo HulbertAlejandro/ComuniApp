@@ -10,6 +10,7 @@ import com.miempresa.comuniapp.domain.model.Event
 import com.miempresa.comuniapp.domain.model.EventStatus
 import com.miempresa.comuniapp.domain.model.ReputationPoints
 import com.miempresa.comuniapp.domain.model.User
+import com.miempresa.comuniapp.domain.model.UserRole
 import com.miempresa.comuniapp.domain.repository.AttendanceRepository
 import com.miempresa.comuniapp.domain.repository.CommentRepository
 import com.miempresa.comuniapp.domain.repository.EventRepository
@@ -40,6 +41,15 @@ class EventDetailViewModel @Inject constructor(
             eventRepository.events.map { list -> list.find { it.id == id } }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val isAdmin: StateFlow<Boolean> =
+        sessionDataStore.sessionFlow
+            .map { session -> session?.role == UserRole.MODERATOR }
+            .stateIn(
+                scope        = viewModelScope,
+                started      = SharingStarted.WhileSubscribed(5000),
+                initialValue = false
+            )
 
     private val _organizer = MutableStateFlow<User?>(null)
     val organizer: StateFlow<User?> = _organizer.asStateFlow()
