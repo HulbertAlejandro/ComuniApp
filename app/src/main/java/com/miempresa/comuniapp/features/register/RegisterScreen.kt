@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.activity.compose.BackHandler
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -45,6 +46,9 @@ fun RegisterScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val registerResult by viewModel.registerResult.collectAsState()
+    val loadingMessage = stringResource(R.string.register_loading)
+    val exitDialogTitle = stringResource(R.string.register_exit_dialog_title)
+    val exitDialogMessage = stringResource(R.string.register_exit_dialog_message)
 
     LaunchedEffect(registerResult) {
         registerResult?.let { result ->
@@ -52,7 +56,7 @@ fun RegisterScreen(
             val message = when (result) {
                 is RequestResult.Success -> result.message
                 is RequestResult.Failure -> result.errorMessage
-                is RequestResult.Loading -> "Registrando usuario..."
+                is RequestResult.Loading -> loadingMessage
             }
 
             snackbarHostState.showSnackbar(message)
@@ -83,14 +87,14 @@ fun RegisterScreen(
 
             Image(
                 painter = painterResource(R.drawable.logo_comunidad),
-                contentDescription = "Logo",
+                contentDescription = stringResource(R.string.home_logo_description),
                 modifier = Modifier.size(220.dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Crear Cuenta",
+                text = stringResource(R.string.register_title),
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -100,7 +104,7 @@ fun RegisterScreen(
             AppTextField(
                 value = viewModel.name.value,
                 onValueChange = { viewModel.name.onChange(it) },
-                label = "Nombre",
+                label = stringResource(R.string.register_name_label),
                 icon = Icons.Default.Person,
                 error = viewModel.name.error
             )
@@ -108,7 +112,7 @@ fun RegisterScreen(
             AppTextField(
                 value = viewModel.phone.value,
                 onValueChange = { viewModel.phone.onChange(it) },
-                label = "Teléfono",
+                label = stringResource(R.string.register_phone_label),
                 icon = Icons.Default.Person,
                 error = viewModel.phone.error
             )
@@ -116,7 +120,7 @@ fun RegisterScreen(
             AppTextField(
                 value = viewModel.email.value,
                 onValueChange = { viewModel.email.onChange(it) },
-                label = "Email",
+                label = stringResource(R.string.register_email_label),
                 icon = Icons.Default.Email,
                 error = viewModel.email.error
             )
@@ -124,7 +128,7 @@ fun RegisterScreen(
             AppPasswordField(
                 value = viewModel.password.value,
                 onValueChange = { viewModel.password.onChange(it) },
-                label = "Contraseña",
+                label = stringResource(R.string.register_password_label),
                 icon = Icons.Default.Lock,
                 error = viewModel.password.error
             )
@@ -132,7 +136,7 @@ fun RegisterScreen(
             AppPasswordField(
                 value = viewModel.confirmPassword.value,
                 onValueChange = { viewModel.confirmPassword.onChange(it) },
-                label = "Confirmar contraseña",
+                label = stringResource(R.string.register_confirm_password_label),
                 icon = Icons.Default.Lock,
                 error = viewModel.confirmPassword.error
             )
@@ -145,7 +149,7 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Categorías favoritas (opcional)",
+                text = stringResource(R.string.register_categories_label),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.fillMaxWidth()
@@ -205,14 +209,14 @@ fun RegisterScreen(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Registrarse")
+                    Text(stringResource(R.string.register_button))
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
             TextButton(onClick = onNavigateToBack) {
-                Text("Volver")
+                Text(stringResource(R.string.common_back))
             }
 
             Spacer(modifier = Modifier.height(30.dp))
@@ -221,8 +225,8 @@ fun RegisterScreen(
 
     if (showExitDialog) {
         ConfirmDialog(
-            title = "¿Está seguro de salir?",
-            text = "Si sale, perderá todos los datos del formulario.",
+            title = exitDialogTitle,
+            text = exitDialogMessage,
             onDismiss = { showExitDialog = false },
             onConfirm = {
                 viewModel.resetForm()

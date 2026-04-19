@@ -16,11 +16,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.domain.model.Category
 import com.miempresa.comuniapp.features.event.components.EventCard
 import java.time.format.DateTimeFormatter
@@ -50,13 +52,13 @@ fun EventListScreen(
                         viewModel.filterByDate(date)
                     }
                     viewModel.showDatePicker = false
-                }) { Text("Aplicar") }
+                }) { Text(stringResource(R.string.event_list_dialog_date_apply)) }
             },
             dismissButton = {
                 TextButton(onClick = {
                     viewModel.filterByDate(null)
                     viewModel.showDatePicker = false
-                }) { Text("Limpiar") }
+                }) { Text(stringResource(R.string.event_list_dialog_date_clear)) }
             }
         ) { DatePicker(state = datePickerState) }
     }
@@ -65,7 +67,7 @@ fun EventListScreen(
     if (viewModel.showFiltersDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.showFiltersDialog = false },
-            title = { Text("Filtrar por categoría") },
+            title = { Text(stringResource(R.string.event_list_dialog_category_title)) },
             text = {
                 Column {
                     Category.entries.forEach { category ->
@@ -97,10 +99,10 @@ fun EventListScreen(
                 TextButton(onClick = {
                     viewModel.filterByCategory(null)
                     viewModel.showFiltersDialog = false
-                }) { Text("Limpiar") }
+                }) { Text(stringResource(R.string.event_list_dialog_category_clear)) }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.showFiltersDialog = false }) { Text("Cancelar") }
+                TextButton(onClick = { viewModel.showFiltersDialog = false }) { Text(stringResource(R.string.common_cancel)) }
             }
         )
     }
@@ -115,7 +117,7 @@ fun EventListScreen(
             ) {
                 // Título centrado
                 Text(
-                    text = "Eventos",
+                    text = stringResource(R.string.event_list_title),
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
@@ -134,14 +136,14 @@ fun EventListScreen(
                     onSearch = {},
                     active = false,
                     onActiveChange = {},
-                    placeholder = { Text("Buscar eventos…", color = Color(0xFF9E9E9E)) },
+                    placeholder = { Text(stringResource(R.string.event_list_search_placeholder), color = Color(0xFF9E9E9E)) },
                     leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = Color(0xFF757575))
+                        Icon(Icons.Default.Search, contentDescription = stringResource(R.string.event_list_search_icon_description), tint = Color(0xFF757575))
                     },
                     trailingIcon = {
                         AnimatedVisibility(visible = viewModel.searchQuery.isNotBlank()) {
                             IconButton(onClick = { viewModel.onSearchQueryChanged("") }) {
-                                Icon(Icons.Default.Close, contentDescription = "Limpiar", tint = Color(0xFF757575))
+                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.event_list_clear_icon_description), tint = Color(0xFF757575))
                             }
                         }
                     },
@@ -169,42 +171,42 @@ fun EventListScreen(
             ) {
                 item {
                     EventFilterChip(
-                        label = if (viewModel.selectedFilter == "Cerca de mí") "📍 Cerca de mí" else "Cerca de mí",
-                        isSelected = viewModel.selectedFilter == "Cerca de mí",
+                        label = if (viewModel.selectedFilter == stringResource(R.string.event_list_filter_nearby_label)) "📍 " + stringResource(R.string.event_list_filter_nearby_label) else stringResource(R.string.event_list_filter_nearby_label),
+                        isSelected = viewModel.selectedFilter == stringResource(R.string.event_list_filter_nearby_label),
                         onClick = { viewModel.toggleProximityFilter() }
                     )
                 }
                 item {
                     val favActive by viewModel.favoriteCategoriesFilter.collectAsState()
                     EventFilterChip(
-                        label = if (favActive) "⭐ Recomendados" else "Recomendados",
+                        label = if (favActive) "⭐ " + stringResource(R.string.event_list_filter_recommended_label) else stringResource(R.string.event_list_filter_recommended_label),
                         isSelected = favActive,
                         onClick = { viewModel.toggleFavoriteCategoriesFilter() }
                     )
                 }
                 item {
                     val catLabel = viewModel.selectedCategory
-                        ?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: "Categoría"
+                        ?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: stringResource(R.string.event_list_filter_category)
                     EventFilterChip(
                         label = catLabel,
-                        isSelected = viewModel.selectedFilter == "Categoría",
+                        isSelected = viewModel.selectedFilter == stringResource(R.string.event_list_filter_category),
                         onClick = { viewModel.showFiltersDialog = true }
                     )
                 }
                 item {
                     val dateLabel = viewModel.selectedDate
                         ?.format(DateTimeFormatter.ofPattern("d MMM", Locale("es", "ES")))
-                        ?.replaceFirstChar { it.uppercase() } ?: "Fecha"
+                        ?.replaceFirstChar { it.uppercase() } ?: stringResource(R.string.event_list_filter_date)
                     EventFilterChip(
                         label = dateLabel,
-                        isSelected = viewModel.selectedFilter == "Fecha",
+                        isSelected = viewModel.selectedFilter == stringResource(R.string.event_list_filter_date),
                         onClick = { viewModel.showDatePicker = true }
                     )
                 }
                 if (viewModel.selectedFilter != null || viewModel.searchQuery.isNotBlank()) {
                     item {
                         EventFilterChip(
-                            label = "✕ Limpiar",
+                            label = "✕ " + stringResource(R.string.event_list_filter_clear),
                             isSelected = false,
                             onClick = { viewModel.clearAllFilters() },
                             tintWhenInactive = Color(0xFFC62828)
@@ -217,9 +219,9 @@ fun EventListScreen(
             if (events.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("No hay eventos disponibles", fontSize = 15.sp, color = Color(0xFF9E9E9E))
+                        Text(stringResource(R.string.event_list_empty), fontSize = 15.sp, color = Color(0xFF9E9E9E))
                         if (viewModel.selectedFilter != null || viewModel.searchQuery.isNotBlank()) {
-                            TextButton(onClick = { viewModel.clearAllFilters() }) { Text("Limpiar filtros") }
+                            TextButton(onClick = { viewModel.clearAllFilters() }) { Text(stringResource(R.string.event_list_clear_filters)) }
                         }
                     }
                 }

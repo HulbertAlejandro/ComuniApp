@@ -9,13 +9,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip // Soluciona: Unresolved reference 'clip'
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel // Soluciona el error de Deprecated
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.domain.model.Badge
 import com.miempresa.comuniapp.domain.model.User
 import com.miempresa.comuniapp.domain.model.UserLevel
@@ -38,7 +40,7 @@ fun AchievementsScreen(
                     .statusBarsPadding()
             ) {
                 Text(
-                    text = "Logros",
+                    text = stringResource(R.string.achievements_title),
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
@@ -71,7 +73,7 @@ fun AchievementsScreen(
 
                     item {
                         Text(
-                            text = "Insignias Obtenidas",
+                            text = stringResource(R.string.achievements_badges_section),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -87,7 +89,7 @@ fun AchievementsScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    "No has obtenido insignias aún",
+                                    stringResource(R.string.achievements_empty),
                                     fontSize = 15.sp,
                                     color = Color(0xFF9E9E9E)
                                 )
@@ -154,13 +156,13 @@ fun ReputationCard(user: User) {
             Spacer(Modifier.height(4.dp))
             if (nextLevel > 0) {
                 Text(
-                    text = "$points / $nextLevel pts para el siguiente nivel",
+                    text = stringResource(R.string.achievements_next_level, points, nextLevel),
                     fontSize = 12.sp,
                     color = Color(0xFF9E9E9E)
                 )
             } else {
                 Text(
-                    text = "Nivel máximo alcanzado",
+                    text = stringResource(R.string.achievements_max_level),
                     fontSize = 12.sp,
                     color = Color(0xFF2E7D32),
                     fontWeight = FontWeight.Medium

@@ -14,10 +14,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.domain.model.Event
 import com.miempresa.comuniapp.domain.model.EventStatus
 import com.miempresa.comuniapp.domain.model.VerificationStatus
@@ -42,12 +44,12 @@ fun ManagePublicationsScreen(
     rejectTargetId?.let { eventId ->
         AlertDialog(
             onDismissRequest = { rejectTargetId = null; rejectReason = "" },
-            title   = { Text("Motivo del rechazo") },
+            title   = { Text(stringResource(R.string.manage_publications_reject_dialog_title)) },
             text    = {
                 OutlinedTextField(
                     value         = rejectReason,
                     onValueChange = { rejectReason = it },
-                    placeholder   = { Text("Escribe el motivo...") },
+                    placeholder   = { Text(stringResource(R.string.manage_publications_reject_placeholder)) },
                     modifier      = Modifier.fillMaxWidth(),
                     minLines      = 3,
                     isError       = rejectReason.isBlank()
@@ -62,11 +64,11 @@ fun ManagePublicationsScreen(
                     },
                     enabled  = rejectReason.isNotBlank(),
                     colors   = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
-                ) { Text("Rechazar") }
+                ) { Text(stringResource(R.string.manage_publications_reject_button_confirm)) }
             },
             dismissButton = {
                 TextButton(onClick = { rejectTargetId = null; rejectReason = "" }) {
-                    Text("Cancelar")
+                    Text(stringResource(R.string.manage_publications_reject_cancel))
                 }
             }
         )
@@ -78,14 +80,14 @@ fun ManagePublicationsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text       = "Publicaciones",
+                        text       = stringResource(R.string.manage_publications_title),
                         style      = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.manage_publications_back_button_description))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -107,7 +109,7 @@ fun ManagePublicationsScreen(
             if (publications.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        text  = "No hay publicaciones",
+                        text  = stringResource(R.string.manage_publications_empty),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -145,10 +147,10 @@ private fun FilterRow(
     onFilterSelected : (PublicationFilter) -> Unit
 ) {
     val filters = listOf(
-        PublicationFilter.ALL      to "Todas",
-        PublicationFilter.PENDING  to "Pendientes",
-        PublicationFilter.APPROVED to "Verificadas",
-        PublicationFilter.REJECTED to "Rechazadas"
+        PublicationFilter.ALL      to stringResource(R.string.manage_publications_filter_all),
+        PublicationFilter.PENDING  to stringResource(R.string.manage_publications_filter_pending),
+        PublicationFilter.APPROVED to stringResource(R.string.manage_publications_filter_verified),
+        PublicationFilter.REJECTED to stringResource(R.string.manage_publications_filter_rejected)
     )
     LazyRow(
         contentPadding        = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -227,7 +229,7 @@ private fun PublicationCard(
                 OutlinedButton(
                     onClick  = onDetail,
                     modifier = Modifier.fillMaxWidth()
-                ) { Text("Ver detalle") }
+                ) { Text(stringResource(R.string.manage_publications_view_detail_button)) }
 
                 // ── Acciones según estado ─────────────────────────────────────
 
@@ -245,7 +247,7 @@ private fun PublicationCard(
                                     containerColor = Color(0xFF4CAF50)
                                 ),
                                 shape = RoundedCornerShape(8.dp)
-                            ) { Text("Verificar", color = Color.White) }
+                            ) { Text(stringResource(R.string.manage_publications_verify_button), color = Color.White) }
 
                             OutlinedButton(
                                 onClick  = onReject,
@@ -257,7 +259,7 @@ private fun PublicationCard(
                                     brush = androidx.compose.ui.graphics.SolidColor(Color(0xFFF44336))
                                 ),
                                 shape = RoundedCornerShape(8.dp)
-                            ) { Text("Rechazar") }
+                            ) { Text(stringResource(R.string.manage_publications_reject_button)) }
                         }
                     }
 
@@ -272,7 +274,7 @@ private fun PublicationCard(
                             ),
                             shape = RoundedCornerShape(8.dp)
                         ) {
-                            Text("Finalizar evento", color = Color.White)
+                            Text(stringResource(R.string.manage_publications_finish_button), color = Color.White)
                         }
                     }
 
@@ -290,9 +292,9 @@ private fun StatusBadge(
     modifier : Modifier = Modifier
 ) {
     val (label, color) = when (status) {
-        VerificationStatus.PENDING  -> "Pendiente" to Color(0xFFFFB300)
-        VerificationStatus.APPROVED -> "Activa"    to Color(0xFF4CAF50)
-        VerificationStatus.REJECTED -> "Rechazada" to Color(0xFFF44336)
+        VerificationStatus.PENDING  -> stringResource(R.string.manage_publications_status_pending) to Color(0xFFFFB300)
+        VerificationStatus.APPROVED -> stringResource(R.string.manage_publications_status_active) to Color(0xFF4CAF50)
+        VerificationStatus.REJECTED -> stringResource(R.string.manage_publications_status_rejected) to Color(0xFFF44336)
     }
     Surface(
         modifier = modifier.clip(MaterialTheme.shapes.small),

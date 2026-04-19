@@ -2,6 +2,8 @@ package com.miempresa.comuniapp.features.admin.publications
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.miempresa.comuniapp.R
+import com.miempresa.comuniapp.core.resources.ResourceProvider
 import com.miempresa.comuniapp.domain.model.Badge
 import com.miempresa.comuniapp.domain.model.Event
 import com.miempresa.comuniapp.domain.model.EventStatus
@@ -21,7 +23,8 @@ enum class PublicationFilter { ALL, PENDING, APPROVED, REJECTED }
 @HiltViewModel
 class ManagePublicationsViewModel @Inject constructor(
     private val eventRepository : EventRepository,
-    private val userRepository  : UserRepository
+    private val userRepository  : UserRepository,
+    private val resources       : ResourceProvider
 ) : ViewModel() {
 
     private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
@@ -137,8 +140,8 @@ class ManagePublicationsViewModel @Inject constructor(
                 topEvent.ownerId,
                 Badge(
                     id          = badgeId,
-                    name        = "Estrella del Mes",
-                    description = "Tu evento \"${topEvent.title}\" fue el más popular del mes",
+                    name        = resources.getString(R.string.badge_star_of_the_month_name),
+                    description = resources.getFormattedString(R.string.badge_star_of_the_month_description, topEvent.title),
                     achievedAt  = System.currentTimeMillis()
                 )
             )
@@ -171,8 +174,8 @@ class ManagePublicationsViewModel @Inject constructor(
                 ownerId,
                 Badge(
                     id          = "badge_pionero",
-                    name        = "Pionero",
-                    description = "Publicaste y verificaste tu primer evento comunitario",
+                    name        = resources.getString(R.string.badge_pionero_name),
+                    description = resources.getString(R.string.badge_pionero_description),
                     achievedAt  = System.currentTimeMillis()
                 )
             )
@@ -184,8 +187,8 @@ class ManagePublicationsViewModel @Inject constructor(
                 ownerId,
                 Badge(
                     id          = "badge_constante",
-                    name        = "Constante",
-                    description = "Has publicado y verificado 10 eventos en la comunidad",
+                    name        = resources.getString(R.string.badge_constante_name),
+                    description = resources.getString(R.string.badge_constante_description),
                     achievedAt  = System.currentTimeMillis()
                 )
             )

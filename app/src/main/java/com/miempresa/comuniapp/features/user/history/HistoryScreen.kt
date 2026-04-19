@@ -12,11 +12,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.domain.model.Event
 import com.miempresa.comuniapp.features.event.components.EventCard
 
@@ -47,12 +49,12 @@ fun HistoryScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver",
+                            contentDescription = stringResource(R.string.history_back_button_description),
                             tint = Color(0xFF212121)
                         )
                     }
                     Text(
-                        text = "Historial de Eventos",
+                        text = stringResource(R.string.history_title),
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold
@@ -78,7 +80,7 @@ fun HistoryScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Aún no tienes eventos finalizados en tu historial",
+                        text = stringResource(R.string.history_empty),
                         fontSize = 15.sp,
                         color = Color(0xFF9E9E9E),
                         textAlign = TextAlign.Center,

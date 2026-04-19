@@ -10,11 +10,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.features.event.components.EventCard
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,7 +37,7 @@ fun SavedEventsScreen(
                     .statusBarsPadding()
             ) {
                 Text(
-                    text = "Eventos Guardados",
+                    text = stringResource(R.string.saved_events_title),
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
@@ -53,7 +55,7 @@ fun SavedEventsScreen(
         Column(modifier = Modifier.padding(innerPadding)) {
             if (events.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No has guardado eventos aún", fontSize = 15.sp, color = Color(0xFF9E9E9E))
+                    Text(stringResource(R.string.saved_events_empty), fontSize = 15.sp, color = Color(0xFF9E9E9E))
                 }
             } else {
                 LazyColumn(

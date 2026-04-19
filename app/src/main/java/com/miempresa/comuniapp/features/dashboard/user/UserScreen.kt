@@ -2,8 +2,10 @@ package com.miempresa.comuniapp.features.dashboard.user
 
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.rememberNavController
+import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.features.dashboard.components.BottomNavigationBar
 import com.miempresa.comuniapp.features.dashboard.components.TopAppBar
 import com.miempresa.comuniapp.features.dashboard.navigation.DashboardRoutes
@@ -12,7 +14,8 @@ import com.miempresa.comuniapp.features.dashboard.navigation.UserNavigation
 @Composable
 fun UserScreen(onLogout: () -> Unit) {
     val navController = rememberNavController()
-    var title by remember { mutableStateOf("Inicio") }
+    val defaultTitle = stringResource(R.string.bottom_nav_home)
+    var title by remember { mutableStateOf(defaultTitle) }
     var showTopBar by remember { mutableStateOf(false) }
     var showBottomBar by remember { mutableStateOf(true) }
 

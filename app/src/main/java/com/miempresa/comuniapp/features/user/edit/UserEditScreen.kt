@@ -16,11 +16,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.domain.model.Category
 
 private val BgScreen    = Color(0xFFF7F7F7)
@@ -72,10 +74,10 @@ fun UserEditScreen(
         containerColor = BgScreen,
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Editar perfil", fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = TextDark) },
+                title = { Text(stringResource(R.string.user_edit_title), fontWeight = FontWeight.SemiBold, fontSize = 17.sp, color = TextDark) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = TextDark)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.user_edit_back_button_description), tint = TextDark)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = BgScreen)
@@ -102,13 +104,13 @@ fun UserEditScreen(
                     )
                 }
 
-                PillField(label = "Nombre", value = name, onValueChange = { name = it })
-                PillField(label = "Teléfono", value = phone, onValueChange = { phone = it })
-                PillField(label = "Email", value = u.email, onValueChange = {}, readOnly = true, enabled = false)
+                PillField(label = stringResource(R.string.user_edit_name_label), value = name, onValueChange = { name = it })
+                PillField(label = stringResource(R.string.user_edit_phone_label), value = phone, onValueChange = { phone = it })
+                PillField(label = stringResource(R.string.user_edit_email_label), value = u.email, onValueChange = {}, readOnly = true, enabled = false)
 
                 // Categorías
                 Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(text = "Comunidades Favoritas", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = LabelColor)
+                    Text(text = stringResource(R.string.user_edit_categories_label), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = LabelColor)
                     FlowRow(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Category.entries.forEach { category ->
                             val isSelected = selectedCategories.contains(category)
@@ -133,7 +135,7 @@ fun UserEditScreen(
                     enabled = !isSaving
                 ) {
                     if (isSaving) CircularProgressIndicator(modifier = Modifier.size(20.dp), color = TextDark)
-                    else Text("Guardar", fontSize = 15.sp, fontWeight = FontWeight.Medium)
+                    else Text(stringResource(R.string.user_edit_save_button_label), fontSize = 15.sp, fontWeight = FontWeight.Medium)
                 }
 
                 // ✅ Botón Eliminar Cuenta
@@ -141,7 +143,7 @@ fun UserEditScreen(
                     onClick = { showDeleteDialog = true },
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    Text("Eliminar mi cuenta", color = DeleteRed, fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.user_edit_delete_account_button), color = DeleteRed, fontWeight = FontWeight.SemiBold)
                 }
 
                 Spacer(Modifier.height(20.dp))
@@ -153,18 +155,18 @@ fun UserEditScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("¿Eliminar cuenta?") },
-            text = { Text("Esta acción borrará tus datos y progreso. No se puede deshacer.") },
+            title = { Text(stringResource(R.string.user_edit_delete_dialog_title)) },
+            text = { Text(stringResource(R.string.user_edit_delete_dialog_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         showDeleteDialog = false
                         viewModel.deleteAccount()
                     }
-                ) { Text("Eliminar", color = DeleteRed, fontWeight = FontWeight.Bold) }
+                ) { Text(stringResource(R.string.user_edit_delete_account_button_label), color = DeleteRed, fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
+                TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.user_edit_cancel_button)) }
             }
         )
     }

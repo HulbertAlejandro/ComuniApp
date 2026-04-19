@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.miempresa.comuniapp.R
@@ -23,13 +24,14 @@ fun ResetPasswordScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val result by viewModel.result.collectAsState()
+    val loadingMessage = stringResource(R.string.password_reset_loading)
 
     LaunchedEffect(result) {
         result?.let {
             val message = when (it) {
                 is RequestResult.Success -> it.message
                 is RequestResult.Failure -> it.errorMessage
-                is RequestResult.Loading -> "Actualizando contraseña..."
+                is RequestResult.Loading -> loadingMessage
             }
 
             snackbarHostState.showSnackbar(message)
@@ -58,14 +60,14 @@ fun ResetPasswordScreen(
 
             Image(
                 painter = painterResource(R.drawable.logo_comunidad),
-                contentDescription = "Logo",
+                contentDescription = stringResource(R.string.home_logo_description),
                 modifier = Modifier.size(220.dp)
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "Nueva Contraseña",
+                text = stringResource(R.string.password_reset_title),
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -75,14 +77,14 @@ fun ResetPasswordScreen(
             AppPasswordField(
                 value = viewModel.newPassword.value,
                 onValueChange = { viewModel.newPassword.onChange(it) },
-                label = "Nueva contraseña",
+                label = stringResource(R.string.password_reset_new_password_label),
                 error = viewModel.newPassword.error
             )
 
             AppPasswordField(
                 value = viewModel.confirmPassword.value,
                 onValueChange = { viewModel.confirmPassword.onChange(it) },
-                label = "Confirmar contraseña",
+                label = stringResource(R.string.password_reset_confirm_password_label),
                 error = viewModel.confirmPassword.error
             )
 
@@ -103,7 +105,7 @@ fun ResetPasswordScreen(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Actualizar contraseña")
+                    Text(stringResource(R.string.password_reset_button))
                 }
             }
         }

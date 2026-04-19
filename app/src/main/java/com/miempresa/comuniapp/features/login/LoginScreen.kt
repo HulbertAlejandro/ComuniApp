@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.miempresa.comuniapp.R
@@ -27,6 +28,7 @@ fun LoginScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val loginResult by viewModel.loginResult.collectAsState()
+    val loadingMessage = stringResource(R.string.common_loading)
 
     LaunchedEffect(loginResult) {
         loginResult?.let { result ->
@@ -34,7 +36,7 @@ fun LoginScreen(
             val message = when (result) {
                 is RequestResult.Success -> result.message
                 is RequestResult.Failure -> result.errorMessage
-                is RequestResult.Loading -> "Cargando..."
+                is RequestResult.Loading -> loadingMessage
             }
 
             snackbarHostState.showSnackbar(message)
@@ -61,14 +63,14 @@ fun LoginScreen(
 
             Image(
                 painter = painterResource(id = R.drawable.logo_comunidad),
-                contentDescription = "Logo",
+                contentDescription = stringResource(R.string.home_logo_description),
                 modifier = Modifier.size(280.dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Iniciar Sesión",
+                text = stringResource(R.string.login_title),
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -78,7 +80,7 @@ fun LoginScreen(
             AppTextField(
                 value = viewModel.email.value,
                 onValueChange = { viewModel.email.onChange(it) },
-                label = "Correo electrónico",
+                label = stringResource(R.string.login_email_label),
                 icon = Icons.Default.Email,
                 error = viewModel.email.error
             )
@@ -86,7 +88,7 @@ fun LoginScreen(
             AppPasswordField(
                 value = viewModel.password.value,
                 onValueChange = { viewModel.password.onChange(it) },
-                label = "Contraseña",
+                label = stringResource(R.string.login_password_label),
                 icon = Icons.Default.Lock,
                 error = viewModel.password.error
             )
@@ -103,7 +105,7 @@ fun LoginScreen(
                 colors = appPrimaryButtonColors()
             ) {
                 Text(
-                    "Ingresar",
+                    stringResource(R.string.login_button),
                     style = MaterialTheme.typography.bodyLarge
                 )
             }
@@ -111,11 +113,11 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             TextButton(onClick = onForgotPasswordClick) {
-                Text("¿Olvidaste tu contraseña?")
+                Text(stringResource(R.string.login_forgot_password))
             }
 
             TextButton(onClick = onRegisterClick) {
-                Text("¿No tienes cuenta? Regístrate")
+                Text(stringResource(R.string.login_no_account))
             }
         }
     }

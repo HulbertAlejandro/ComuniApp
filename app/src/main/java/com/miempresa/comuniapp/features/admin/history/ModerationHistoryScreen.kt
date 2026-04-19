@@ -13,9 +13,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.domain.model.Event
 import com.miempresa.comuniapp.domain.model.VerificationStatus
 
@@ -35,10 +37,10 @@ fun ModerationHistoryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Historial", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.moderation_history_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.moderation_history_back_button_description))
                     }
                 }
             )
@@ -55,7 +57,7 @@ fun ModerationHistoryScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                placeholder = { Text("Buscar...") },
+                placeholder = { Text(stringResource(R.string.moderation_history_search_placeholder)) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 shape = MaterialTheme.shapes.medium,
                 singleLine = true
@@ -68,7 +70,7 @@ fun ModerationHistoryScreen(
 
             if (events.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No hay publicaciones", style = MaterialTheme.typography.bodyLarge)
+                    Text(stringResource(R.string.moderation_history_empty), style = MaterialTheme.typography.bodyLarge)
                 }
             } else {
                 LazyColumn(
@@ -101,9 +103,9 @@ private fun FilterRow(
     onFilterSelected : (HistoryFilter) -> Unit
 ) {
     val filters = listOf(
-        HistoryFilter.ALL      to "Todas",
-        HistoryFilter.VERIFIED to "Verificadas",
-        HistoryFilter.REJECTED to "Rechazadas"
+        HistoryFilter.ALL      to stringResource(R.string.moderation_history_filter_all),
+        HistoryFilter.VERIFIED to stringResource(R.string.moderation_history_filter_verified),
+        HistoryFilter.REJECTED to stringResource(R.string.moderation_history_filter_rejected)
     )
     LazyRow(
         contentPadding        = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -162,7 +164,7 @@ private fun HistoryCard(
                 ) {
                     Column(modifier = Modifier.padding(8.dp)) {
                         Text(
-                            text       = "MOTIVO DEL RECHAZO:",
+                            text       = stringResource(R.string.moderation_history_rejection_reason_label),
                             style      = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color      = MaterialTheme.colorScheme.onErrorContainer
@@ -182,9 +184,9 @@ private fun HistoryCard(
 @Composable
 private fun StatusBadge(status: VerificationStatus) {
     val (label, color, icon) = when (status) {
-        VerificationStatus.APPROVED -> Triple("VERIFICADO", MaterialTheme.colorScheme.primary,   Icons.Default.CheckCircle)
-        VerificationStatus.REJECTED -> Triple("RECHAZADO",  MaterialTheme.colorScheme.error,     Icons.Default.Cancel)
-        VerificationStatus.PENDING  -> Triple("PENDIENTE",  MaterialTheme.colorScheme.tertiary,  Icons.Default.Search)
+        VerificationStatus.APPROVED -> Triple(stringResource(R.string.moderation_history_status_verified), MaterialTheme.colorScheme.primary,   Icons.Default.CheckCircle)
+        VerificationStatus.REJECTED -> Triple(stringResource(R.string.moderation_history_status_rejected),  MaterialTheme.colorScheme.error,     Icons.Default.Cancel)
+        VerificationStatus.PENDING  -> Triple(stringResource(R.string.moderation_history_status_pending),  MaterialTheme.colorScheme.tertiary,  Icons.Default.Search)
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))

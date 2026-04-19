@@ -5,6 +5,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.miempresa.comuniapp.R
+import com.miempresa.comuniapp.core.resources.ResourceProvider
 import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.core.utils.ValidatedField
 import com.miempresa.comuniapp.domain.model.*
@@ -20,19 +22,20 @@ import javax.inject.Inject
 
 @HiltViewModel
 class EditEventViewModel @Inject constructor(
-    private val repository: EventRepository
+    private val repository: EventRepository,
+    private val resources: ResourceProvider
 ) : ViewModel() {
 
     private var currentEvent: Event? = null
 
     // Campos validados alineados con CreateEvent
-    val title = ValidatedField("") { if (it.isBlank()) "Título obligatorio" else null }
-    val description = ValidatedField("") { if (it.isBlank()) "Descripción obligatoria" else null }
+    val title = ValidatedField("") { if (it.isBlank()) resources.getString(R.string.edit_event_validation_title_required) else null }
+    val description = ValidatedField("") { if (it.isBlank()) resources.getString(R.string.edit_event_validation_description_required) else null }
     val imageUrl = ValidatedField("") {
-        if (it.isBlank()) "URL obligatoria" else if (!it.startsWith("http")) "URL no válida" else null
+        if (it.isBlank()) resources.getString(R.string.edit_event_validation_image_url_required) else if (!it.startsWith("http")) resources.getString(R.string.edit_event_validation_image_url_invalid) else null
     }
-    val latitude = ValidatedField("") { it.toDoubleOrNull()?.let { null } ?: "Latitud inválida" }
-    val longitude = ValidatedField("") { it.toDoubleOrNull()?.let { null } ?: "Longitud inválida" }
+    val latitude = ValidatedField("") { it.toDoubleOrNull()?.let { null } ?: resources.getString(R.string.edit_event_validation_latitude_invalid) }
+    val longitude = ValidatedField("") { it.toDoubleOrNull()?.let { null } ?: resources.getString(R.string.edit_event_validation_longitude_invalid) }
 
     var category by mutableStateOf(Category.DEPORTES)
     var maxAttendees by mutableStateOf("")
@@ -102,9 +105,9 @@ class EditEventViewModel @Inject constructor(
                     endDate = formatDate(endDateMillis!!)
                 )
                 repository.update(updatedEvent)
-                _result.value = RequestResult.Success("Evento actualizado con éxito")
+                _result.value = RequestResult.Success(resources.getString(R.string.edit_event_update_success))
             } catch (e: Exception) {
-                _result.value = RequestResult.Failure(e.message ?: "Error al actualizar")
+                _result.value = RequestResult.Failure(e.message ?: resources.getString(R.string.edit_event_update_failure))
             }
         }
     }
@@ -115,9 +118,9 @@ class EditEventViewModel @Inject constructor(
             _result.value = RequestResult.Loading
             try {
                 repository.delete(id)
-                _result.value = RequestResult.Success("Evento eliminado correctamente")
+                _result.value = RequestResult.Success(resources.getString(R.string.edit_event_delete_success))
             } catch (e: Exception) {
-                _result.value = RequestResult.Failure("No se pudo eliminar el evento")
+                _result.value = RequestResult.Failure(resources.getString(R.string.edit_event_delete_failure))
             }
         }
     }

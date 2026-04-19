@@ -11,11 +11,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.domain.model.Event
 import com.miempresa.comuniapp.domain.model.EventStatus
 import com.miempresa.comuniapp.features.event.components.EventCard
@@ -35,13 +37,18 @@ fun MyEventsScreen(
     val userInterests by viewModel.userInterests.collectAsState()
 
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("Creados", "Activos", "Finalizados", "Rechazados") // ✅ 4 Tabs
+    val tabs = listOf(
+        stringResource(R.string.my_events_tab_created),
+        stringResource(R.string.my_events_tab_active),
+        stringResource(R.string.my_events_tab_finished),
+        stringResource(R.string.my_events_tab_rejected)
+    )
 
     Scaffold(
         topBar = {
             Column(modifier = Modifier.background(Color.White).statusBarsPadding()) {
                 Text(
-                    text = "Mis Eventos",
+                    text = stringResource(R.string.my_events_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontSize = 22.sp, fontWeight = FontWeight.Bold),
                     color = Color(0xFF212121),
                     textAlign = TextAlign.Center,
@@ -94,7 +101,7 @@ fun MyEventsTabContent(
 ) {
     if (events.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize().padding(vertical = 48.dp), contentAlignment = Alignment.Center) {
-            Text(text = "No hay eventos $tabName", fontSize = 15.sp, color = Color(0xFF9E9E9E))
+            Text(text = stringResource(R.string.my_events_empty_message), fontSize = 15.sp, color = Color(0xFF9E9E9E))
         }
     } else {
         LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 80.dp)) {
@@ -120,7 +127,7 @@ fun MyEventsTabContent(
                             shape = RoundedCornerShape(8.dp)
                         ) {
                             Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(text = "Motivo: ", fontWeight = FontWeight.Bold, color = Color(0xFFC62828), fontSize = 12.sp)
+                                Text(text = stringResource(R.string.my_events_rejection_reason_label), fontWeight = FontWeight.Bold, color = Color(0xFFC62828), fontSize = 12.sp)
                                 Text(text = event.rejectionReason!!, color = Color(0xFFC62828), fontSize = 12.sp)
                             }
                         }
@@ -223,7 +230,7 @@ fun MyEventCardWrapper(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Text(
-                    text = "✎ Editar",
+                    text = stringResource(R.string.my_events_edit_label),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White
@@ -245,7 +252,7 @@ fun MyEventCardWrapper(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 Text(
-                    text = "✓ Finalizar",
+                    text = stringResource(R.string.my_events_finish_label),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White

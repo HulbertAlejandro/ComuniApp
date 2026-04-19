@@ -2,6 +2,8 @@ package com.miempresa.comuniapp.features.user.edit
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.miempresa.comuniapp.R
+import com.miempresa.comuniapp.core.resources.ResourceProvider
 import com.miempresa.comuniapp.data.datastore.SessionDataStore
 import com.miempresa.comuniapp.domain.model.Category
 import com.miempresa.comuniapp.domain.model.User
@@ -19,7 +21,8 @@ sealed interface UserEditUiEvent {
 @HiltViewModel
 class UserEditViewModel @Inject constructor(
     private val repository: UserRepository,
-    private val sessionDataStore: SessionDataStore
+    private val sessionDataStore: SessionDataStore,
+    private val resources: ResourceProvider
 ) : ViewModel() {
 
     val user: StateFlow<User?> =
@@ -66,10 +69,10 @@ class UserEditViewModel @Inject constructor(
                         favoriteCategories = _selectedCategories.value.toList()
                     )
                 )
-                _uiEvents.emit(UserEditUiEvent.ShowMessage("Perfil actualizado con éxito"))
+                _uiEvents.emit(UserEditUiEvent.ShowMessage(resources.getString(R.string.user_edit_profile_saved)))
                 _uiEvents.emit(UserEditUiEvent.NavigateBack)
             } catch (e: Exception) {
-                _uiEvents.emit(UserEditUiEvent.ShowMessage("Error al guardar: ${e.message}"))
+                _uiEvents.emit(UserEditUiEvent.ShowMessage("${resources.getString(R.string.user_edit_save_error)}: ${e.message}"))
             } finally {
                 _isSaving.value = false
             }
@@ -83,9 +86,9 @@ class UserEditViewModel @Inject constructor(
             try {
                 repository.delete(current.id)
                 sessionDataStore.clearSession() // Al limpiar sesión, el NavHost redirige al Login
-                _uiEvents.emit(UserEditUiEvent.ShowMessage("Cuenta eliminada correctamente"))
+                _uiEvents.emit(UserEditUiEvent.ShowMessage(resources.getString(R.string.user_edit_account_deleted)))
             } catch (e: Exception) {
-                _uiEvents.emit(UserEditUiEvent.ShowMessage("Error: ${e.message}"))
+                _uiEvents.emit(UserEditUiEvent.ShowMessage("${resources.getString(R.string.user_edit_delete_error)}: ${e.message}"))
             }
         }
     }

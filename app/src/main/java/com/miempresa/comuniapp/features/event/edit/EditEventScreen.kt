@@ -16,14 +16,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.domain.model.Category
-import com.miempresa.comuniapp.features.event.create.* // Importamos los componentes compartidos
+import com.miempresa.comuniapp.features.event.create.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,10 +65,10 @@ fun EditEventScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Editar Evento", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.edit_event_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.edit_event_back_button_description))
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
@@ -84,7 +86,7 @@ fun EditEventScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // SECCIÓN 1: IMAGEN
-            SectionCard(title = "Imagen del Evento") {
+            SectionCard(title = stringResource(R.string.edit_event_image_section)) {
                 AsyncImage(
                     model = viewModel.imageUrl.value.ifBlank { null },
                     contentDescription = null,
@@ -99,16 +101,16 @@ fun EditEventScreen(
                     onClick = { showImageUrlDialog = true },
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE0E0E0), contentColor = Color.Black)
-                ) { Text("Editar URL de Imagen") }
+                ) { Text(stringResource(R.string.edit_event_image_edit_button)) }
             }
 
             // SECCIÓN 2: INFORMACIÓN
-            SectionCard(title = "Detalles") {
-                LabelText("TÍTULO")
-                CustomTextField(viewModel.title.value, { viewModel.title.onChange(it) }, "Título del evento")
+            SectionCard(title = stringResource(R.string.edit_event_details_section)) {
+                LabelText(stringResource(R.string.edit_event_title_label))
+                CustomTextField(viewModel.title.value, { viewModel.title.onChange(it) }, stringResource(R.string.edit_event_title_placeholder))
 
                 Spacer(Modifier.height(12.dp))
-                LabelText("CATEGORÍA")
+                LabelText(stringResource(R.string.edit_event_category_label))
                 OutlinedCard(onClick = { showCategoryDialog = true }, modifier = Modifier.fillMaxWidth()) {
                     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(viewModel.category.name, modifier = Modifier.weight(1f))
@@ -117,39 +119,39 @@ fun EditEventScreen(
                 }
 
                 Spacer(Modifier.height(12.dp))
-                LabelText("DESCRIPCIÓN")
-                CustomTextField(viewModel.description.value, { viewModel.description.onChange(it) }, "Descripción...", false, 4)
+                LabelText(stringResource(R.string.edit_event_description_label))
+                CustomTextField(viewModel.description.value, { viewModel.description.onChange(it) }, stringResource(R.string.edit_event_description_placeholder), false, 4)
             }
 
             // SECCIÓN 3: FECHA Y HORA
-            SectionCard(title = "Fecha y Hora") {
-                DateTimeRow("INICIO", viewModel.startDateMillis,
+            SectionCard(title = stringResource(R.string.edit_event_datetime_section)) {
+                DateTimeRow(stringResource(R.string.edit_event_start_label), viewModel.startDateMillis,
                     { pickingForStart = true; showDatePicker = true },
                     { pickingForStart = true; showTimePicker = true })
                 Divider(Modifier.padding(vertical = 8.dp), thickness = 0.5.dp)
-                DateTimeRow("FIN", viewModel.endDateMillis,
+                DateTimeRow(stringResource(R.string.edit_event_end_label), viewModel.endDateMillis,
                     { pickingForStart = false; showDatePicker = true },
                     { pickingForStart = false; showTimePicker = true })
             }
 
             // SECCIÓN 4: UBICACIÓN
-            SectionCard(title = "Ubicación (Coordenadas)") {
+            SectionCard(title = stringResource(R.string.edit_event_location_section)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Column(Modifier.weight(1f)) {
-                        LabelText("LATITUD")
+                        LabelText(stringResource(R.string.edit_event_latitude_label))
                         CustomTextField(viewModel.latitude.value, { viewModel.latitude.onChange(it) }, "0.0")
                     }
                     Column(Modifier.weight(1f)) {
-                        LabelText("LONGITUD")
+                        LabelText(stringResource(R.string.edit_event_longitude_label))
                         CustomTextField(viewModel.longitude.value, { viewModel.longitude.onChange(it) }, "0.0")
                     }
                 }
             }
 
             // SECCIÓN 5: CAPACIDAD
-            SectionCard(title = "Asistentes") {
-                LabelText("CUPOS MÁXIMOS")
-                CustomTextField(viewModel.maxAttendees, { viewModel.maxAttendees = it }, "Ej: 50")
+            SectionCard(title = stringResource(R.string.edit_event_capacity_section)) {
+                LabelText(stringResource(R.string.edit_event_capacity_label))
+                CustomTextField(viewModel.maxAttendees, { viewModel.maxAttendees = it }, stringResource(R.string.edit_event_capacity_placeholder))
             }
 
             // BOTONES DE ACCIÓN
@@ -159,7 +161,7 @@ fun EditEventScreen(
                 shape = RoundedCornerShape(16.dp),
                 enabled = viewModel.isFormValid
             ) {
-                Text("Guardar Cambios", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(stringResource(R.string.edit_event_save_button), fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
 
             // BOTÓN ELIMINAR
@@ -168,7 +170,7 @@ fun EditEventScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFD32F2F))
             ) {
-                Text("Eliminar Evento", fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.edit_event_delete_button_text), fontWeight = FontWeight.SemiBold)
             }
 
             Spacer(Modifier.height(24.dp))
@@ -179,15 +181,15 @@ fun EditEventScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("¿Eliminar evento?") },
-            text = { Text("Esta acción notificará a los asistentes y no se puede deshacer.") },
+            title = { Text(stringResource(R.string.edit_event_delete_dialog_title_text)) },
+            text = { Text(stringResource(R.string.edit_event_delete_dialog_message_text)) },
             confirmButton = {
                 Button(onClick = { viewModel.deleteEvent() }, colors = ButtonDefaults.buttonColors(containerColor = Color.Red)) {
-                    Text("Eliminar definitivamente")
+                    Text(stringResource(R.string.edit_event_delete_confirm_text))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
+                TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(R.string.edit_event_cancel)) }
             }
         )
     }
@@ -195,22 +197,22 @@ fun EditEventScreen(
     if (showImageUrlDialog) {
         AlertDialog(
             onDismissRequest = { showImageUrlDialog = false },
-            title = { Text("URL de la Imagen") },
+            title = { Text(stringResource(R.string.edit_event_image_url_dialog_title)) },
             text = {
                 OutlinedTextField(
                     value = viewModel.imageUrl.value,
                     onValueChange = { viewModel.imageUrl.onChange(it) },
-                    placeholder = { Text("https://...") }
+                    placeholder = { Text(stringResource(R.string.edit_event_image_url_placeholder)) }
                 )
             },
-            confirmButton = { Button(onClick = { showImageUrlDialog = false }) { Text("Aceptar") } }
+            confirmButton = { Button(onClick = { showImageUrlDialog = false }) { Text(stringResource(R.string.edit_event_image_url_accept)) } }
         )
     }
 
     if (showCategoryDialog) {
         AlertDialog(
             onDismissRequest = { showCategoryDialog = false },
-            title = { Text("Seleccionar Categoría") },
+            title = { Text(stringResource(R.string.edit_event_category_dialog_title)) },
             text = {
                 Column {
                     Category.entries.forEach { cat ->

@@ -18,11 +18,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.domain.model.User
 import com.miempresa.comuniapp.ui.components.ConfirmDialog
 import com.miempresa.comuniapp.ui.theme.*
@@ -70,7 +72,7 @@ fun ProfileScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Mi Perfil",
+                        text = stringResource(R.string.profile_title),
                         style = MaterialTheme.typography.titleLarge,
                         color = TextMain
                     )
@@ -140,10 +142,12 @@ fun ProfileScreen(
                     // ✅ El nivel solo se muestra para usuarios normales
                     if (!isAdmin) {
                         Text(
-                            text     = "Nivel ${u.reputation.level.ordinal + 1} - ${
+                            text     = stringResource(
+                                R.string.profile_level_label,
+                                u.reputation.level.ordinal + 1,
                                 u.reputation.level.name.lowercase()
                                     .replaceFirstChar { it.uppercase() }
-                            }",
+                            ),
                             color    = TextGray,
                             fontSize = 13.sp
                         )
@@ -161,7 +165,7 @@ fun ProfileScreen(
                 ) {
                     Icon(Icons.Outlined.Edit, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Editar perfil")
+                    Text(stringResource(R.string.profile_edit_button))
                 }
 
                 Spacer(Modifier.height(16.dp))
@@ -193,13 +197,13 @@ fun ProfileScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column {
-                            OptionItem("Mis eventos", Icons.Outlined.Event) { onMyEvents() }
+                            OptionItem(stringResource(R.string.profile_my_events_option), Icons.Outlined.Event) { onMyEvents() }
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                            OptionItem("Eventos guardados", Icons.Outlined.BookmarkBorder) { onSavedEvents() }
+                            OptionItem(stringResource(R.string.profile_saved_events_option), Icons.Outlined.BookmarkBorder) { onSavedEvents() }
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                            OptionItem("Logros", Icons.Outlined.StarBorder) { onAchievements() }
+                            OptionItem(stringResource(R.string.profile_achievements_option), Icons.Outlined.StarBorder) { onAchievements() }
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                            OptionItem("Historial", Icons.Outlined.History) { onHistory() }
+                            OptionItem(stringResource(R.string.profile_history_option), Icons.Outlined.History) { onHistory() }
                         }
                     }
 
@@ -218,7 +222,7 @@ fun ProfileScreen(
                 ) {
                     Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Cerrar sesión")
+                    Text(stringResource(R.string.profile_logout_button))
                 }
 
                 Spacer(Modifier.height(30.dp))
@@ -235,8 +239,8 @@ fun ProfileScreen(
     // ✅ Confirm Dialog
     if (showLogoutDialog) {
         ConfirmDialog(
-            title = "Cerrar sesión",
-            text = "¿Seguro que deseas salir?",
+            title = stringResource(R.string.profile_logout_dialog_title),
+            text = stringResource(R.string.profile_logout_dialog_message),
             onDismiss = { showLogoutDialog = false },
             onConfirm = {
                 viewModel.logout()

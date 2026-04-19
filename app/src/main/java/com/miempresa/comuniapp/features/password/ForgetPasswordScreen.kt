@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.miempresa.comuniapp.R
@@ -24,13 +25,14 @@ fun ForgetPasswordScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val result by viewModel.result.collectAsState()
+    val loadingMessage = stringResource(R.string.password_forget_loading)
 
     LaunchedEffect(result) {
         result?.let {
             val message = when (it) {
                 is RequestResult.Success -> it.message
                 is RequestResult.Failure -> it.errorMessage
-                is RequestResult.Loading -> "Enviando correo..."
+                is RequestResult.Loading -> loadingMessage
             }
 
             snackbarHostState.showSnackbar(message)
@@ -59,14 +61,14 @@ fun ForgetPasswordScreen(
 
             Image(
                 painter = painterResource(id = R.drawable.logo_comunidad),
-                contentDescription = "Logo",
+                contentDescription = stringResource(R.string.home_logo_description),
                 modifier = Modifier.size(220.dp)
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
             Text(
-                text = "Recuperar Contraseña",
+                text = stringResource(R.string.password_forget_title),
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -76,7 +78,7 @@ fun ForgetPasswordScreen(
             AppTextField(
                 value = viewModel.email.value,
                 onValueChange = { viewModel.email.onChange(it) },
-                label = "Email",
+                label = stringResource(R.string.password_forget_email_label),
                 icon = Icons.Default.Email,
                 error = viewModel.email.error
             )
@@ -99,7 +101,7 @@ fun ForgetPasswordScreen(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Text("Enviar enlace")
+                    Text(stringResource(R.string.password_forget_button))
                 }
             }
         }

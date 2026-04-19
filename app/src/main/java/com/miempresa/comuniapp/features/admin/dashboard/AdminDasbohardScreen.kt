@@ -10,10 +10,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.miempresa.comuniapp.R
 
 @Composable
 fun AdminDashboardScreen(
@@ -35,7 +37,7 @@ fun AdminDashboardScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Text(
-                text          = "Resumen general",
+                text          = stringResource(R.string.admin_dashboard_summary),
                 fontSize      = 14.sp,
                 fontWeight    = FontWeight.SemiBold,
                 color         = Color(0xFF757575),
@@ -49,7 +51,7 @@ fun AdminDashboardScreen(
             ) {
                 StatCard(
                     modifier       = Modifier.weight(1f),
-                    label          = "Pendientes",
+                    label          = stringResource(R.string.admin_dashboard_pending),
                     count          = stats.pendingCount,
                     icon           = Icons.Outlined.HourglassEmpty,
                     iconColor      = Color(0xFFE65100),
@@ -57,7 +59,7 @@ fun AdminDashboardScreen(
                 )
                 StatCard(
                     modifier       = Modifier.weight(1f),
-                    label          = "Aprobados",
+                    label          = stringResource(R.string.admin_dashboard_approved),
                     count          = stats.approvedCount,
                     icon           = Icons.Outlined.CheckCircle,
                     iconColor      = Color(0xFF2E7D32),
@@ -72,7 +74,7 @@ fun AdminDashboardScreen(
             ) {
                 StatCard(
                     modifier       = Modifier.weight(1f),
-                    label          = "Activos",
+                    label          = stringResource(R.string.admin_dashboard_active),
                     count          = stats.activeCount,
                     icon           = Icons.Outlined.PlayCircle,
                     iconColor      = Color(0xFF1565C0),
@@ -80,7 +82,7 @@ fun AdminDashboardScreen(
                 )
                 StatCard(
                     modifier       = Modifier.weight(1f),
-                    label          = "Rechazados",
+                    label          = stringResource(R.string.admin_dashboard_rejected),
                     count          = stats.rejectedCount,
                     icon           = Icons.Outlined.Cancel,
                     iconColor      = Color(0xFFC62828),

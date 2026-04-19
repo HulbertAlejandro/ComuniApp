@@ -1,3 +1,409 @@
 <resources>
     <string name="app_name">ComuniApp</string>
+
+    <!-- ========== COMMON STRINGS ========== -->
+    <string name="common_ok">OK</string>
+    <string name="common_cancel">Cancelar</string>
+    <string name="common_confirm">Confirmar</string>
+    <string name="common_accept">Aceptar</string>
+    <string name="common_back">Volver</string>
+    <string name="common_loading">Cargando...</string>
+    <string name="common_error">Error</string>
+    <string name="common_success">Éxito</string>
+    <string name="common_yes">Sí</string>
+    <string name="common_no">No</string>
+    <string name="common_search">Buscar...</string>
+    <string name="common_clear">Limpiar</string>
+    <string name="common_edit">Editar</string>
+    <string name="common_delete">Eliminar</string>
+    <string name="common_save">Guardar</string>
+    <string name="common_more_info">Más información</string>
+    <string name="common_no_data">Sin datos</string>
+    <string name="common_empty_state">No hay elementos</string>
+
+    <!-- ========== LOGIN STRINGS ========== -->
+    <string name="login_title">Iniciar Sesión</string>
+    <string name="login_email_label">Correo electrónico</string>
+    <string name="login_password_label">Contraseña</string>
+    <string name="login_button">Ingresar</string>
+    <string name="login_forgot_password">¿Olvidaste tu contraseña?</string>
+    <string name="login_no_account">¿No tienes cuenta? Regístrate</string>
+    <string name="login_success">Inicio de sesión exitoso</string>
+    <string name="login_failure">Credenciales inválidas</string>
+    <string name="error_email_empty">El correo es obligatorio</string>
+    <string name="error_email_invalid">Ingresa un correo válido</string>
+     <string name="error_password_empty">La contraseña es obligatoria</string>
+     <string name="error_password_required">La contraseña es obligatoria</string>
+     <string name="error_password_min_length">Mínimo 6 caracteres</string>
+     <string name="error_confirm_password_empty">Confirma la contraseña</string>
+     <string name="error_confirm_password_mismatch_message">Las contraseñas no coinciden</string>
+     <string name="error_user_not_found">No existe un usuario con ese email</string>
+
+     <!-- ========== REGISTER STRINGS ========== -->
+    <string name="register_title">Crear Cuenta</string>
+    <string name="register_name_label">Nombre</string>
+    <string name="register_phone_label">Teléfono</string>
+    <string name="register_email_label">Email</string>
+    <string name="register_password_label">Contraseña</string>
+    <string name="register_confirm_password_label">Confirmar contraseña</string>
+    <string name="register_categories_label">Categorías favoritas (opcional)</string>
+    <string name="register_button">Registrarse</string>
+    <string name="register_loading">Registrando usuario...</string>
+    <string name="register_success">Cuenta creada exitosamente</string>
+    <string name="register_failure">Error al registrar la cuenta</string>
+    <string name="register_exit_dialog_title">¿Está seguro de salir?</string>
+    <string name="register_exit_dialog_message">Si sale, perderá todos los datos del formulario.</string>
+    <string name="error_name_empty">El nombre es obligatorio</string>
+    <string name="error_name_invalid">El nombre debe tener al menos 3 caracteres</string>
+    <string name="error_phone_empty">El teléfono es obligatorio</string>
+    <string name="error_phone_invalid">El teléfono debe ser válido</string>
+    <string name="error_email_already_exists">El correo ya está registrado</string>
+    <string name="error_confirm_password_mismatch">Las contraseñas no coinciden</string>
+
+    <!-- ========== PASSWORD RECOVERY STRINGS ========== -->
+    <string name="password_forget_title">Recuperar Contraseña</string>
+    <string name="password_forget_email_label">Email</string>
+    <string name="password_forget_button">Enviar enlace</string>
+    <string name="password_forget_loading">Enviando correo...</string>
+    <string name="password_forget_success">Verificación enviada a tu email</string>
+    <string name="password_forget_failure">Error al enviar el correo</string>
+    <string name="password_reset_title">Nueva Contraseña</string>
+    <string name="password_reset_new_password_label">Nueva contraseña</string>
+    <string name="password_reset_confirm_password_label">Confirmar contraseña</string>
+    <string name="password_reset_button">Actualizar contraseña</string>
+    <string name="password_reset_loading">Actualizando contraseña...</string>
+    <string name="password_reset_success">Contraseña actualizada exitosamente</string>
+    <string name="password_reset_failure">Error al actualizar la contraseña</string>
+    <string name="error_password_blank">La contraseña no puede estar vacía</string>
+
+    <!-- ========== HOME STRINGS ========== -->
+    <string name="home_title">ComuniApp</string>
+    <string name="home_subtitle">Plataforma para descubrir, crear y participar en eventos comunitarios.</string>
+    <string name="home_login_button">Iniciar Sesión</string>
+    <string name="home_logo_description">Logo de la aplicación</string>
+
+    <!-- ========== EVENT LIST STRINGS ========== -->
+    <string name="event_list_title">Eventos</string>
+    <string name="event_list_search_placeholder">Buscar eventos…</string>
+    <string name="event_list_empty">No hay eventos disponibles</string>
+    <string name="event_list_empty_filters">No hay eventos con los filtros aplicados</string>
+    <string name="event_list_clear_filters">Limpiar filtros</string>
+    <string name="event_list_filter_nearby">📍 Cerca de mí</string>
+    <string name="event_list_filter_nearby_label">Cerca de mí</string>
+    <string name="event_list_filter_recommended">⭐ Recomendados</string>
+    <string name="event_list_filter_recommended_label">Recomendados</string>
+    <string name="event_list_filter_category">Categoría</string>
+    <string name="event_list_filter_date">Fecha</string>
+    <string name="event_list_filter_clear">✕ Limpiar</string>
+    <string name="event_list_dialog_category_title">Filtrar por categoría</string>
+    <string name="event_list_dialog_category_clear">Limpiar</string>
+    <string name="event_list_dialog_date_title">Seleccionar fecha</string>
+    <string name="event_list_dialog_date_apply">Aplicar</string>
+    <string name="event_list_dialog_date_clear">Limpiar</string>
+    <string name="event_list_search_icon_description">Buscar</string>
+    <string name="event_list_clear_icon_description">Limpiar búsqueda</string>
+    <string name="event_list_filter_icon_description">Filtros</string>
+
+    <!-- ========== EVENT DETAIL STRINGS ========== -->
+    <string name="event_detail_title">Detalle del evento</string>
+    <string name="event_detail_back_button_description">Volver</string>
+    <string name="event_detail_organizer_label">Organizador</string>
+    <string name="event_detail_date_time_label">Fecha y Hora</string>
+    <string name="event_detail_location_label">Ubicación</string>
+    <string name="event_detail_description_label">Descripción</string>
+    <string name="event_detail_category_label">Categoría</string>
+    <string name="event_detail_attendees_label">Asistentes</string>
+    <string name="event_detail_interested">Interesado</string>
+    <string name="event_detail_attend_button">Participar</string>
+    <string name="event_detail_leave_button">Salir del evento</string>
+    <string name="event_detail_full">Evento lleno</string>
+    <string name="event_detail_edit_button">Editar</string>
+    <string name="event_detail_delete_button">Eliminar</string>
+    <string name="event_detail_comments">Comentarios</string>
+    <string name="event_detail_add_comment">Agregar comentario</string>
+    <string name="event_detail_no_comments">Sin comentarios aún</string>
+    <string name="event_detail_comment_placeholder">Cuéntanos tu opinión...</string>
+    <string name="event_detail_comment_button">Enviar</string>
+    <string name="event_detail_loading">Cargando evento...</string>
+    <string name="event_detail_not_found">Evento no encontrado</string>
+    <string name="event_detail_attending">✓ Asistiendo</string>
+    <string name="event_detail_attend">Asistir</string>
+    <string name="event_detail_description_section">DESCRIPCIÓN</string>
+    <string name="event_detail_capacity_section">CUPOS DISPONIBLES</string>
+    <string name="event_detail_attendees_count">%d / %s asistentes</string>
+    <string name="event_detail_location_section">UBICACIÓN</string>
+    <string name="event_detail_comment_section">COMENTAR</string>
+    <string name="event_detail_comment_send">Enviar</string>
+    <string name="event_detail_comments_featured">COMENTARIOS DESTACADOS</string>
+    <string name="event_detail_status_active">ACTIVO</string>
+    <string name="event_detail_status_full">LLENO</string>
+    <string name="event_detail_status_pending">PENDIENTE</string>
+    <string name="event_detail_status_finished">FINALIZADO</string>
+    <string name="event_detail_time_ago_now">Ahora</string>
+    <string name="event_detail_time_ago_minutes">Hace %dm</string>
+    <string name="event_detail_time_ago_hours">Hace %dh</string>
+    <string name="event_detail_time_ago_days">Hace %dd</string>
+    <string name="event_detail_unknown_user">Usuario</string>
+
+    <!-- ========== CREATE EVENT STRINGS ========== -->
+    <string name="create_event_section_image">Imagen</string>
+    <string name="create_event_configure_image">Configurar URL de Imagen</string>
+    <string name="create_event_section_details">Detalles del Evento</string>
+    <string name="create_event_title_label">TÍTULO DEL EVENTO</string>
+    <string name="create_event_title_placeholder">Ej: Festival de Verano</string>
+    <string name="create_event_category_label">CATEGORÍA</string>
+    <string name="create_event_category_select">Seleccionar...</string>
+    <string name="create_event_description_label">DESCRIPCIÓN</string>
+    <string name="create_event_description_placeholder">Cuéntanos más...</string>
+    <string name="create_event_section_datetime">Fecha y Hora</string>
+    <string name="create_event_start">INICIO</string>
+    <string name="create_event_end">FIN</string>
+    <string name="create_event_section_location">Ubicación</string>
+    <string name="create_event_latitude_label">LATITUD</string>
+    <string name="create_event_latitude_placeholder">0.0</string>
+    <string name="create_event_longitude_label">LONGITUD</string>
+    <string name="create_event_longitude_placeholder">0.0</string>
+    <string name="create_event_section_capacity">Asistentes</string>
+    <string name="create_event_capacity_label">CUPOS DISPONIBLES</string>
+    <string name="create_event_capacity_placeholder">100</string>
+    <string name="create_event_image_url_dialog_title">URL de la Imagen</string>
+    <string name="create_event_image_url_placeholder">http://...</string>
+    <string name="create_event_image_url_button">Listo</string>
+    <string name="create_event_category_dialog_title">Seleccionar Categoría</string>
+    <string name="create_event_date_dialog_confirm">Confirmar</string>
+    <string name="create_event_time_dialog_ok">OK</string>
+    <string name="create_event_select_date">Seleccionar fecha</string>
+    <string name="create_event_time_placeholder">Hora</string>
+    <string name="create_event_button">Crear Evento</string>
+    <string name="create_event_cancel_button">Cancelar</string>
+    <string name="create_event_success">Evento creado exitosamente</string>
+    <string name="create_event_failure">Error al crear el evento</string>
+
+    <!-- ========== EDIT EVENT STRINGS ========== -->
+    <string name="edit_event_title">Editar Evento</string>
+    <string name="edit_event_image_section">Imagen del Evento</string>
+    <string name="edit_event_details_section">Detalles del Evento</string>
+    <string name="edit_event_button">Guardar cambios</string>
+    <string name="edit_event_cancel_button">Cancelar</string>
+    <string name="edit_event_delete_button">Eliminar evento</string>
+    <string name="edit_event_delete_dialog_title">Eliminar evento</string>
+    <string name="edit_event_delete_dialog_message">¿Estás seguro de que deseas eliminar este evento?</string>
+    <string name="edit_event_delete_confirm">Eliminar</string>
+    <string name="edit_event_back_button_description">Regresar</string>
+    <string name="edit_event_success">Evento actualizado exitosamente</string>
+    <string name="edit_event_failure">Error al actualizar el evento</string>
+    <string name="edit_event_image_edit_button">Editar URL de Imagen</string>
+    <string name="edit_event_title_label">TÍTULO</string>
+    <string name="edit_event_title_placeholder">Título del evento</string>
+    <string name="edit_event_category_label">CATEGORÍA</string>
+    <string name="edit_event_description_label">DESCRIPCIÓN</string>
+    <string name="edit_event_description_placeholder">Descripción...</string>
+    <string name="edit_event_datetime_section">Fecha y Hora</string>
+    <string name="edit_event_start_label">INICIO</string>
+    <string name="edit_event_end_label">FIN</string>
+    <string name="edit_event_location_section">Ubicación (Coordenadas)</string>
+    <string name="edit_event_latitude_label">LATITUD</string>
+    <string name="edit_event_longitude_label">LONGITUD</string>
+    <string name="edit_event_capacity_section">Asistentes</string>
+    <string name="edit_event_capacity_label">CUPOS MÁXIMOS</string>
+    <string name="edit_event_capacity_placeholder">Ej: 50</string>
+    <string name="edit_event_save_button">Guardar Cambios</string>
+    <string name="edit_event_delete_button_text">Eliminar Evento</string>
+    <string name="edit_event_delete_dialog_title_text">¿Eliminar evento?</string>
+    <string name="edit_event_delete_dialog_message_text">Esta acción notificará a los asistentes y no se puede deshacer.</string>
+    <string name="edit_event_delete_confirm_text">Eliminar definitivamente</string>
+    <string name="edit_event_image_url_dialog_title">URL de la Imagen</string>
+    <string name="edit_event_image_url_placeholder">https://...</string>
+    <string name="edit_event_image_url_accept">Aceptar</string>
+    <string name="edit_event_category_dialog_title">Seleccionar Categoría</string>
+    <string name="edit_event_cancel">Cancelar</string>
+    <string name="edit_event_validation_title_required">Título obligatorio</string>
+    <string name="edit_event_validation_description_required">Descripción obligatoria</string>
+    <string name="edit_event_validation_image_url_required">URL obligatoria</string>
+    <string name="edit_event_validation_image_url_invalid">URL no válida</string>
+    <string name="edit_event_validation_latitude_invalid">Latitud inválida</string>
+    <string name="edit_event_validation_longitude_invalid">Longitud inválida</string>
+    <string name="edit_event_update_success">Evento actualizado con éxito</string>
+    <string name="edit_event_update_failure">Error al actualizar</string>
+    <string name="edit_event_delete_success">Evento eliminado exitosamente</string>
+    <string name="edit_event_delete_failure">No se pudo eliminar el evento</string>
+
+    <!-- ========== PROFILE STRINGS ========== -->
+    <string name="profile_title">Mi Perfil</string>
+    <string name="profile_edit_button">Editar perfil</string>
+    <string name="profile_statistics_created">CREADOS</string>
+    <string name="profile_statistics_attended">ASISTIDOS</string>
+    <string name="profile_statistics_saved">GUARDADOS</string>
+    <string name="profile_statistics_points">PUNTOS</string>
+    <string name="profile_my_events_option">Mis eventos</string>
+    <string name="profile_saved_events_option">Eventos guardados</string>
+    <string name="profile_achievements_option">Logros</string>
+    <string name="profile_history_option">Historial</string>
+    <string name="profile_logout_button">Cerrar sesión</string>
+    <string name="profile_logout_dialog_title">Cerrar sesión</string>
+    <string name="profile_logout_dialog_message">¿Seguro que deseas salir?</string>
+    <string name="profile_logout_confirm">Cerrar sesión</string>
+    <string name="profile_level_label" formatted="false">Nivel %d - %s</string>
+    <string name="profile_camera_icon_description">Cambiar foto</string>
+    <string name="profile_loading">Cargando perfil...</string>
+
+    <!-- ========== USER EDIT STRINGS ========== -->
+     <string name="user_edit_title">Editar perfil</string>
+     <string name="user_edit_name_label">Nombre</string>
+     <string name="user_edit_phone_label">Teléfono</string>
+     <string name="user_edit_email_label">Email</string>
+     <string name="user_edit_categories_label">Comunidades Favoritas</string>
+     <string name="user_edit_save_button">Guardar cambios</string>
+     <string name="user_edit_save_button_label">Guardar</string>
+     <string name="user_edit_back_button_description">Volver</string>
+     <string name="user_edit_delete_account_button">Eliminar mi cuenta</string>
+     <string name="user_edit_delete_account_button_label">Eliminar</string>
+     <string name="user_edit_delete_dialog_title">¿Eliminar cuenta?</string>
+     <string name="user_edit_delete_dialog_message">Esta acción borrará tus datos y progreso. No se puede deshacer.</string>
+     <string name="user_edit_cancel_button">Cancelar</string>
+     <string name="user_edit_profile_saved">Perfil actualizado con éxito</string>
+     <string name="user_edit_save_error">Error al guardar</string>
+     <string name="user_edit_account_deleted">Cuenta eliminada correctamente</string>
+     <string name="user_edit_delete_error">Error</string>
+     <string name="user_edit_success">Perfil actualizado exitosamente</string>
+     <string name="user_edit_failure">Error al actualizar el perfil</string>
+
+    <!-- ========== HISTORY STRINGS ========== -->
+    <string name="history_title">Historial de Eventos</string>
+    <string name="history_empty">Aún no tienes eventos finalizados en tu historial</string>
+    <string name="history_back_button_description">Volver</string>
+    <string name="history_event_card_back_button_description">Regresar</string>
+
+    <!-- ========== MY EVENTS STRINGS ========== -->
+    <string name="my_events_title">Mis Eventos</string>
+    <string name="my_events_tab_created">Creados</string>
+    <string name="my_events_tab_active">Activos</string>
+    <string name="my_events_tab_finished">Finalizados</string>
+     <string name="my_events_tab_rejected">Rechazados</string>
+     <string name="my_events_empty">No hay eventos %s</string>
+     <string name="my_events_empty_message">No hay eventos</string>
+     <string name="my_events_edit_label">✎ Editar</string>
+     <string name="my_events_finish_label">✓ Finalizar</string>
+     <string name="my_events_rejection_reason_label">Motivo:</string>
+     <string name="my_events_edit_button">Editar</string>
+     <string name="my_events_finish_button">Finalizar</string>
+     <string name="my_events_finish_dialog_title">Finalizar evento</string>
+    <string name="my_events_finish_dialog_message">¿Deseas finalizar este evento?</string>
+    <string name="my_events_finish_confirm">Finalizar</string>
+    <string name="my_events_rejection_reason">Motivo del rechazo: %s</string>
+
+    <!-- ========== SAVED EVENTS STRINGS ========== -->
+    <string name="saved_events_title">Eventos Guardados</string>
+    <string name="saved_events_empty">No has guardado eventos aún</string>
+
+    <!-- ========== ACHIEVEMENTS STRINGS ========== -->
+    <string name="achievements_title">Logros</string>
+    <string name="achievements_badges_section">Insignias Obtenidas</string>
+    <string name="achievements_empty">No has obtenido insignias aún</string>
+    <string name="achievements_no_badges">No has obtenido insignias aún</string>
+    <string name="achievements_max_level">Nivel máximo alcanzado</string>
+    <string name="achievements_next_level" formatted="false">%d / %d pts para el siguiente nivel</string>
+    <string name="achievements_obtained_date">Obtenido el %s</string>
+    <string name="achievements_loading">Cargando logros...</string>
+
+    <!-- ========== ADMIN DASHBOARD STRINGS ========== -->
+    <string name="admin_dashboard_title">Panel Admin</string>
+    <string name="admin_dashboard_summary">Resumen general</string>
+    <string name="admin_dashboard_pending">Pendientes</string>
+    <string name="admin_dashboard_approved">Aprobados</string>
+    <string name="admin_dashboard_active">Activos</string>
+    <string name="admin_dashboard_rejected">Rechazados</string>
+    <string name="admin_panel_title">Panel</string>
+
+    <!-- ========== MODERATION HISTORY STRINGS ========== -->
+    <string name="moderation_history_title">Historial</string>
+    <string name="moderation_history_search_placeholder">Buscar...</string>
+    <string name="moderation_history_empty">No hay publicaciones</string>
+    <string name="moderation_history_filter_pending">Pendientes</string>
+    <string name="moderation_history_filter_approved">Aprobados</string>
+    <string name="moderation_history_filter_rejected">Rechazados</string>
+    <string name="moderation_history_back_button_description">Volver</string>
+    <string name="moderation_history_filter_all">Todas</string>
+    <string name="moderation_history_filter_verified">Verificadas</string>
+    <string name="moderation_history_rejection_reason_label">MOTIVO DEL RECHAZO:</string>
+    <string name="moderation_history_status_verified">VERIFICADO</string>
+    <string name="moderation_history_status_rejected">RECHAZADO</string>
+    <string name="moderation_history_status_pending">PENDIENTE</string>
+
+    <!-- ========== MANAGE PUBLICATIONS STRINGS ========== -->
+    <string name="manage_publications_title">Publicaciones</string>
+    <string name="manage_publications_back_button_description">Volver</string>
+    <string name="manage_publications_filter_pending">Pendientes</string>
+    <string name="manage_publications_filter_approved">Aprobadas</string>
+    <string name="manage_publications_approve_button">Aprobar</string>
+    <string name="manage_publications_reject_button">Rechazar</string>
+    <string name="manage_publications_view_button">Ver</string>
+    <string name="manage_publications_reject_dialog_title">Motivo del rechazo</string>
+    <string name="manage_publications_reject_placeholder">Escribe el motivo...</string>
+    <string name="manage_publications_reject_button_confirm">Rechazar</string>
+    <string name="manage_publications_reject_cancel">Cancelar</string>
+    <string name="manage_publications_reject_success">Publicación rechazada</string>
+    <string name="manage_publications_approve_success">Publicación aprobada</string>
+    <string name="manage_publications_error">Error procesando publicación</string>
+    <string name="manage_publications_empty">No hay publicaciones</string>
+    <string name="manage_publications_filter_all">Todas</string>
+    <string name="manage_publications_filter_verified">Verificadas</string>
+    <string name="manage_publications_filter_rejected">Rechazadas</string>
+    <string name="manage_publications_view_detail_button">Ver detalle</string>
+    <string name="manage_publications_verify_button">Verificar</string>
+    <string name="manage_publications_finish_button">Finalizar evento</string>
+    <string name="manage_publications_status_pending">Pendiente</string>
+    <string name="manage_publications_status_active">Activa</string>
+    <string name="manage_publications_status_rejected">Rechazada</string>
+
+    <!-- ========== ADMIN STRINGS ========== -->
+    <string name="admin_publications_option">Publicaciones</string>
+    <string name="admin_history_option">Historial</string>
+
+    <!-- ========== UI COMPONENT STRINGS ========== -->
+    <string name="bottom_nav_home">Inicio</string>
+    <string name="bottom_nav_map">Mapa</string>
+    <string name="bottom_nav_create">Crear</string>
+    <string name="bottom_nav_notifications">Alertas</string>
+    <string name="bottom_nav_profile">Perfil</string>
+    <string name="bottom_nav_admin_dashboard">Panel</string>
+    <string name="bottom_nav_publications">Publicaciones</string>
+    <string name="bottom_nav_history">Historial</string>
+
+    <!-- ========== ERROR MESSAGES ========== -->
+    <string name="error_generic">Algo salió mal. Por favor intenta nuevamente.</string>
+    <string name="error_network">Error de conexión. Verifica tu conexión a internet.</string>
+    <string name="error_unauthorized">No autorizado. Por favor inicia sesión nuevamente.</string>
+    <string name="error_not_found">No encontrado</string>
+    <string name="error_server">Error del servidor. Por favor intenta más tarde.</string>
+    <string name="error_timeout">Tiempo de espera agotado</string>
+    <string name="error_field_required">Este campo es obligatorio</string>
+    <string name="error_invalid_value">Valor inválido</string>
+    <string name="error_title">Error</string>
+
+    <!-- ========== VALIDATION ERRORS ========== -->
+    <string name="validation_error_email">Correo electrónico inválido</string>
+    <string name="validation_error_password_length">La contraseña debe tener al menos 6 caracteres</string>
+    <string name="validation_error_phone">Teléfono inválido</string>
+    <string name="validation_error_title_required">El título es obligatorio</string>
+    <string name="validation_error_description_required">La descripción es obligatoria</string>
+    <string name="validation_error_category_required">La categoría es obligatoria</string>
+    <string name="validation_error_location_required">La ubicación es obligatoria</string>
+    <string name="validation_error_date_required">La fecha es obligatoria</string>
+    <string name="validation_error_time_required">La hora es obligatoria</string>
+    <string name="validation_error_image_url_required">URL de imagen obligatoria</string>
+    <string name="validation_error_image_url_invalid">URL no válida</string>
+    <string name="validation_error_max_attendees_invalid">Número inválido</string>
+    <string name="validation_error_max_attendees_min">Mínimo 1</string>
+    <string name="validation_error_latitude_invalid">Latitud inválida</string>
+    <string name="validation_error_longitude_invalid">Longitud inválida</string>
+    <string name="default_organizer_name">Organizador</string>
+
+    <!-- ========== BADGE STRINGS ========== -->
+    <string name="badge_star_of_the_month_name">Estrella del Mes</string>
+    <string name="badge_star_of_the_month_description">Tu evento "%s" fue el más popular del mes</string>
+    <string name="badge_pionero_name">Pionero</string>
+    <string name="badge_pionero_description">Publicaste y verificaste tu primer evento comunitario</string>
+    <string name="badge_constante_name">Constante</string>
+    <string name="badge_constante_description">Has publicado y verificado 10 eventos en la comunidad</string>
 </resources>

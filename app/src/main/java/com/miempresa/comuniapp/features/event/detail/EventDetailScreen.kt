@@ -22,11 +22,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.domain.model.Category
 import com.miempresa.comuniapp.domain.model.EventStatus
 import com.miempresa.comuniapp.domain.model.User
@@ -92,10 +94,10 @@ fun EventDetailScreen(
         containerColor = Color.White,
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Detalle del evento", fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = TextPrimary) },
+                title = { Text(stringResource(R.string.event_detail_title), fontWeight = FontWeight.SemiBold, fontSize = 16.sp, color = TextPrimary) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = TextPrimary)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.event_detail_back_button_description), tint = TextPrimary)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
@@ -160,7 +162,7 @@ fun EventDetailScreen(
                         enabled = !isFull || isAttending,
                         modifier = Modifier.height(38.dp)
                     ) {
-                        Text(if (isAttending) "✓ Asistiendo" else if (isFull) "Lleno" else "Asistir", fontSize = 13.sp)
+                        Text(if (isAttending) stringResource(R.string.event_detail_attending) else if (isFull) stringResource(R.string.event_detail_full) else stringResource(R.string.event_detail_attend), fontSize = 13.sp)
                     }
 
                     OutlinedButton(
@@ -173,7 +175,7 @@ fun EventDetailScreen(
                     ) {
                         Icon(if (isInterested) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder, null, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Me interesa ${ev.interestCount}", fontSize = 13.sp)
+                        Text(stringResource(R.string.event_detail_interested) + " ${ev.interestCount}", fontSize = 13.sp)
                     }
 
                     OutlinedButton(
@@ -185,7 +187,7 @@ fun EventDetailScreen(
                     ) {
                         Icon(Icons.AutoMirrored.Outlined.Comment, null, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Comentarios $commentsCount", fontSize = 13.sp)
+                        Text(stringResource(R.string.event_detail_comments) + " $commentsCount", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
                 }
                 HorizontalDivider(color = Divider)
@@ -203,7 +205,7 @@ fun EventDetailScreen(
                     ) {
                         Icon(Icons.AutoMirrored.Outlined.Comment, null, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("Comentarios $commentsCount", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.event_detail_comments) + " $commentsCount", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                     }
                 }
                 HorizontalDivider(color = Divider)
@@ -211,7 +213,7 @@ fun EventDetailScreen(
 
             // ── 4. Descripción ────────────────────────────────────────────────
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
-                SectionTitle("DESCRIPCIÓN")
+                SectionTitle(stringResource(R.string.event_detail_description_section))
                 Spacer(Modifier.height(8.dp))
                 Text(text = ev.description, fontSize = 15.sp, color = TextPrimary, lineHeight = 22.sp)
             }
@@ -220,7 +222,7 @@ fun EventDetailScreen(
 
             // ── 5. Cupos ──────────────────────────────────────────────────────
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
-                SectionTitle("CUPOS DISPONIBLES")
+                SectionTitle(stringResource(R.string.event_detail_capacity_section))
                 Spacer(Modifier.height(10.dp))
                 LinearProgressIndicator(
                     progress = { attendeesProgress.coerceIn(0f, 1f) },
@@ -229,7 +231,7 @@ fun EventDetailScreen(
                     trackColor = Color(0xFFE0E0E0)
                 )
                 Spacer(Modifier.height(6.dp))
-                Text("${ev.currentAttendees} / ${ev.maxAttendees ?: "∞"} asistentes", fontSize = 13.sp, color = if (isFull) Color(0xFFC62828) else TextSecondary)
+                Text(stringResource(R.string.event_detail_attendees_count, ev.currentAttendees, ev.maxAttendees ?: "∞"), fontSize = 13.sp, color = if (isFull) Color(0xFFC62828) else TextSecondary)
             }
 
             HorizontalDivider(color = Divider)
@@ -243,7 +245,7 @@ fun EventDetailScreen(
 
             // ── 7. Ubicación ──────────────────────────────────────────────────
             Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
-                SectionTitle("UBICACIÓN")
+                SectionTitle(stringResource(R.string.event_detail_location_section))
                 Spacer(Modifier.height(10.dp))
                 Box(
                     modifier = Modifier.fillMaxWidth().height(140.dp).clip(RoundedCornerShape(12.dp)).background(Color(0xFFEEEEEE)).border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(12.dp)),
@@ -265,13 +267,13 @@ fun EventDetailScreen(
                 ev.eventStatus != EventStatus.FINISHED
             ) {
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
-                    SectionTitle("COMENTAR")
+                    SectionTitle(stringResource(R.string.event_detail_comment_section))
                     Spacer(Modifier.height(8.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Bottom) {
                         OutlinedTextField(
                             value = newCommentText,
                             onValueChange = { newCommentText = it },
-                            placeholder = { Text("Escribe un comentario...", fontSize = 13.sp) },
+                            placeholder = { Text(stringResource(R.string.event_detail_comment_placeholder), fontSize = 13.sp) },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(10.dp),
                             colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = GreenPrimary, unfocusedBorderColor = Divider)
@@ -283,7 +285,7 @@ fun EventDetailScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
                             modifier = Modifier.height(48.dp)
                         ) {
-                            Text("Enviar", fontSize = 13.sp)
+                            Text(stringResource(R.string.event_detail_comment_send), fontSize = 13.sp)
                         }
                     }
                 }
@@ -294,12 +296,12 @@ fun EventDetailScreen(
             // ✅ El admin SÍ ve comentarios aunque el evento sea PENDING o CREATED
             if (isAdmin || ev.eventStatus != EventStatus.CREATED) {
                 Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)) {
-                    SectionTitle("COMENTARIOS DESTACADOS")
+                    SectionTitle(stringResource(R.string.event_detail_comments_featured))
                     Spacer(Modifier.height(12.dp))
 
                     if (comments.isEmpty()) {
                         Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(CardBg).border(1.dp, Divider, RoundedCornerShape(10.dp)).padding(20.dp), Alignment.Center) {
-                            Text("No hay comentarios disponibles", fontSize = 14.sp, color = TextSecondary)
+                            Text(stringResource(R.string.event_detail_no_comments), fontSize = 14.sp, color = TextSecondary)
                         }
                     } else {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -334,10 +336,10 @@ private fun CategoryBadge(category: Category) {
 @Composable
 private fun StatusBadge(status: EventStatus) {
     val (color, label) = when (status) {
-        EventStatus.ACTIVE   -> Color(0xFF2E7D32) to "ACTIVO"
-        EventStatus.FULL     -> Color(0xFFC62828) to "LLENO"
-        EventStatus.CREATED  -> Color(0xFFE65100) to "PENDIENTE"
-        EventStatus.FINISHED -> Color(0xFF424242) to "FINALIZADO"
+        EventStatus.ACTIVE   -> Color(0xFF2E7D32) to stringResource(R.string.event_detail_status_active)
+        EventStatus.FULL     -> Color(0xFFC62828) to stringResource(R.string.event_detail_status_full)
+        EventStatus.CREATED  -> Color(0xFFE65100) to stringResource(R.string.event_detail_status_pending)
+        EventStatus.FINISHED -> Color(0xFF424242) to stringResource(R.string.event_detail_status_finished)
     }
     Surface(color = color, shape = RoundedCornerShape(4.dp)) {
         Text(label, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
@@ -355,8 +357,8 @@ private fun OrganizerRow(organizer: User?, ownerId: String) {
             }
         }
         Column(modifier = Modifier.weight(1f)) {
-            Text(organizer?.name ?: "Usuario", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
-            Text("Organizador", fontSize = 12.sp, color = TextSecondary)
+            Text(organizer?.name ?: stringResource(R.string.event_detail_unknown_user), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = TextPrimary)
+            Text(stringResource(R.string.event_detail_organizer_label), fontSize = 12.sp, color = TextSecondary)
         }
         val rating = organizer?.reputation?.points?.let { pts -> (pts.coerceAtMost(600) / 600f * 5f).let { "%.1f".format(it) } } ?: "–"
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -369,8 +371,8 @@ private fun OrganizerRow(organizer: User?, ownerId: String) {
 @Composable
 private fun CommentItem(comment: com.miempresa.comuniapp.domain.model.Comment, authorsMap: Map<String, User>) {
     val author = authorsMap[comment.authorId]
-    val userName = author?.name ?: "Usuario"
-    val timeAgo = formatTimeAgo(comment.timestamp)
+    val userName = author?.name ?: stringResource(R.string.event_detail_unknown_user)
+    val (key, args) = formatTimeAgo(comment.timestamp)
 
     Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(CardBg).padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(Color(0xFFE0E0E0)), Alignment.Center) {
@@ -383,22 +385,22 @@ private fun CommentItem(comment: com.miempresa.comuniapp.domain.model.Comment, a
         Column {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(userName, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, color = TextPrimary)
-                Text(timeAgo, fontSize = 11.sp, color = TextSecondary)
+                Text(stringResource(key, *args.toTypedArray()), fontSize = 11.sp, color = TextSecondary)
             }
             Text(comment.content, fontSize = 13.sp, color = TextPrimary, lineHeight = 18.sp)
         }
     }
 }
 
-private fun formatTimeAgo(timestamp: Long): String {
+private fun formatTimeAgo(timestamp: Long): Pair<Int, List<Any>> {
     val diff = System.currentTimeMillis() - timestamp
     val minutes = diff / 60000
     val hours = minutes / 60
     val days = hours / 24
     return when {
-        minutes < 1 -> "Ahora"
-        minutes < 60 -> "Hace ${minutes}m"
-        hours < 24 -> "Hace ${hours}h"
-        else -> "Hace ${days}d"
+        minutes < 1 -> Pair(R.string.event_detail_time_ago_now, emptyList())
+        minutes < 60 -> Pair(R.string.event_detail_time_ago_minutes, listOf(minutes))
+        hours < 24 -> Pair(R.string.event_detail_time_ago_hours, listOf(hours))
+        else -> Pair(R.string.event_detail_time_ago_days, listOf(days))
     }
 }
