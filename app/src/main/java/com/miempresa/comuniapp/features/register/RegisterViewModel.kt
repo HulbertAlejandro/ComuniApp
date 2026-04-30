@@ -73,7 +73,7 @@ class RegisterViewModel @Inject constructor(
     private val _registerResult = MutableStateFlow<RequestResult?>(null)
     val registerResult: StateFlow<RequestResult?> = _registerResult
 
-    fun register() {
+    fun register(photo: String) {
         if (!isFormValid) return
 
         viewModelScope.launch {
@@ -82,7 +82,9 @@ class RegisterViewModel @Inject constructor(
             try {
                 val exists = repository.findByEmail(email.value)
                 if (exists != null) {
-                    _registerResult.value = RequestResult.Failure(resources.getString(R.string.error_email_already_exists))
+                    _registerResult.value = RequestResult.Failure(
+                        resources.getString(R.string.error_email_already_exists)
+                    )
                     return@launch
                 }
 
@@ -91,23 +93,27 @@ class RegisterViewModel @Inject constructor(
                     name = name.value.trim(),
                     email = email.value.trim(),
                     phoneNumber = phone.value.trim(),
-                    profilePictureUrl = "https://i.pravatar.cc/300",
-                    location = Location(latitude = 4.6097, longitude = -74.0817),
+                    profilePictureUrl = photo.ifBlank { "https://i.pravatar.cc/300" },
+                    location = Location(4.6097, -74.0817),
                     role = UserRole.USER,
                     reputation = Reputation(
                         points = 0,
                         level = UserLevel.ESPECTADOR,
                         badges = emptyList()
                     ),
-                    // Categorías elegidas durante el registro
                     favoriteCategories = _selectedCategories.value.toList()
                 )
 
                 repository.saveWithPassword(user, password.value)
-                _registerResult.value = RequestResult.Success(resources.getString(R.string.register_success))
+
+                _registerResult.value = RequestResult.Success(
+                    resources.getString(R.string.register_success)
+                )
 
             } catch (e: Exception) {
-                _registerResult.value = RequestResult.Failure(e.message ?: resources.getString(R.string.error_generic))
+                _registerResult.value = RequestResult.Failure(
+                    e.message ?: resources.getString(R.string.error_generic)
+                )
             }
         }
     }

@@ -1,10 +1,22 @@
 package com.miempresa.comuniapp.features.register
 
+import android.Manifest
+import android.content.Context
+import android.net.Uri
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
@@ -12,43 +24,74 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.activity.compose.BackHandler
+import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import coil3.compose.AsyncImage
 import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.domain.model.Category
 import com.miempresa.comuniapp.ui.components.AppPasswordField
 import com.miempresa.comuniapp.ui.components.AppTextField
 import com.miempresa.comuniapp.ui.components.ConfirmDialog
-import com.miempresa.comuniapp.ui.theme.*
+import com.miempresa.comuniapp.ui.theme.appPrimaryButtonColors
 import kotlinx.coroutines.delay
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.sp
+import java.io.File
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun RegisterScreen(
     onNavigateToBack: () -> Unit = {},
     viewModel: RegisterViewModel = hiltViewModel()
 ) {
 
-    var showExitDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
-    BackHandler {
-        showExitDialog = true
-    }
+    var showExitDialog by remember { mutableStateOf(false) }
+    var showImageOptions by remember { mutableStateOf(false) }
+    var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
+    var photo by remember { mutableStateOf("") }
+
+    BackHandler { showExitDialog = true }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val registerResult by viewModel.registerResult.collectAsState()
+    val selectedCategories by viewModel.selectedCategories.collectAsState()
+
+    // 📷 Cámara
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            tempCameraUri?.let { photo = it.toString() }
+        }
+    }
+
+    // 🖼️ Galería
+    val galleryLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let { photo = it.toString() }
+    }
+
+    // 🔐 Permiso cámara
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            tempCameraUri = createTempImageUri(context)
+            tempCameraUri?.let { cameraLauncher.launch(it) }
+        }
+    }
+
     val loadingMessage = stringResource(R.string.register_loading)
-    val exitDialogTitle = stringResource(R.string.register_exit_dialog_title)
-    val exitDialogMessage = stringResource(R.string.register_exit_dialog_message)
 
     LaunchedEffect(registerResult) {
         registerResult?.let { result ->
@@ -71,7 +114,6 @@ fun RegisterScreen(
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
 
@@ -87,7 +129,7 @@ fun RegisterScreen(
 
             Image(
                 painter = painterResource(R.drawable.logo_comunidad),
-                contentDescription = stringResource(R.string.home_logo_description),
+                contentDescription = null,
                 modifier = Modifier.size(220.dp)
             )
 
@@ -95,11 +137,35 @@ fun RegisterScreen(
 
             Text(
                 text = stringResource(R.string.register_title),
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.onBackground
+                style = MaterialTheme.typography.headlineLarge
             )
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // 👤 FOTO
+            Box(
+                modifier = Modifier
+                    .size(90.dp)
+                    .clip(CircleShape)
+                    .background(Color.LightGray)
+                    .clickable { showImageOptions = true },
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = photo.ifBlank { "https://i.pravatar.cc/300" },
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                Icon(
+                    imageVector = Icons.Default.CameraAlt,
+                    contentDescription = null,
+                    modifier = Modifier.align(Alignment.BottomEnd)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
 
             AppTextField(
                 value = viewModel.name.value,
@@ -143,21 +209,13 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(30.dp))
 
-            // ── Categorías favoritas (opcional) ──────────────────────────────────────
-            val selectedCategories by viewModel.selectedCategories.collectAsState()
-
-            Spacer(modifier = Modifier.height(8.dp))
-
             Text(
                 text = stringResource(R.string.register_categories_label),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // FlowRow de chips de categorías
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -165,27 +223,17 @@ fun RegisterScreen(
             ) {
                 Category.entries.forEach { category ->
                     val isSelected = selectedCategories.contains(category)
+
                     FilterChip(
                         selected = isSelected,
                         onClick = { viewModel.toggleCategory(category) },
                         label = {
                             Text(
-                                text = category.name.lowercase().replaceFirstChar { it.uppercase() },
+                                category.name.lowercase()
+                                    .replaceFirstChar { it.uppercase() },
                                 fontSize = 13.sp
                             )
                         },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFF000000),
-                            selectedLabelColor = Color.White,
-                            containerColor = Color(0xFFE0E0E0),
-                            labelColor = Color(0xFF212121)
-                        ),
-                        border = FilterChipDefaults.filterChipBorder(
-                            enabled = true,
-                            selected = isSelected,
-                            borderColor = Color.Transparent,
-                            selectedBorderColor = Color.Transparent
-                        ),
                         shape = RoundedCornerShape(50.dp)
                     )
                 }
@@ -194,20 +242,15 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { viewModel.register() },
+                onClick = { viewModel.register(photo) },
                 enabled = viewModel.isFormValid,
-                shape = MaterialTheme.shapes.large,
                 colors = appPrimaryButtonColors(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(55.dp)
             ) {
-
                 if (registerResult is RequestResult.Loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp
-                    )
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp))
                 } else {
                     Text(stringResource(R.string.register_button))
                 }
@@ -223,10 +266,33 @@ fun RegisterScreen(
         }
     }
 
+    // 📷 BottomSheet
+    if (showImageOptions) {
+        ModalBottomSheet(
+            onDismissRequest = { showImageOptions = false }
+        ) {
+            Column {
+                TextButton(onClick = {
+                    showImageOptions = false
+                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                }) {
+                    Text("Tomar foto")
+                }
+
+                TextButton(onClick = {
+                    showImageOptions = false
+                    galleryLauncher.launch("image/*")
+                }) {
+                    Text("Elegir de galería")
+                }
+            }
+        }
+    }
+
     if (showExitDialog) {
         ConfirmDialog(
-            title = exitDialogTitle,
-            text = exitDialogMessage,
+            title = stringResource(R.string.register_exit_dialog_title),
+            text = stringResource(R.string.register_exit_dialog_message),
             onDismiss = { showExitDialog = false },
             onConfirm = {
                 viewModel.resetForm()
@@ -234,4 +300,13 @@ fun RegisterScreen(
             }
         )
     }
+}
+
+private fun createTempImageUri(context: Context): Uri {
+    val file = File.createTempFile("photo_", ".jpg", context.cacheDir)
+    return FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.fileprovider",
+        file
+    )
 }
