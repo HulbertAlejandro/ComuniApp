@@ -26,6 +26,7 @@ import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.domain.model.Category
 import com.miempresa.comuniapp.features.event.create.*
+import com.miempresa.comuniapp.core.component.MapBox
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +48,8 @@ fun EditEventScreen(
 
     val datePickerState = rememberDatePickerState()
     val timePickerState = rememberTimePickerState()
+
+    val initialPoint = remember(eventId) { viewModel.initialMapPoint }
 
     LaunchedEffect(eventId) { viewModel.loadEvent(eventId) }
 
@@ -134,17 +137,34 @@ fun EditEventScreen(
                     { pickingForStart = false; showTimePicker = true })
             }
 
-            // SECCIÓN 4: UBICACIÓN
+            // SECCIÓN 4: UBICACIÓN — reemplazar el bloque completo ──────────────
+
             SectionCard(title = stringResource(R.string.edit_event_location_section)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Column(Modifier.weight(1f)) {
-                        LabelText(stringResource(R.string.edit_event_latitude_label))
-                        CustomTextField(viewModel.latitude.value, { viewModel.latitude.onChange(it) }, "0.0")
+
+                MapBox(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(280.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    activateClick        = true,
+                    showMyLocationButton = true,
+                    // ✅ Marcador precargado con la ubicación actual del evento
+                    initialPoint         = initialPoint,
+                    onMapClickListener   = { point ->
+                        viewModel.onMapPointSelected(point)
                     }
-                    Column(Modifier.weight(1f)) {
-                        LabelText(stringResource(R.string.edit_event_longitude_label))
-                        CustomTextField(viewModel.longitude.value, { viewModel.longitude.onChange(it) }, "0.0")
-                    }
+                )
+
+                Spacer(Modifier.height(6.dp))
+
+                val selectedLocation by viewModel.selectedLocation.collectAsState()
+                selectedLocation?.let { loc ->
+                    Text(
+                        text  = "📍 %.5f, %.5f".format(loc.latitude, loc.longitude),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
                 }
             }
 

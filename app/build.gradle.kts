@@ -76,4 +76,7 @@ dependencies {
 
     implementation(libs.data.store)
 
+    implementation(libs.maps.android)
+    implementation(libs.maps.compose)
+
 }

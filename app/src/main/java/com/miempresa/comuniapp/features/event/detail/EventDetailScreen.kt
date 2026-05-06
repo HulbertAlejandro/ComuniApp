@@ -135,7 +135,7 @@ fun EventDetailScreen(
                 Spacer(Modifier.height(4.dp))
                 Text(text = dateFormatted, fontSize = 14.sp, color = TextSecondary)
                 Spacer(Modifier.height(2.dp))
-                Text(text = "${"%.4f".format(ev.location.latitude)}, ${"%.4f".format(ev.location.longitude)}", fontSize = 14.sp, color = TextSecondary)
+                Text(text = "${"%.4f".format(ev.eventLocation.latitude)}, ${"%.4f".format(ev.eventLocation.longitude)}", fontSize = 14.sp, color = TextSecondary)
             }
 
             HorizontalDivider(color = Divider)
@@ -253,7 +253,7 @@ fun EventDetailScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(Icons.Default.LocationOn, null, tint = Color(0xFFC62828), modifier = Modifier.size(36.dp))
-                        Text("${"%.5f".format(ev.location.latitude)}, ${"%.5f".format(ev.location.longitude)}", fontSize = 13.sp, color = TextSecondary)
+                        Text("${"%.5f".format(ev.eventLocation.latitude)}, ${"%.5f".format(ev.eventLocation.longitude)}", fontSize = 13.sp, color = TextSecondary)
                     }
                 }
             }

@@ -26,9 +26,6 @@ interface UserRepository {
     // Roles
     suspend fun getModerators(): List<User>
 
-    // Ubicación
-    suspend fun getUsersNearby(latitude: Double, longitude: Double, radiusKm: Double): List<User>
-
     // Intereses por evento
     suspend fun addInterestToUser(userId: String, eventId: String)
     suspend fun removeInterestFromUser(userId: String, eventId: String)

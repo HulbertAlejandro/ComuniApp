@@ -406,5 +406,13 @@
     <string name="badge_pionero_description">You published and verified your first community event</string>
     <string name="badge_constante_name">Constant</string>
     <string name="badge_constante_description">You have published and verified 10 events in the community</string>
+
+    <!-- Register -->
+    <string name="register_address_label">Neighborhood or address</string>
+
+    <!-- Edit profile -->
+    <string name="user_edit_address_label">Neighborhood or address</string>
+
+    <string name="create_event_location_required">Tap the map to locate the event</string>
 </resources>
 

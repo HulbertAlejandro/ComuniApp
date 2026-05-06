@@ -7,8 +7,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.math.*
-
 @Singleton
 class UserRepositoryImpl @Inject constructor() : UserRepository {
 
@@ -122,24 +120,6 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
     override suspend fun getModerators(): List<User> =
         _users.value.filter { it.role == UserRole.MODERATOR }
 
-    // =============================
-    // Ubicación
-    // =============================
-
-    override suspend fun getUsersNearby(
-        latitude: Double,
-        longitude: Double,
-        radiusKm: Double
-    ): List<User> {
-        return _users.value.filter {
-            distanceKm(
-                latitude,
-                longitude,
-                it.location.latitude,
-                it.location.longitude
-            ) <= radiusKm
-        }
-    }
 
     // =============================
     // Helpers
@@ -154,48 +134,27 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
         }
     }
 
-    private fun distanceKm(
-        lat1: Double,
-        lon1: Double,
-        lat2: Double,
-        lon2: Double
-    ): Double {
-        val r = 6371.0
-        val dLat = Math.toRadians(lat2 - lat1)
-        val dLon = Math.toRadians(lon2 - lon1)
-
-        val a = sin(dLat / 2).pow(2) +
-                cos(Math.toRadians(lat1)) *
-                cos(Math.toRadians(lat2)) *
-                sin(dLon / 2).pow(2)
-
-        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
-        return r * c
-    }
-
-    private fun seedUsers(): List<User> {
-        return listOf(
-            User(
-                id = "1",
-                name = "Juan",
-                email = "juan@email.com",
-                location = Location(4.6097, -74.0817)
-            ),
-            User(
-                id = "2",
-                name = "Maria",
-                email = "maria@email.com",
-                location = Location(4.6100, -74.0820)
-            ),
-            User(
-                id = "3",
-                name = "Admin",
-                email = "admin@email.com",
-                role = UserRole.MODERATOR,
-                location = Location(4.6110, -74.0830)
-            )
+    private fun seedUsers(): List<User> = listOf(
+        User(
+            id = "1",
+            name = "Juan",
+            email = "juan@email.com",
+            direction = "Chapinero, Bogotá"
+        ),
+        User(
+            id = "2",
+            name = "Maria",
+            email = "maria@email.com",
+            direction = "Usaquén, Bogotá"
+        ),
+        User(
+            id = "3",
+            name = "Admin",
+            email = "admin@email.com",
+            role = UserRole.MODERATOR,
+            direction = "La Candelaria, Bogotá"
         )
-    }
+    )
 
     // =============================
     // Intereses por usuario

@@ -60,6 +60,7 @@ fun UserEditScreen(
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var photo by remember { mutableStateOf("") }
+    var direction by remember { mutableStateOf("") }
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showImageOptions by remember { mutableStateOf(false) }
@@ -100,6 +101,7 @@ fun UserEditScreen(
             name = u.name
             phone = u.phoneNumber
             photo = u.profilePictureUrl
+            direction = u.direction
         }
     }
 
@@ -190,6 +192,12 @@ fun UserEditScreen(
                 )
 
                 PillField(
+                    label = stringResource(R.string.user_edit_address_label), // "Barrio o dirección"
+                    value = direction,
+                    onValueChange = { direction = it }
+                )
+
+                PillField(
                     label = stringResource(R.string.user_edit_email_label),
                     value = u.email,
                     onValueChange = {},
@@ -242,7 +250,7 @@ fun UserEditScreen(
 
                 // 💾 Guardar
                 Button(
-                    onClick = { viewModel.saveUser(name, phone, photo) },
+                    onClick = { viewModel.saveUser(name, phone, photo, direction) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),

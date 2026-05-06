@@ -93,7 +93,7 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
         longitude: Double,
         radiusKm: Double
     ): List<Event> = _events.value.filter {
-        distanceKm(latitude, longitude, it.location.latitude, it.location.longitude) <= radiusKm
+        distanceKm(latitude, longitude, it.eventLocation.latitude, it.eventLocation.longitude) <= radiusKm
     }
 
     override suspend fun getEventsByUser(userId: String): List<Event> =
@@ -141,208 +141,176 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
         return r * 2 * atan2(sqrt(a), sqrt(1 - a))
     }
 
-    // =============================
-    // Seed
-    // =============================
-    //
-    // Usuario 1 (Juan) está en: 4.6097, -74.0817  ← referencia para el filtro
-    //
-    // DENTRO del radio (≤ 5 km) → aparecen con "Cerca de mí":
-    //   id1  Torneo Fútbol          4.6097, -74.0817   ~0.0 km  (mismo barrio)
-    //   id2  Yoga al Aire Libre     4.6120, -74.0840   ~0.3 km  (barrio contiguo)
-    //   id5  Taller Kotlin          4.6080, -74.0800   ~0.2 km  (a pocas cuadras)
-    //
-    // FUERA del radio (> 5 km) → ocultos con "Cerca de mí":
-    //   id3  Feria Gastronómica     4.6600, -74.0550   ~8.5 km  (norte lejano)
-    //   id4  Jornada Limpieza       4.5500, -74.1200  ~12.0 km  (suroccidente)
-    //   id6  Ciclopaseo Nocturno    4.7000, -74.1100  ~11.5 km  (norte)
-    //   id7  Charla Emprendimiento  4.5300, -74.0700  ~9.1 km   (sur)
-    //   id8  Feria Emprendedores    4.7400, -74.0600  ~15.2 km  (norte lejano)
-    //   id9  Cine al Aire Libre     4.4900, -74.1300  ~17.0 km  (suroeste)
-    //   id10 Campaña Donación Ropa  4.7800, -74.1500  ~23.0 km  (noroeste)
-    //
     private fun seedEvents(): List<Event> {
         return listOf(
-
-            // ── DENTRO (~0 km) ─────────────────────────────────────────────
             Event(
                 id = "1",
                 title = "Torneo de Fútbol Comunitario",
                 description = "Participa en nuestro torneo local y gana premios.",
                 category = Category.DEPORTES,
                 imageUrl = "https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=800&auto=format&fit=crop",
-                location = Location(4.6097, -74.0817),   // mismo punto que Usuario 1
+                eventLocation = EventLocation(4.5393, -75.6728), // Campus Uniquindío (Norte)
                 startDate = "2026-05-25 08:00",
                 endDate   = "2026-05-25 17:00",
                 maxAttendees     = 50,
                 currentAttendees = 32,
-                ownerId             = "1",
-                organizerName       = "Junta de Acción Comunal",
-                eventStatus         = EventStatus.CREATED,
-                verificationStatus  = VerificationStatus.PENDING
+                ownerId            = "1",
+                organizerName      = "Junta de Acción Comunal",
+                eventStatus        = EventStatus.ACTIVE,
+                verificationStatus = VerificationStatus.APPROVED
             ),
 
-            // ── DENTRO (~0.3 km) ───────────────────────────────────────────
             Event(
                 id = "2",
                 title = "Clase de Yoga al Aire Libre",
-                description = "Relájate y conecta con la naturaleza.",
+                description = "Relájate y conecta con la naturaleza en el Parque de la Vida.",
                 category = Category.DEPORTES,
                 imageUrl = "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=800&auto=format&fit=crop",
-                location = Location(4.6120, -74.0840),   // ~0.3 km al noroccidente
+                eventLocation = EventLocation(4.5490, -75.6650), // Sector Parque de la Vida / Fundadores
                 startDate = "2026-05-26 07:00",
                 endDate   = "2026-05-26 09:00",
                 maxAttendees     = 20,
-                currentAttendees = 20,
-                ownerId             = "1",
-                organizerName       = "Camilo Yoga",
-                eventStatus         = EventStatus.FULL,
-                verificationStatus  = VerificationStatus.APPROVED
+                currentAttendees = 15,
+                ownerId            = "1",
+                organizerName      = "Camilo Yoga",
+                eventStatus        = EventStatus.ACTIVE,
+                verificationStatus = VerificationStatus.APPROVED
             ),
 
-            // ── FUERA (~8.5 km) ────────────────────────────────────────────
             Event(
                 id = "3",
-                title = "Feria Gastronómica",
-                description = "Comida típica, música y cultura local.",
+                title = "Feria Gastronómica Armenia",
+                description = "Comida típica quindiana, música y cultura local.",
                 category = Category.CULTURA,
                 imageUrl = "https://images.unsplash.com/photo-1533777857889-4be7c70b33f7?q=80&w=800&auto=format&fit=crop",
-                location = Location(4.6600, -74.0550),   // ~8.5 km al norte
+                eventLocation = EventLocation(4.5300, -75.6700), // Centro - Cerca a la Plaza de Bolívar
                 startDate = "2026-05-31 10:00",
                 endDate   = "2026-06-01 20:00",
                 maxAttendees     = 200,
                 currentAttendees = 85,
-                ownerId             = "1",
-                organizerName       = "Alcaldía Municipal",
-                eventStatus         = EventStatus.FINISHED,
-                verificationStatus  = VerificationStatus.APPROVED
+                ownerId            = "1",
+                organizerName      = "Alcaldía de Armenia",
+                eventStatus        = EventStatus.ACTIVE,
+                verificationStatus = VerificationStatus.APPROVED
             ),
 
-            // ── FUERA (~12 km) ─────────────────────────────────────────────
             Event(
                 id = "4",
                 title = "Jornada de Limpieza del Parque",
-                description = "Ayúdanos a cuidar nuestro entorno.",
+                description = "Ayúdanos a cuidar el Parque Metropolitano La Secreta.",
                 category = Category.VOLUNTARIADO,
                 imageUrl = "https://images.unsplash.com/photo-1509099836639-18ba1795216d?q=80&w=800&auto=format&fit=crop",
-                location = Location(4.5500, -74.1200),   // ~12 km al suroccidente
+                eventLocation = EventLocation(4.5200, -75.6850), // La Secreta (Salida hacia el sur)
                 startDate = "2026-06-02 08:00",
                 endDate   = "2026-06-02 12:00",
                 maxAttendees     = null,
                 currentAttendees = 10,
-                ownerId             = "4",
-                organizerName       = "Fundación Verde",
-                eventStatus         = EventStatus.ACTIVE,
-                verificationStatus  = VerificationStatus.REJECTED,
-                rejectionReason     = "Evento duplicado"
+                ownerId            = "4",
+                organizerName      = "Fundación Verde Quindío",
+                eventStatus        = EventStatus.ACTIVE,
+                verificationStatus = VerificationStatus.APPROVED
             ),
 
-            // ── DENTRO (~0.2 km) ───────────────────────────────────────────
             Event(
                 id = "5",
                 title = "Taller de Programación Kotlin",
-                description = "Aprende desarrollo Android desde cero.",
+                description = "Aprende desarrollo Android desde cero en el campus.",
                 category = Category.ACADEMICO,
                 imageUrl = "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=800&auto=format&fit=crop",
-                location = Location(4.6080, -74.0800),   // ~0.2 km al suroriente
+                eventLocation = EventLocation(4.5550, -75.6580), // Más al Norte - Sector Oro Negro
                 startDate = "2026-06-05 18:00",
                 endDate   = "2026-06-05 21:00",
                 maxAttendees     = 30,
                 currentAttendees = 12,
-                ownerId             = "2",
-                organizerName       = "Centro de Programación",
-                eventStatus         = EventStatus.ACTIVE,
-                verificationStatus  = VerificationStatus.APPROVED
+                ownerId            = "2",
+                organizerName      = "Centro de Programación UQ",
+                eventStatus        = EventStatus.ACTIVE,
+                verificationStatus = VerificationStatus.APPROVED
             ),
 
-            // ── FUERA (~11.5 km) ───────────────────────────────────────────
             Event(
                 id = "6",
-                title = "Ciclopaseo Nocturno",
-                description = "Recorrido en bicicleta por la ciudad.",
+                title = "Ciclopaseo Nocturno Armenia",
+                description = "Recorrido en bicicleta por la ciudad cafetéra.",
                 category = Category.DEPORTES,
                 imageUrl = "https://images.unsplash.com/photo-1508973378895-8d1f2d4e94c6?q=80&w=800&auto=format&fit=crop",
-                location = Location(4.7000, -74.1100),   // ~11.5 km al norte
+                eventLocation = EventLocation(4.5340, -75.6950), // Occidente - Sector San Juan / Los Quindos
                 startDate = "2026-06-07 19:00",
                 endDate   = "2026-06-07 22:00",
                 maxAttendees     = 100,
                 currentAttendees = 60,
-                ownerId             = "1",
-                organizerName       = "Asociación Ciclista",
-                eventStatus         = EventStatus.ACTIVE,
-                verificationStatus  = VerificationStatus.APPROVED
+                ownerId            = "1",
+                organizerName      = "Asociación Ciclista Quindío",
+                eventStatus        = EventStatus.ACTIVE,
+                verificationStatus = VerificationStatus.APPROVED
             ),
 
-            // ── FUERA (~9.1 km) ────────────────────────────────────────────
             Event(
                 id = "7",
                 title = "Charla de Emprendimiento",
-                description = "Aprende a crear tu propio negocio.",
+                description = "Aprende a crear tu propio negocio en el Quindío.",
                 category = Category.ACADEMICO,
                 imageUrl = "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop",
-                location = Location(4.5300, -74.0700),   // ~9.1 km al sur
+                eventLocation = EventLocation(4.5150, -75.6750), // Sur - Sector Estadio San José
                 startDate = "2026-06-10 17:00",
                 endDate   = "2026-06-10 20:00",
                 maxAttendees     = 40,
                 currentAttendees = 25,
-                ownerId             = "3",
-                organizerName       = "Cámara de Comercio",
-                eventStatus         = EventStatus.ACTIVE,
-                verificationStatus  = VerificationStatus.PENDING
+                ownerId            = "3",
+                organizerName      = "Cámara de Comercio Armenia",
+                eventStatus        = EventStatus.ACTIVE,
+                verificationStatus = VerificationStatus.APPROVED
             ),
 
-            // ── FUERA (~15.2 km) ───────────────────────────────────────────
             Event(
                 id = "8",
                 title = "Feria de Emprendedores Locales",
-                description = "Apoya negocios locales y productos artesanales.",
+                description = "Apoya negocios locales y productos artesanales del eje cafetero.",
                 category = Category.SOCIAL,
                 imageUrl = "https://images.unsplash.com/photo-1521334884684-d80222895322?q=80&w=800&auto=format&fit=crop",
-                location = Location(4.7400, -74.0600),   // ~15.2 km al norte
+                eventLocation = EventLocation(4.5100, -75.7100), // Hacia el Edén / Aeropuerto
                 startDate = "2026-06-12 09:00",
                 endDate   = "2026-06-12 18:00",
                 maxAttendees     = 150,
                 currentAttendees = 90,
-                ownerId             = "2",
-                organizerName       = "Asociación de Emprendedores",
-                eventStatus         = EventStatus.ACTIVE,
-                verificationStatus  = VerificationStatus.APPROVED
+                ownerId            = "2",
+                organizerName      = "Asociación de Emprendedores UQ",
+                eventStatus        = EventStatus.ACTIVE,
+                verificationStatus = VerificationStatus.APPROVED
             ),
 
-            // ── FUERA (~17 km) ─────────────────────────────────────────────
             Event(
                 id = "9",
                 title = "Cine Comunitario al Aire Libre",
-                description = "Película gratuita para toda la familia.",
+                description = "Película gratuita para toda la familia en el campus.",
                 category = Category.CULTURA,
                 imageUrl = "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=800&auto=format&fit=crop",
-                location = Location(4.4900, -74.1300),   // ~17 km al suroeste
+                eventLocation = EventLocation(4.5650, -75.6500), // Norte extremo - Sector Avenida Centenario
                 startDate = "2026-06-15 19:00",
                 endDate   = "2026-06-15 22:00",
                 maxAttendees     = 80,
                 currentAttendees = 40,
-                ownerId             = "1",
-                organizerName       = "Centro Cultural",
-                eventStatus         = EventStatus.ACTIVE,
-                verificationStatus  = VerificationStatus.APPROVED
+                ownerId            = "1",
+                organizerName      = "Centro Cultural UQ",
+                eventStatus        = EventStatus.ACTIVE,
+                verificationStatus = VerificationStatus.APPROVED
             ),
 
-            // ── FUERA (~23 km) ─────────────────────────────────────────────
             Event(
                 id = "10",
                 title = "Campaña de Donación de Ropa",
-                description = "Dona ropa para familias necesitadas.",
+                description = "Dona ropa para familias del barrio Brasilia.",
                 category = Category.VOLUNTARIADO,
                 imageUrl = "https://images.unsplash.com/photo-1593113630400-ea4288922497?q=80&w=800&auto=format&fit=crop",
-                location = Location(4.7800, -74.1500),   // ~23 km al noroeste
+                eventLocation = EventLocation(4.5450, -75.6850), // Noroccidente - Sector Granada / Las Acacias
                 startDate = "2026-06-18 09:00",
                 endDate   = "2026-06-18 16:00",
                 maxAttendees     = null,
                 currentAttendees = 15,
-                ownerId             = "3",
-                organizerName       = "Cruz Roja",
-                eventStatus         = EventStatus.ACTIVE,
-                verificationStatus  = VerificationStatus.PENDING
+                ownerId            = "3",
+                organizerName      = "Cruz Roja Quindío",
+                eventStatus        = EventStatus.ACTIVE,
+                verificationStatus = VerificationStatus.APPROVED
             )
         )
     }

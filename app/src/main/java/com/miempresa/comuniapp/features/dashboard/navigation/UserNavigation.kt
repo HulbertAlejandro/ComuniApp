@@ -11,6 +11,7 @@ import com.miempresa.comuniapp.features.event.create.CreateEventScreen
 import com.miempresa.comuniapp.features.event.detail.EventDetailScreen
 import com.miempresa.comuniapp.features.event.edit.EditEventScreen
 import com.miempresa.comuniapp.features.event.list.EventListScreen
+import com.miempresa.comuniapp.features.map.MapScreen
 import com.miempresa.comuniapp.features.user.achievements.AchievementsScreen
 import com.miempresa.comuniapp.features.user.edit.UserEditScreen
 import com.miempresa.comuniapp.features.user.history.HistoryScreen
@@ -39,7 +40,13 @@ fun UserNavigation(
         }
 
         composable<DashboardRoutes.Map> {
-            Text("Mapa (pendiente)")
+            MapScreen(
+                paddingValues = padding,
+                onEventClick  = { eventId ->
+                    // ✅ Navega al detalle del evento al presionar la card
+                    navController.navigate(DashboardRoutes.EventDetail(eventId))
+                }
+            )
         }
 
         composable<DashboardRoutes.CreateEvent> {

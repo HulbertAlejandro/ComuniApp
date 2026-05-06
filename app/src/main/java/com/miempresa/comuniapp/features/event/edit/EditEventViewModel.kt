@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mapbox.geojson.Point
 import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.resources.ResourceProvider
 import com.miempresa.comuniapp.core.utils.RequestResult
@@ -12,13 +13,16 @@ import com.miempresa.comuniapp.core.utils.ValidatedField
 import com.miempresa.comuniapp.domain.model.*
 import com.miempresa.comuniapp.domain.repository.EventRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
+
+sealed interface UserEditUiEvent {
+    data class ShowMessage(val message: String) : UserEditUiEvent
+    data object NavigateBack : UserEditUiEvent
+}
 
 @HiltViewModel
 class EditEventViewModel @Inject constructor(
@@ -28,89 +32,136 @@ class EditEventViewModel @Inject constructor(
 
     private var currentEvent: Event? = null
 
-    // Campos validados alineados con CreateEvent
-    val title = ValidatedField("") { if (it.isBlank()) resources.getString(R.string.edit_event_validation_title_required) else null }
-    val description = ValidatedField("") { if (it.isBlank()) resources.getString(R.string.edit_event_validation_description_required) else null }
-    val imageUrl = ValidatedField("") {
-        if (it.isBlank()) resources.getString(R.string.edit_event_validation_image_url_required) else if (!it.startsWith("http")) resources.getString(R.string.edit_event_validation_image_url_invalid) else null
-    }
-    val latitude = ValidatedField("") { it.toDoubleOrNull()?.let { null } ?: resources.getString(R.string.edit_event_validation_latitude_invalid) }
-    val longitude = ValidatedField("") { it.toDoubleOrNull()?.let { null } ?: resources.getString(R.string.edit_event_validation_longitude_invalid) }
+    // ── Campos validados (sin cambios) ───────────────────────────────────
 
-    var category by mutableStateOf(Category.DEPORTES)
+    val title = ValidatedField("") {
+        if (it.isBlank()) resources.getString(R.string.edit_event_validation_title_required)
+        else null
+    }
+
+    val description = ValidatedField("") {
+        if (it.isBlank()) resources.getString(R.string.edit_event_validation_description_required)
+        else null
+    }
+
+    val imageUrl = ValidatedField("") {
+        when {
+            it.isBlank() ->
+                resources.getString(R.string.edit_event_validation_image_url_required)
+            !it.startsWith("http") ->
+                resources.getString(R.string.edit_event_validation_image_url_invalid)
+            else -> null
+        }
+    }
+
+    var category     by mutableStateOf(Category.DEPORTES)
     var maxAttendees by mutableStateOf("")
     var startDateMillis by mutableStateOf<Long?>(null)
-    var endDateMillis by mutableStateOf<Long?>(null)
+    var endDateMillis   by mutableStateOf<Long?>(null)
+
+    // ── Ubicación — reemplaza los ValidatedField de lat/lon ──────────────
+    //
+    // Se pre-carga en loadEvent() con la ubicación existente del evento.
+    // Se actualiza cuando el usuario mueve el marcador en el mapa.
+
+    private val _selectedLocation = MutableStateFlow<EventLocation?>(null)
+    val selectedLocation: StateFlow<EventLocation?> = _selectedLocation.asStateFlow()
+
+    /**
+     * Expone la ubicación actual como [Point] de Mapbox para que la Screen
+     * pueda pasárselo a [MapBox] vía [initialPoint] sin tener lógica de
+     * conversión en la UI.
+     */
+    val initialMapPoint: Point?
+        get() = _selectedLocation.value?.let {
+            Point.fromLngLat(it.longitude, it.latitude)
+        }
+
+    /**
+     * Llamado desde la Screen cuando el usuario reposiciona el marcador.
+     */
+    fun onMapPointSelected(point: Point) {
+        _selectedLocation.value = EventLocation(
+            latitude  = point.latitude(),
+            longitude = point.longitude()
+        )
+    }
+
+    // ── Resultado ────────────────────────────────────────────────────────
 
     private val _result = MutableStateFlow<RequestResult?>(null)
     val result: StateFlow<RequestResult?> = _result.asStateFlow()
 
+    // ── Carga del evento ─────────────────────────────────────────────────
+
     fun loadEvent(eventId: String) {
-        if (currentEvent != null) return // Evita recargas infinitas
+        if (currentEvent != null) return   // evita recargas en recomposición
 
         viewModelScope.launch {
             repository.findById(eventId)?.let { ev ->
                 currentEvent = ev
 
-                // Usamos onChange para que el ValidatedField sepa que el valor cambió
                 title.onChange(ev.title)
                 description.onChange(ev.description)
                 imageUrl.onChange(ev.imageUrl)
-                latitude.onChange(ev.location.latitude.toString())
-                longitude.onChange(ev.location.longitude.toString())
 
-                category = ev.category
-                maxAttendees = ev.maxAttendees?.toString() ?: ""
+                // ✅ Pre-carga la ubicación existente en el StateFlow
+                // La Screen la leerá vía viewModel.initialMapPoint
+                _selectedLocation.value = ev.eventLocation
 
+                category        = ev.category
+                maxAttendees    = ev.maxAttendees?.toString() ?: ""
                 startDateMillis = parseDate(ev.startDate)
-                endDateMillis = parseDate(ev.endDate)
+                endDateMillis   = parseDate(ev.endDate)
             }
         }
     }
 
+    // ── Validación ───────────────────────────────────────────────────────
+
     val isFormValid: Boolean
-        get() {
-            // Log para debug si fuera necesario:
-            // println("T:${title.value.isNotBlank()} D:${description.value.isNotBlank()} I:${imageUrl.value.startsWith("http")} L:${latitude.value.isNotBlank()} DT:${startDateMillis != null}")
+        get() = title.value.isNotBlank() &&
+                description.value.isNotBlank() &&
+                imageUrl.value.startsWith("http") &&
+                _selectedLocation.value != null &&
+                startDateMillis != null &&
+                endDateMillis   != null &&
+                endDateMillis!! > startDateMillis!!
 
-            val hasTitle = title.value.isNotBlank()
-            val hasDesc = description.value.isNotBlank()
-            val hasUrl = imageUrl.value.startsWith("http")
-            val hasLat = latitude.value.isNotBlank() && latitude.value.toDoubleOrNull() != null
-            val hasLng = longitude.value.isNotBlank() && longitude.value.toDoubleOrNull() != null
-
-            val validDates = startDateMillis != null &&
-                    endDateMillis != null &&
-                    endDateMillis!! > startDateMillis!!
-
-            // Verificamos que los campos obligatorios tengan contenido
-            return hasTitle && hasDesc && hasUrl && hasLat && hasLng && validDates
-        }
+    // ── Actualización ────────────────────────────────────────────────────
 
     fun updateEvent() {
-        val event = currentEvent ?: return
+        val event    = currentEvent          ?: return
+        val location = _selectedLocation.value ?: return
         if (!isFormValid) return
 
         viewModelScope.launch {
             _result.value = RequestResult.Loading
             try {
-                val updatedEvent = event.copy(
-                    title = title.value,
-                    description = description.value,
-                    imageUrl = imageUrl.value,
-                    category = category,
-                    location = Location(latitude.value.toDouble(), longitude.value.toDouble()),
-                    maxAttendees = maxAttendees.toIntOrNull(),
-                    startDate = formatDate(startDateMillis!!),
-                    endDate = formatDate(endDateMillis!!)
+                repository.update(
+                    event.copy(
+                        title         = title.value.trim(),
+                        description   = description.value.trim(),
+                        imageUrl      = imageUrl.value.trim(),
+                        category      = category,
+                        eventLocation = location,
+                        maxAttendees  = maxAttendees.toIntOrNull(),
+                        startDate     = formatDate(startDateMillis!!),
+                        endDate       = formatDate(endDateMillis!!)
+                    )
                 )
-                repository.update(updatedEvent)
-                _result.value = RequestResult.Success(resources.getString(R.string.edit_event_update_success))
+                _result.value = RequestResult.Success(
+                    resources.getString(R.string.edit_event_update_success)
+                )
             } catch (e: Exception) {
-                _result.value = RequestResult.Failure(e.message ?: resources.getString(R.string.edit_event_update_failure))
+                _result.value = RequestResult.Failure(
+                    e.message ?: resources.getString(R.string.edit_event_update_failure)
+                )
             }
         }
     }
+
+    // ── Eliminación ──────────────────────────────────────────────────────
 
     fun deleteEvent() {
         val id = currentEvent?.id ?: return
@@ -118,14 +169,20 @@ class EditEventViewModel @Inject constructor(
             _result.value = RequestResult.Loading
             try {
                 repository.delete(id)
-                _result.value = RequestResult.Success(resources.getString(R.string.edit_event_delete_success))
+                _result.value = RequestResult.Success(
+                    resources.getString(R.string.edit_event_delete_success)
+                )
             } catch (e: Exception) {
-                _result.value = RequestResult.Failure(resources.getString(R.string.edit_event_delete_failure))
+                _result.value = RequestResult.Failure(
+                    resources.getString(R.string.edit_event_delete_failure)
+                )
             }
         }
     }
 
     fun resetResult() { _result.value = null }
+
+    // ── Helpers ──────────────────────────────────────────────────────────
 
     private fun formatDate(millis: Long): String =
         SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(millis))

@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mapbox.geojson.Point
 import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.resources.ResourceProvider
 import com.miempresa.comuniapp.core.utils.RequestResult
@@ -41,97 +42,158 @@ class CreateEventViewModel @Inject constructor(
         }
     }
 
-    // --- Campos con Validación ---
-    val title = ValidatedField("") { if (it.isBlank()) resources.getString(R.string.validation_error_title_required) else null }
-    val description = ValidatedField("") { if (it.isBlank()) resources.getString(R.string.validation_error_description_required) else null }
-    val imageUrl = ValidatedField("") {
-        if (it.isBlank()) resources.getString(R.string.validation_error_image_url_required)
-        else if (!it.startsWith("http")) resources.getString(R.string.validation_error_image_url_invalid) else null
-    }
-    val maxAttendees = ValidatedField("") {
-        it.toIntOrNull()?.let { num -> if (num <= 0) resources.getString(R.string.validation_error_max_attendees_min) else null } ?: resources.getString(R.string.validation_error_max_attendees_invalid)
-    }
-    val latitude = ValidatedField("") { it.toDoubleOrNull()?.let { null } ?: resources.getString(R.string.validation_error_latitude_invalid) }
-    val longitude = ValidatedField("") { it.toDoubleOrNull()?.let { null } ?: resources.getString(R.string.validation_error_longitude_invalid) }
+    // ── Campos con validación (sin cambios) ──────────────────────────────
 
-    // --- Categoría ---
+    val title = ValidatedField("") {
+        if (it.isBlank()) resources.getString(R.string.validation_error_title_required) else null
+    }
+
+    val description = ValidatedField("") {
+        if (it.isBlank()) resources.getString(R.string.validation_error_description_required) else null
+    }
+
+    val imageUrl = ValidatedField("") {
+        when {
+            it.isBlank() -> resources.getString(R.string.validation_error_image_url_required)
+            !it.startsWith("http") -> resources.getString(R.string.validation_error_image_url_invalid)
+            else -> null
+        }
+    }
+
+    val maxAttendees = ValidatedField("") {
+        it.toIntOrNull()
+            ?.let { num ->
+                if (num <= 0) resources.getString(R.string.validation_error_max_attendees_min)
+                else null
+            }
+            ?: resources.getString(R.string.validation_error_max_attendees_invalid)
+    }
+
+    // ── Ubicación — reemplaza los ValidatedField de lat/lon ──────────────
+    //
+    // El flujo es:
+    //   MapBox.onMapClickListener → onMapPointSelected(Point) → _selectedLocation
+    //
+    // Usamos EventLocation como tipo de dominio; el Point de Mapbox
+    // se convierte aquí para que la Screen no tenga lógica de dominio.
+
+    private val _selectedLocation = MutableStateFlow<EventLocation?>(null)
+    val selectedLocation: StateFlow<EventLocation?> = _selectedLocation.asStateFlow()
+
+    /**
+     * Llamado desde la Screen cuando el usuario toca el mapa.
+     * Convierte el [Point] de Mapbox a [EventLocation] de dominio.
+     */
+    fun onMapPointSelected(point: Point) {
+        _selectedLocation.value = EventLocation(
+            latitude = point.latitude(),
+            longitude = point.longitude()
+            // direccionDisplay vacío por ahora;
+            // el Paso 4 agrega reverse geocoding aquí
+        )
+    }
+
+    // ── Categoría ────────────────────────────────────────────────────────
+
     var selectedCategory by mutableStateOf<Category?>(null)
     fun onCategorySelected(category: Category) { selectedCategory = category }
 
-    // --- Fechas (Corrección de Bug de Desfase) ---
+    // ── Fechas (lógica original intacta) ─────────────────────────────────
+
     var startDateMillis by mutableStateOf<Long?>(null)
     var endDateMillis by mutableStateOf<Long?>(null)
 
     fun updateDateTime(isStart: Boolean, dateMillis: Long?, hour: Int, minute: Int) {
-        // Usamos UTC para evitar el desfase del día al seleccionar en el DatePicker
-        val base = dateMillis ?: (if (isStart) startDateMillis else endDateMillis) ?: System.currentTimeMillis()
-        val zonedDateTime = Instant.ofEpochMilli(base)
+        val base = dateMillis
+            ?: (if (isStart) startDateMillis else endDateMillis)
+            ?: System.currentTimeMillis()
+
+        val zoned = Instant.ofEpochMilli(base)
             .atZone(ZoneId.of("America/Bogota"))
             .withHour(hour)
             .withMinute(minute)
             .withSecond(0)
 
-        if (isStart) startDateMillis = zonedDateTime.toInstant().toEpochMilli()
-        else endDateMillis = zonedDateTime.toInstant().toEpochMilli()
+        if (isStart) startDateMillis = zoned.toInstant().toEpochMilli()
+        else endDateMillis = zoned.toInstant().toEpochMilli()
     }
+
+    // ── Resultado ────────────────────────────────────────────────────────
 
     private val _result = MutableStateFlow<RequestResult?>(null)
     val result: StateFlow<RequestResult?> = _result
 
-    val isFormValid: Boolean
-        get() {
-            val hasTitle = title.value.isNotBlank()
-            val hasDesc = description.value.isNotBlank()
-            val hasUrl = imageUrl.value.startsWith("http")
-            val hasAttendees = maxAttendees.value.toIntOrNull()?.let { it > 0 } ?: false
-            val hasLoc = latitude.value.isNotBlank() && longitude.value.isNotBlank()
-            val hasDates = startDateMillis != null && endDateMillis != null && endDateMillis != null && endDateMillis!! > startDateMillis!!
-            val hasCat = selectedCategory != null
+    // ── Validación ───────────────────────────────────────────────────────
 
-            return hasTitle && hasDesc && hasUrl && hasAttendees && hasLoc && hasDates && hasCat
-        }
+    val isFormValid: Boolean
+        get() = title.value.isNotBlank() &&
+                description.value.isNotBlank() &&
+                imageUrl.value.startsWith("http") &&
+                (maxAttendees.value.toIntOrNull()?.let { it > 0 } ?: false) &&
+                _selectedLocation.value != null &&
+                startDateMillis != null &&
+                endDateMillis != null &&
+                endDateMillis!! > startDateMillis!! &&
+                selectedCategory != null
+
+    // ── Creación ─────────────────────────────────────────────────────────
+
     fun createEvent() {
-        val owner = _ownerId.value ?: return
+        val owner    = _ownerId.value ?: return
+        val location = _selectedLocation.value ?: return
         if (!isFormValid) return
 
         viewModelScope.launch {
             _result.value = RequestResult.Loading
             try {
-                val start = Instant.ofEpochMilli(startDateMillis!!).atZone(ZoneId.systemDefault())
-                val end = Instant.ofEpochMilli(endDateMillis!!).atZone(ZoneId.systemDefault())
+                val start = Instant.ofEpochMilli(startDateMillis!!)
+                    .atZone(ZoneId.systemDefault())
+                val end = Instant.ofEpochMilli(endDateMillis!!)
+                    .atZone(ZoneId.systemDefault())
 
-                val event = Event(
-                    id = UUID.randomUUID().toString(),
-                    title = title.value,
-                    description = description.value,
-                    category = selectedCategory!!,
-                    imageUrl = imageUrl.value,
-                    location = Location(latitude.value.toDouble(), longitude.value.toDouble()),
-                    startDate = start.format(dateFormatter),
-                    endDate = end.format(dateFormatter),
-                    maxAttendees = maxAttendees.value.toIntOrNull(),
-                    ownerId = owner,
-                    organizerName = _organizerName.value ?: resources.getString(R.string.default_organizer_name),
-                    eventStatus = EventStatus.CREATED,
-                    verificationStatus = VerificationStatus.PENDING
+                repository.save(
+                    Event(
+                        id               = UUID.randomUUID().toString(),
+                        title            = title.value.trim(),
+                        description      = description.value.trim(),
+                        category         = selectedCategory!!,
+                        imageUrl         = imageUrl.value.trim(),
+                        eventLocation    = location,
+                        startDate        = start.format(dateFormatter),
+                        endDate          = end.format(dateFormatter),
+                        maxAttendees     = maxAttendees.value.toIntOrNull(),
+                        ownerId          = owner,
+                        organizerName    = _organizerName.value
+                            ?: resources.getString(R.string.default_organizer_name),
+                        eventStatus      = EventStatus.CREATED,
+                        verificationStatus = VerificationStatus.PENDING
+                    )
                 )
-                repository.save(event)
                 clearForm()
-                _result.value = RequestResult.Success(resources.getString(R.string.create_event_success))
+                _result.value = RequestResult.Success(
+                    resources.getString(R.string.create_event_success)
+                )
             } catch (e: Exception) {
-                _result.value = RequestResult.Failure(e.message ?: resources.getString(R.string.create_event_failure))
+                _result.value = RequestResult.Failure(
+                    e.message ?: resources.getString(R.string.create_event_failure)
+                )
             }
         }
     }
 
+    // ── Helpers ──────────────────────────────────────────────────────────
+
     private fun clearForm() {
-        title.reset(); description.reset(); imageUrl.reset()
-        maxAttendees.reset(); latitude.reset(); longitude.reset()
-        selectedCategory = null; startDateMillis = null; endDateMillis = null
+        title.reset()
+        description.reset()
+        imageUrl.reset()
+        maxAttendees.reset()
+        _selectedLocation.value = null
+        selectedCategory        = null
+        startDateMillis         = null
+        endDateMillis           = null
     }
 
     fun onImageUrlChange(url: String) { imageUrl.onChange(url) }
-    fun onLatitudeChange(lat: String) { latitude.onChange(lat) }
-    fun onLongitudeChange(lng: String) { longitude.onChange(lng) }
-    fun resetResult() { _result.value = null }
+    fun resetResult()                 { _result.value = null }
 }

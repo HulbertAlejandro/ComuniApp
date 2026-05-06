@@ -406,4 +406,12 @@
     <string name="badge_pionero_description">Publicaste y verificaste tu primer evento comunitario</string>
     <string name="badge_constante_name">Constante</string>
     <string name="badge_constante_description">Has publicado y verificado 10 eventos en la comunidad</string>
+
+    <!-- Register -->
+    <string name="register_address_label">Barrio o dirección (opcional)</string>
+
+    <!-- Edit profile -->
+    <string name="user_edit_address_label">Barrio o dirección</string>
+
+    <string name="create_event_location_required">Toca el mapa para ubicar el evento</string>
 </resources>

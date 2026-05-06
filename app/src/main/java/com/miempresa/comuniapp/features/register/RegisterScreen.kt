@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -181,6 +182,15 @@ fun RegisterScreen(
                 label = stringResource(R.string.register_phone_label),
                 icon = Icons.Default.Person,
                 error = viewModel.phone.error
+            )
+
+
+            AppTextField(
+                value = viewModel.direccion.value,
+                onValueChange = { viewModel.direccion.onChange(it) },
+                label = stringResource(R.string.register_address_label), // "Barrio o dirección (opcional)"
+                icon = Icons.Default.LocationOn,
+                error = viewModel.direccion.error
             )
 
             AppTextField(

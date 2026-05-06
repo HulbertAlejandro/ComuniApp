@@ -30,6 +30,7 @@ import com.miempresa.comuniapp.domain.model.Category
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import com.miempresa.comuniapp.core.component.MapBox
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +48,7 @@ fun CreateEventScreen(
     var showImageUrlDialog by remember { mutableStateOf(false) }
     var showCategoryDialog by remember { mutableStateOf(false) }
     var pickingForStart by remember { mutableStateOf(true) }
+    val selectedLocation by viewModel.selectedLocation.collectAsState()
 
     val datePickerState = rememberDatePickerState()
     val timePickerState = rememberTimePickerState()
@@ -130,17 +132,44 @@ fun CreateEventScreen(
                 DateTimeRow(stringResource(R.string.create_event_end), viewModel.endDateMillis, { pickingForStart = false; showDatePicker = true }, { pickingForStart = false; showTimePicker = true })
             }
 
-            // SECCIÓN 4: UBICACIÓN
+            // SECCIÓN 4: UBICACIÓN — reemplazar el bloque completo ──────────────
+
             SectionCard(title = stringResource(R.string.create_event_section_location)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Column(Modifier.weight(1f)) {
-                        LabelText(stringResource(R.string.create_event_latitude_label))
-                        CustomTextField(viewModel.latitude.value, { viewModel.onLatitudeChange(it) }, stringResource(R.string.create_event_latitude_placeholder))
+
+                MapBox(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(280.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    activateClick    = true,          // habilita el click para seleccionar
+                    showMyLocationButton = true,
+                    initialPoint     = null,          // creación siempre empieza sin marcador
+                    onMapClickListener = { point ->
+                        viewModel.onMapPointSelected(point)
                     }
-                    Column(Modifier.weight(1f)) {
-                        LabelText(stringResource(R.string.create_event_longitude_label))
-                        CustomTextField(viewModel.longitude.value, { viewModel.onLongitudeChange(it) }, stringResource(R.string.create_event_longitude_placeholder))
-                    }
+                )
+
+                // Error de validación cuando aún no se eligió ubicación
+                if (selectedLocation == null) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text  = stringResource(R.string.create_event_location_required),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                } else {
+                    // Confirmación visual de coordenadas elegidas
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text  = "📍 %.5f, %.5f".format(
+                            selectedLocation!!.latitude,
+                            selectedLocation!!.longitude
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
                 }
             }
 

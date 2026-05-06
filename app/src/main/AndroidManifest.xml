@@ -8,6 +8,10 @@
     <!-- CÁMARA -->
     <uses-permission android:name="android.permission.CAMERA" />
 
+    <!-- UBICACIÓN -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
     <!-- OPCIONAL -->
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 

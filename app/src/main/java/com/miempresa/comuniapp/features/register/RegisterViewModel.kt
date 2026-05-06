@@ -28,7 +28,8 @@ class RegisterViewModel @Inject constructor(
     val email = ValidatedField("") {
         when {
             it.isBlank() -> resources.getString(R.string.error_email_empty)
-            !Patterns.EMAIL_ADDRESS.matcher(it).matches() -> resources.getString(R.string.error_email_invalid)
+            !Patterns.EMAIL_ADDRESS.matcher(it).matches() ->
+                resources.getString(R.string.error_email_invalid)
             else -> null
         }
     }
@@ -48,12 +49,14 @@ class RegisterViewModel @Inject constructor(
     val confirmPassword = ValidatedField("") {
         when {
             it.isBlank() -> resources.getString(R.string.error_confirm_password_empty)
-            it != password.value -> resources.getString(R.string.error_confirm_password_mismatch_message)
+            it != password.value ->
+                resources.getString(R.string.error_confirm_password_mismatch_message)
             else -> null
         }
     }
 
-    // Categorías favoritas seleccionadas durante el registro
+    val direccion = ValidatedField("") { null }
+
     private val _selectedCategories = MutableStateFlow<Set<Category>>(emptySet())
     val selectedCategories: StateFlow<Set<Category>> = _selectedCategories.asStateFlow()
 
@@ -94,7 +97,7 @@ class RegisterViewModel @Inject constructor(
                     email = email.value.trim(),
                     phoneNumber = phone.value.trim(),
                     profilePictureUrl = photo.ifBlank { "https://i.pravatar.cc/300" },
-                    location = Location(4.6097, -74.0817),
+                    direction = direccion.value.trim(),
                     role = UserRole.USER,
                     reputation = Reputation(
                         points = 0,
@@ -126,6 +129,7 @@ class RegisterViewModel @Inject constructor(
         phone.reset()
         password.reset()
         confirmPassword.reset()
+        direccion.reset()
         _selectedCategories.value = emptySet()
     }
 }

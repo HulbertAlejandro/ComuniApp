@@ -25,6 +25,7 @@ fun UserScreen(onLogout: () -> Unit) {
 
             // Pantallas con TopAppBar propia: no mostrar la global
             showTopBar = !dest.hasRoute<DashboardRoutes.EventList>() &&
+                    !dest.hasRoute<DashboardRoutes.Map>() &&
                     !dest.hasRoute<DashboardRoutes.CreateEvent>() &&
                     !dest.hasRoute<DashboardRoutes.EventDetail>() &&
                     !dest.hasRoute<DashboardRoutes.Profile>() &&

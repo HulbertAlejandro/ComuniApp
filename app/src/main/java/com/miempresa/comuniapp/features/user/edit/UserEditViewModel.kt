@@ -56,7 +56,7 @@ class UserEditViewModel @Inject constructor(
         }
     }
 
-    fun saveUser(name: String, phone: String, photo: String) {
+    fun saveUser(name: String, phone: String, photo: String, direccion: String) {
         val current = user.value ?: return
         viewModelScope.launch {
             _isSaving.value = true
@@ -66,29 +66,45 @@ class UserEditViewModel @Inject constructor(
                         name = name.trim(),
                         phoneNumber = phone.trim(),
                         profilePictureUrl = photo.trim().ifBlank { current.profilePictureUrl },
+                        direction = direccion.trim().ifBlank { current.direction },
                         favoriteCategories = _selectedCategories.value.toList()
                     )
                 )
-                _uiEvents.emit(UserEditUiEvent.ShowMessage(resources.getString(R.string.user_edit_profile_saved)))
+                _uiEvents.emit(
+                    UserEditUiEvent.ShowMessage(
+                        resources.getString(R.string.user_edit_profile_saved)
+                    )
+                )
                 _uiEvents.emit(UserEditUiEvent.NavigateBack)
             } catch (e: Exception) {
-                _uiEvents.emit(UserEditUiEvent.ShowMessage("${resources.getString(R.string.user_edit_save_error)}: ${e.message}"))
+                _uiEvents.emit(
+                    UserEditUiEvent.ShowMessage(
+                        "${resources.getString(R.string.user_edit_save_error)}: ${e.message}"
+                    )
+                )
             } finally {
                 _isSaving.value = false
             }
         }
     }
 
-    // ✅ Nueva funcionalidad para eliminar cuenta
     fun deleteAccount() {
         val current = user.value ?: return
         viewModelScope.launch {
             try {
                 repository.delete(current.id)
-                sessionDataStore.clearSession() // Al limpiar sesión, el NavHost redirige al Login
-                _uiEvents.emit(UserEditUiEvent.ShowMessage(resources.getString(R.string.user_edit_account_deleted)))
+                sessionDataStore.clearSession()
+                _uiEvents.emit(
+                    UserEditUiEvent.ShowMessage(
+                        resources.getString(R.string.user_edit_account_deleted)
+                    )
+                )
             } catch (e: Exception) {
-                _uiEvents.emit(UserEditUiEvent.ShowMessage("${resources.getString(R.string.user_edit_delete_error)}: ${e.message}"))
+                _uiEvents.emit(
+                    UserEditUiEvent.ShowMessage(
+                        "${resources.getString(R.string.user_edit_delete_error)}: ${e.message}"
+                    )
+                )
             }
         }
     }

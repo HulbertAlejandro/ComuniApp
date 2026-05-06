@@ -11,7 +11,7 @@ data class Event(
     val imageUrl: String,
 
     // Ubicación obligatoria
-    val location: Location,
+    val eventLocation: EventLocation,
 
     // Fechas
     val startDate: String,
@@ -38,6 +38,6 @@ data class Event(
     val commentsCount: Int = 0,
 
 
-)
+    )
 
 
