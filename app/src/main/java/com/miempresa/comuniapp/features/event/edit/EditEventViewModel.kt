@@ -1,10 +1,13 @@
 package com.miempresa.comuniapp.features.event.edit
 
+import android.content.Context
+import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.core.content.FileProvider
 import com.mapbox.geojson.Point
 import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.resources.ResourceProvider
@@ -15,6 +18,7 @@ import com.miempresa.comuniapp.domain.repository.EventRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
@@ -32,54 +36,71 @@ class EditEventViewModel @Inject constructor(
 
     private var currentEvent: Event? = null
 
-    // ── Campos validados (sin cambios) ───────────────────────────────────
+    // ── Campos validados ─────────────────────────────────────────────────
 
     val title = ValidatedField("") {
-        if (it.isBlank()) resources.getString(R.string.edit_event_validation_title_required)
-        else null
+        if (it.isBlank()) resources.getString(R.string.edit_event_validation_title_required) else null
     }
 
     val description = ValidatedField("") {
-        if (it.isBlank()) resources.getString(R.string.edit_event_validation_description_required)
-        else null
+        if (it.isBlank()) resources.getString(R.string.edit_event_validation_description_required) else null
     }
 
-    val imageUrl = ValidatedField("") {
-        when {
-            it.isBlank() ->
-                resources.getString(R.string.edit_event_validation_image_url_required)
-            !it.startsWith("http") ->
-                resources.getString(R.string.edit_event_validation_image_url_invalid)
-            else -> null
-        }
-    }
-
-    var category     by mutableStateOf(Category.DEPORTES)
-    var maxAttendees by mutableStateOf("")
+    var category        by mutableStateOf(Category.DEPORTES)
+    var maxAttendees    by mutableStateOf("")
     var startDateMillis by mutableStateOf<Long?>(null)
     var endDateMillis   by mutableStateOf<Long?>(null)
 
-    // ── Ubicación — reemplaza los ValidatedField de lat/lon ──────────────
+    // ── Imágenes múltiples ───────────────────────────────────────────────
     //
-    // Se pre-carga en loadEvent() con la ubicación existente del evento.
-    // Se actualiza cuando el usuario mueve el marcador en el mapa.
+    // Al cargar el evento, pre-populamos con las URIs existentes (String→Uri).
+    // El usuario puede añadir nuevas (cámara/galería) o eliminar las existentes.
+    // Al guardar, convertimos de vuelta a List<String>.
+
+    private val _imageUris = MutableStateFlow<List<Uri>>(emptyList())
+    val imageUris: StateFlow<List<Uri>> = _imageUris.asStateFlow()
+
+    /** URI temporal del disparo de cámara actual. */
+    private var _currentCameraUri: Uri? = null
+
+    /**
+     * Genera un archivo temporal único en caché para cada foto de cámara.
+     * Llama a esto inmediatamente antes de lanzar el TakePicture launcher.
+     */
+    fun createTempCameraUri(context: Context): Uri {
+        val dir  = File(context.cacheDir, "event_images").also { it.mkdirs() }
+        val file = File(dir, "camera_${UUID.randomUUID()}.jpg")
+        val uri  = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        _currentCameraUri = uri
+        return uri
+    }
+
+    /** Llamado cuando TakePicture devuelve. Solo agrega si la foto fue confirmada. */
+    fun onCameraImageCaptured(success: Boolean) {
+        if (success) _currentCameraUri?.let { _imageUris.value += it }
+        _currentCameraUri = null
+    }
+
+    /** Llamado cuando el selector de galería devuelve URIs. */
+    fun onGalleryImagesSelected(uris: List<Uri>) {
+        if (uris.isNotEmpty()) _imageUris.value += uris
+    }
+
+    /** Elimina la imagen en la posición [index]. */
+    fun removeImage(index: Int) {
+        _imageUris.value = _imageUris.value
+            .toMutableList()
+            .also { it.removeAt(index) }
+    }
+
+    // ── Ubicación ────────────────────────────────────────────────────────
 
     private val _selectedLocation = MutableStateFlow<EventLocation?>(null)
     val selectedLocation: StateFlow<EventLocation?> = _selectedLocation.asStateFlow()
 
-    /**
-     * Expone la ubicación actual como [Point] de Mapbox para que la Screen
-     * pueda pasárselo a [MapBox] vía [initialPoint] sin tener lógica de
-     * conversión en la UI.
-     */
     val initialMapPoint: Point?
-        get() = _selectedLocation.value?.let {
-            Point.fromLngLat(it.longitude, it.latitude)
-        }
+        get() = _selectedLocation.value?.let { Point.fromLngLat(it.longitude, it.latitude) }
 
-    /**
-     * Llamado desde la Screen cuando el usuario reposiciona el marcador.
-     */
     fun onMapPointSelected(point: Point) {
         _selectedLocation.value = EventLocation(
             latitude  = point.latitude(),
@@ -100,21 +121,33 @@ class EditEventViewModel @Inject constructor(
         viewModelScope.launch {
             repository.findById(eventId)?.let { ev ->
                 currentEvent = ev
-
                 title.onChange(ev.title)
                 description.onChange(ev.description)
-                imageUrl.onChange(ev.imageUrl)
-
-                // ✅ Pre-carga la ubicación existente en el StateFlow
-                // La Screen la leerá vía viewModel.initialMapPoint
-                _selectedLocation.value = ev.eventLocation
-
                 category        = ev.category
                 maxAttendees    = ev.maxAttendees?.toString() ?: ""
                 startDateMillis = parseDate(ev.startDate)
                 endDateMillis   = parseDate(ev.endDate)
+
+                // ✅ Pre-cargar las URIs existentes como Uri (String → Uri)
+                _imageUris.value = ev.imageUris.map { Uri.parse(it) }
+
+                // ✅ Pre-cargar ubicación existente
+                _selectedLocation.value = ev.eventLocation
             }
         }
+    }
+
+    fun updateDateTime(isStart: Boolean, dateMillis: Long?, hour: Int, minute: Int) {
+        val base = dateMillis
+            ?: (if (isStart) startDateMillis else endDateMillis)
+            ?: System.currentTimeMillis()
+
+        val zoned = java.time.Instant.ofEpochMilli(base)
+            .atZone(java.time.ZoneId.of("America/Bogota"))
+            .withHour(hour).withMinute(minute).withSecond(0)
+
+        if (isStart) startDateMillis = zoned.toInstant().toEpochMilli()
+        else         endDateMillis   = zoned.toInstant().toEpochMilli()
     }
 
     // ── Validación ───────────────────────────────────────────────────────
@@ -122,7 +155,7 @@ class EditEventViewModel @Inject constructor(
     val isFormValid: Boolean
         get() = title.value.isNotBlank() &&
                 description.value.isNotBlank() &&
-                imageUrl.value.startsWith("http") &&
+                _imageUris.value.isNotEmpty() &&   // al menos 1 imagen
                 _selectedLocation.value != null &&
                 startDateMillis != null &&
                 endDateMillis   != null &&
@@ -131,7 +164,7 @@ class EditEventViewModel @Inject constructor(
     // ── Actualización ────────────────────────────────────────────────────
 
     fun updateEvent() {
-        val event    = currentEvent          ?: return
+        val event    = currentEvent            ?: return
         val location = _selectedLocation.value ?: return
         if (!isFormValid) return
 
@@ -142,7 +175,8 @@ class EditEventViewModel @Inject constructor(
                     event.copy(
                         title         = title.value.trim(),
                         description   = description.value.trim(),
-                        imageUrl      = imageUrl.value.trim(),
+                        // ✅ Convertir Uri → String en el límite ViewModel→Dominio
+                        imageUris     = _imageUris.value.map { it.toString() },
                         category      = category,
                         eventLocation = location,
                         maxAttendees  = maxAttendees.toIntOrNull(),

@@ -22,12 +22,11 @@ import coil3.compose.AsyncImage
 import com.miempresa.comuniapp.domain.model.Event
 import com.miempresa.comuniapp.domain.model.EventStatus
 import com.miempresa.comuniapp.domain.model.User
-import com.miempresa.comuniapp.domain.model.UserLevel // Asegúrate de importar tu enum/clase de nivel
+import com.miempresa.comuniapp.domain.model.UserLevel
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-// Función auxiliar para los emojis de nivel sugerida por Claude
 fun levelEmoji(level: UserLevel?): String {
     return when (level?.name) {
         "NOVATO" -> "🌱"
@@ -59,7 +58,8 @@ fun EventCard(
             // ── Imagen con badges ─────────────────────────────────────────────
             Box(modifier = Modifier.fillMaxWidth().height(200.dp)) {
                 AsyncImage(
-                    model = event.imageUrl,
+                    // ✅ CORRECCIÓN: Usar imageUris.firstOrNull()
+                    model = event.imageUris.firstOrNull(),
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()
@@ -118,20 +118,22 @@ fun EventCard(
                         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
                     )
                     dt.format(
-                        DateTimeFormatter.ofPattern("EEE d MMM · h:mm a", Locale("es", "ES"))
+                        // ✅ CORRECCIÓN: Usar Locale.forLanguageTag o Locale("es")
+                        DateTimeFormatter.ofPattern("EEE d MMM · h:mm a", Locale.forLanguageTag("es-ES"))
                     ).replaceFirstChar { it.uppercase() }
-                } catch (e: Exception) { event.startDate }
+                } catch (_: Exception) { // ✅ CORRECCIÓN: "_" para parámetro no usado
+                    event.startDate
+                }
 
                 Text(text = dateText, fontSize = 13.sp, color = Color(0xFF757575),
                     modifier = Modifier.padding(top = 2.dp))
 
-                // ── Fila de Info Actualizada con Diseño de Claude ────────────────
+                // ── Fila de Info Organizador ────────────────────────────────────
                 Row(
                     modifier = Modifier.padding(top = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Badge de Asistentes
                     val isFull = event.maxAttendees?.let { event.currentAttendees >= it } ?: false
                     Surface(
                         color = if (isFull) Color(0xFFFFEBEE) else Color(0xFFE8F5E9),
@@ -148,7 +150,6 @@ fun EventCard(
 
                     Text("·", color = Color(0xFFBDBDBD))
 
-                    // Info del Organizador y Nivel
                     organizer?.let { org ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
@@ -215,7 +216,6 @@ fun EventCard(
                         }
                     }
 
-                    // Contadores
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)

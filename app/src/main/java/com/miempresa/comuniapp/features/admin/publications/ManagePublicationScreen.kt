@@ -6,7 +6,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack // ✅ Cambiado
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,18 +29,17 @@ import com.miempresa.comuniapp.domain.model.VerificationStatus
 fun ManagePublicationsScreen(
     onNavigateBack : () -> Unit,
     onViewDetail   : (String) -> Unit,
-    bottomPadding  : PaddingValues = PaddingValues(),   // ← recibe el bottom de la BottomBar
+    bottomPadding  : PaddingValues = PaddingValues(),
     viewModel      : ManagePublicationsViewModel = hiltViewModel()
 ) {
     val publications  by viewModel.filteredPublications.collectAsState()
     val activeFilter  by viewModel.activeFilter.collectAsState()
     val organizersMap by viewModel.organizersMap.collectAsState()
 
-    // Estado del diálogo de rechazo
     var rejectTargetId by remember { mutableStateOf<String?>(null) }
     var rejectReason   by remember { mutableStateOf("") }
 
-    // ✅ Diálogo de rechazo
+    // Diálogo de rechazo
     rejectTargetId?.let { eventId ->
         AlertDialog(
             onDismissRequest = { rejectTargetId = null; rejectReason = "" },
@@ -87,7 +86,8 @@ fun ManagePublicationsScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.manage_publications_back_button_description))
+                        // ✅ Uso de AutoMirrored para evitar deprecación
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.manage_publications_back_button_description))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -109,7 +109,7 @@ fun ManagePublicationsScreen(
             if (publications.isEmpty()) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
-                        text  = stringResource(R.string.manage_publications_empty),
+                        text   = stringResource(R.string.manage_publications_empty),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -120,7 +120,6 @@ fun ManagePublicationsScreen(
                         start  = 16.dp,
                         end    = 16.dp,
                         top    = 8.dp,
-                        // ✅ La última tarjeta no queda tapada por la BottomBar
                         bottom = 16.dp + bottomPadding.calculateBottomPadding()
                     ),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -132,7 +131,7 @@ fun ManagePublicationsScreen(
                             onDetail      = { onViewDetail(event.id) },
                             onApprove     = { viewModel.approveEvent(event.id) },
                             onReject      = { rejectTargetId = event.id },
-                            onFinish      = { viewModel.finishEvent(event.id) }   // ← nuevo
+                            onFinish      = { viewModel.finishEvent(event.id) }
                         )
                     }
                 }
@@ -177,7 +176,7 @@ private fun PublicationCard(
     onDetail      : () -> Unit,
     onApprove     : () -> Unit,
     onReject      : () -> Unit,
-    onFinish      : () -> Unit                                 // ← nuevo
+    onFinish      : () -> Unit
 ) {
     Card(
         modifier  = Modifier.fillMaxWidth(),
@@ -188,7 +187,8 @@ private fun PublicationCard(
 
             Box(modifier = Modifier.fillMaxWidth()) {
                 AsyncImage(
-                    model              = event.imageUrl,
+                    // ✅ CORRECCIÓN: Usar la primera imagen de la lista
+                    model              = event.imageUris.firstOrNull(),
                     contentDescription = event.title,
                     modifier           = Modifier
                         .fillMaxWidth()
@@ -213,29 +213,26 @@ private fun PublicationCard(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text  = organizerName,
+                    text = organizerName,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text  = event.startDate,
+                    text = event.startDate,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Siempre visible
                 OutlinedButton(
                     onClick  = onDetail,
                     modifier = Modifier.fillMaxWidth()
                 ) { Text(stringResource(R.string.manage_publications_view_detail_button)) }
 
-                // ── Acciones según estado ─────────────────────────────────────
-
-                when {
-                    // Pendiente: puede aprobarse o rechazarse
-                    event.verificationStatus == VerificationStatus.PENDING -> {
+                // ✅ Se usa el estado de verificación como sujeto del when para limpiar advertencias
+                when (event.verificationStatus) {
+                    VerificationStatus.PENDING -> {
                         Row(
                             modifier              = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -243,18 +240,14 @@ private fun PublicationCard(
                             Button(
                                 onClick  = onApprove,
                                 modifier = Modifier.weight(1f),
-                                colors   = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF4CAF50)
-                                ),
+                                colors   = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50)),
                                 shape = RoundedCornerShape(8.dp)
                             ) { Text(stringResource(R.string.manage_publications_verify_button), color = Color.White) }
 
                             OutlinedButton(
                                 onClick  = onReject,
                                 modifier = Modifier.weight(1f),
-                                colors   = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = Color(0xFFF44336)
-                                ),
+                                colors   = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFF44336)),
                                 border = ButtonDefaults.outlinedButtonBorder(true).copy(
                                     brush = androidx.compose.ui.graphics.SolidColor(Color(0xFFF44336))
                                 ),
@@ -262,24 +255,20 @@ private fun PublicationCard(
                             ) { Text(stringResource(R.string.manage_publications_reject_button)) }
                         }
                     }
-
-                    // Aprobado y ACTIVO o FULL: puede finalizarse
-                    event.verificationStatus == VerificationStatus.APPROVED &&
-                            event.eventStatus        != EventStatus.FINISHED -> {
-                        Button(
-                            onClick  = onFinish,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors   = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF546E7A)   // gris azulado — acción destructiva suave
-                            ),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(stringResource(R.string.manage_publications_finish_button), color = Color.White)
+                    VerificationStatus.APPROVED -> {
+                        // Si está aprobado, revisamos si el evento aún no ha finalizado
+                        if (event.eventStatus != EventStatus.FINISHED) {
+                            Button(
+                                onClick  = onFinish,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors   = ButtonDefaults.buttonColors(containerColor = Color(0xFF546E7A)),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(stringResource(R.string.manage_publications_finish_button), color = Color.White)
+                            }
                         }
                     }
-
-                    // Finalizado o rechazado: solo lectura, sin botones extra
-                    else -> { /* nada */ }
+                    VerificationStatus.REJECTED -> { /* No se muestran acciones */ }
                 }
             }
         }

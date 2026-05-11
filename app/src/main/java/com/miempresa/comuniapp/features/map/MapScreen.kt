@@ -8,7 +8,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -87,7 +86,8 @@ private fun EventPreviewCard(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             AsyncImage(
-                model = event.imageUrl,
+                // ✅ CORRECCIÓN: Se cambió imageUrl por imageUris.firstOrNull()
+                model = event.imageUris.firstOrNull(),
                 contentDescription = null,
                 modifier = Modifier
                     .size(64.dp)
@@ -113,7 +113,13 @@ private fun EventPreviewCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.CalendarToday, null, Modifier.size(12.dp), tint = Color.Gray)
                     Spacer(Modifier.width(4.dp))
-                    Text(event.startDate.substringBefore(" "), fontSize = 12.sp, color = Color.Gray)
+                    // Manejo seguro por si la fecha viene vacía
+                    val dateLabel = if (event.startDate.contains(" ")) {
+                        event.startDate.substringBefore(" ")
+                    } else {
+                        event.startDate
+                    }
+                    Text(dateLabel, fontSize = 12.sp, color = Color.Gray)
                 }
             }
 

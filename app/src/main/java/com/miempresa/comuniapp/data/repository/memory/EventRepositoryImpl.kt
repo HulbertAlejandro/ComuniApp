@@ -22,6 +22,7 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
     }
 
     override suspend fun save(event: Event) {
+        // Ahora el evento ya trae su lista de imageUris desde el ViewModel
         _events.value += event.copy(
             eventStatus = EventStatus.CREATED,
             verificationStatus = VerificationStatus.PENDING
@@ -108,13 +109,11 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
 
     override suspend fun addInterest(eventId: String) {
         val event = findById(eventId) ?: return
-
         update(event.copy(interestCount = event.interestCount + 1))
     }
 
     override suspend fun removeInterest(eventId: String) {
         val event = findById(eventId) ?: return
-
         update(event.copy(interestCount = maxOf(0, event.interestCount - 1)))
     }
 
@@ -146,27 +145,35 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
             Event(
                 id = "1",
                 title = "Torneo de Fútbol Comunitario",
-                description = "Participa en nuestro torneo local y gana premios.",
+                description = "Participa en nuestro torneo local y gana premios. Contaremos con hidratación y arbitraje profesional.",
                 category = Category.DEPORTES,
-                imageUrl = "https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=800&auto=format&fit=crop",
-                eventLocation = EventLocation(4.5393, -75.6728), // Campus Uniquindío (Norte)
+                imageUris = listOf(
+                    "https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=800",
+                    "https://images.unsplash.com/photo-1517466787929-bc90951d0974?q=80&w=800",
+                    "https://images.unsplash.com/photo-1510566337590-2fc1f21d0faa?q=80&w=800"
+                ),
+                eventLocation = EventLocation(4.5393, -75.6728),
                 startDate = "2026-05-25 08:00",
                 endDate   = "2026-05-25 17:00",
                 maxAttendees     = 50,
                 currentAttendees = 32,
                 ownerId            = "1",
                 organizerName      = "Junta de Acción Comunal",
-                eventStatus        = EventStatus.ACTIVE,
-                verificationStatus = VerificationStatus.APPROVED
+                eventStatus        = EventStatus.CREATED,
+                verificationStatus = VerificationStatus.PENDING
             ),
 
             Event(
                 id = "2",
                 title = "Clase de Yoga al Aire Libre",
-                description = "Relájate y conecta con la naturaleza en el Parque de la Vida.",
+                description = "Relájate y conecta con la naturaleza en el Parque de la Vida. Trae tu propio mat.",
                 category = Category.DEPORTES,
-                imageUrl = "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=800&auto=format&fit=crop",
-                eventLocation = EventLocation(4.5490, -75.6650), // Sector Parque de la Vida / Fundadores
+                imageUris = listOf(
+                    "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=800",
+                    "https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=800",
+                    "https://images.unsplash.com/photo-1552196563-55cd4e45efb3?q=80&w=800"
+                ),
+                eventLocation = EventLocation(4.5490, -75.6650),
                 startDate = "2026-05-26 07:00",
                 endDate   = "2026-05-26 09:00",
                 maxAttendees     = 20,
@@ -180,10 +187,14 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
             Event(
                 id = "3",
                 title = "Feria Gastronómica Armenia",
-                description = "Comida típica quindiana, música y cultura local.",
+                description = "Comida típica quindiana, música y cultura local. ¡No te pierdas el concurso del mejor sudado!",
                 category = Category.CULTURA,
-                imageUrl = "https://images.unsplash.com/photo-1533777857889-4be7c70b33f7?q=80&w=800&auto=format&fit=crop",
-                eventLocation = EventLocation(4.5300, -75.6700), // Centro - Cerca a la Plaza de Bolívar
+                imageUris = listOf(
+                    "https://images.unsplash.com/photo-1533777857889-4be7c70b33f7?q=80&w=800",
+                    "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=800",
+                    "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=800"
+                ),
+                eventLocation = EventLocation(4.5300, -75.6700),
                 startDate = "2026-05-31 10:00",
                 endDate   = "2026-06-01 20:00",
                 maxAttendees     = 200,
@@ -197,10 +208,14 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
             Event(
                 id = "4",
                 title = "Jornada de Limpieza del Parque",
-                description = "Ayúdanos a cuidar el Parque Metropolitano La Secreta.",
+                description = "Ayúdanos a cuidar el Parque Metropolitano La Secreta. Nosotros ponemos las bolsas y guantes.",
                 category = Category.VOLUNTARIADO,
-                imageUrl = "https://images.unsplash.com/photo-1509099836639-18ba1795216d?q=80&w=800&auto=format&fit=crop",
-                eventLocation = EventLocation(4.5200, -75.6850), // La Secreta (Salida hacia el sur)
+                imageUris = listOf(
+                    "https://images.unsplash.com/photo-1509099836639-18ba1795216d?q=80&w=800",
+                    "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?q=80&w=800",
+                    "https://images.unsplash.com/photo-1618477461853-cf6ed80fafa5?q=80&w=800"
+                ),
+                eventLocation = EventLocation(4.5200, -75.6850),
                 startDate = "2026-06-02 08:00",
                 endDate   = "2026-06-02 12:00",
                 maxAttendees     = null,
@@ -214,10 +229,14 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
             Event(
                 id = "5",
                 title = "Taller de Programación Kotlin",
-                description = "Aprende desarrollo Android desde cero en el campus.",
+                description = "Aprende desarrollo Android desde cero en el campus. Trae tu laptop.",
                 category = Category.ACADEMICO,
-                imageUrl = "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=800&auto=format&fit=crop",
-                eventLocation = EventLocation(4.5550, -75.6580), // Más al Norte - Sector Oro Negro
+                imageUris = listOf(
+                    "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=800",
+                    "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=800",
+                    "https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=800"
+                ),
+                eventLocation = EventLocation(4.5550, -75.6580),
                 startDate = "2026-06-05 18:00",
                 endDate   = "2026-06-05 21:00",
                 maxAttendees     = 30,
@@ -231,10 +250,14 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
             Event(
                 id = "6",
                 title = "Ciclopaseo Nocturno Armenia",
-                description = "Recorrido en bicicleta por la ciudad cafetéra.",
+                description = "Recorrido en bicicleta por la ciudad cafetera. Indispensable casco y luces.",
                 category = Category.DEPORTES,
-                imageUrl = "https://images.unsplash.com/photo-1508973378895-8d1f2d4e94c6?q=80&w=800&auto=format&fit=crop",
-                eventLocation = EventLocation(4.5340, -75.6950), // Occidente - Sector San Juan / Los Quindos
+                imageUris = listOf(
+                    "https://images.unsplash.com/photo-1508973378895-8d1f2d4e94c6?q=80&w=800",
+                    "https://images.unsplash.com/photo-1471506480208-8a93a68634b7?q=80&w=800",
+                    "https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?q=80&w=800"
+                ),
+                eventLocation = EventLocation(4.5340, -75.6950),
                 startDate = "2026-06-07 19:00",
                 endDate   = "2026-06-07 22:00",
                 maxAttendees     = 100,
@@ -248,10 +271,14 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
             Event(
                 id = "7",
                 title = "Charla de Emprendimiento",
-                description = "Aprende a crear tu propio negocio en el Quindío.",
+                description = "Aprende a crear tu propio negocio en el Quindío con expertos del sector.",
                 category = Category.ACADEMICO,
-                imageUrl = "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800&auto=format&fit=crop",
-                eventLocation = EventLocation(4.5150, -75.6750), // Sur - Sector Estadio San José
+                imageUris = listOf(
+                    "https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=800",
+                    "https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=800",
+                    "https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=800"
+                ),
+                eventLocation = EventLocation(4.5150, -75.6750),
                 startDate = "2026-06-10 17:00",
                 endDate   = "2026-06-10 20:00",
                 maxAttendees     = 40,
@@ -267,8 +294,12 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
                 title = "Feria de Emprendedores Locales",
                 description = "Apoya negocios locales y productos artesanales del eje cafetero.",
                 category = Category.SOCIAL,
-                imageUrl = "https://images.unsplash.com/photo-1521334884684-d80222895322?q=80&w=800&auto=format&fit=crop",
-                eventLocation = EventLocation(4.5100, -75.7100), // Hacia el Edén / Aeropuerto
+                imageUris = listOf(
+                    "https://images.unsplash.com/photo-1521334884684-d80222895322?q=80&w=800",
+                    "https://images.unsplash.com/photo-1531050171651-61afc2834d75?q=80&w=800",
+                    "https://images.unsplash.com/photo-1475483768296-6163e08872a1?q=80&w=800"
+                ),
+                eventLocation = EventLocation(4.5100, -75.7100),
                 startDate = "2026-06-12 09:00",
                 endDate   = "2026-06-12 18:00",
                 maxAttendees     = 150,
@@ -282,10 +313,14 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
             Event(
                 id = "9",
                 title = "Cine Comunitario al Aire Libre",
-                description = "Película gratuita para toda la familia en el campus.",
+                description = "Película gratuita para toda la familia en el campus. Trae tu manta y snacks.",
                 category = Category.CULTURA,
-                imageUrl = "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=800&auto=format&fit=crop",
-                eventLocation = EventLocation(4.5650, -75.6500), // Norte extremo - Sector Avenida Centenario
+                imageUris = listOf(
+                    "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?q=80&w=800",
+                    "https://images.unsplash.com/photo-1517604931442-7e0c8ed0963c?q=80&w=800",
+                    "https://images.unsplash.com/photo-1524712245354-2c4e5e7121c0?q=80&w=800"
+                ),
+                eventLocation = EventLocation(4.5650, -75.6500),
                 startDate = "2026-06-15 19:00",
                 endDate   = "2026-06-15 22:00",
                 maxAttendees     = 80,
@@ -299,10 +334,14 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
             Event(
                 id = "10",
                 title = "Campaña de Donación de Ropa",
-                description = "Dona ropa para familias del barrio Brasilia.",
+                description = "Dona ropa en buen estado para familias del barrio Brasilia.",
                 category = Category.VOLUNTARIADO,
-                imageUrl = "https://images.unsplash.com/photo-1593113630400-ea4288922497?q=80&w=800&auto=format&fit=crop",
-                eventLocation = EventLocation(4.5450, -75.6850), // Noroccidente - Sector Granada / Las Acacias
+                imageUris = listOf(
+                    "https://images.unsplash.com/photo-1593113630400-ea4288922497?q=80&w=800",
+                    "https://images.unsplash.com/photo-1578358371191-20320622ff44?q=80&w=800",
+                    "https://images.unsplash.com/photo-1544027993-37dbfe43562a?q=80&w=800"
+                ),
+                eventLocation = EventLocation(4.5450, -75.6850),
                 startDate = "2026-06-18 09:00",
                 endDate   = "2026-06-18 16:00",
                 maxAttendees     = null,

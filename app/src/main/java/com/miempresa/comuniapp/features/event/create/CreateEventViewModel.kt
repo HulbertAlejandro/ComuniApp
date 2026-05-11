@@ -1,11 +1,13 @@
 package com.miempresa.comuniapp.features.event.create
 
+import android.content.Context
+import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.mapbox.geojson.Point
 import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.resources.ResourceProvider
 import com.miempresa.comuniapp.core.utils.RequestResult
@@ -16,6 +18,7 @@ import com.miempresa.comuniapp.domain.repository.EventRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.io.File
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -42,7 +45,7 @@ class CreateEventViewModel @Inject constructor(
         }
     }
 
-    // ── Campos con validación (sin cambios) ──────────────────────────────
+    // ── Campos con validación ────────────────────────────────────────────
 
     val title = ValidatedField("") {
         if (it.isBlank()) resources.getString(R.string.validation_error_title_required) else null
@@ -52,44 +55,86 @@ class CreateEventViewModel @Inject constructor(
         if (it.isBlank()) resources.getString(R.string.validation_error_description_required) else null
     }
 
-    val imageUrl = ValidatedField("") {
-        when {
-            it.isBlank() -> resources.getString(R.string.validation_error_image_url_required)
-            !it.startsWith("http") -> resources.getString(R.string.validation_error_image_url_invalid)
-            else -> null
-        }
-    }
-
     val maxAttendees = ValidatedField("") {
         it.toIntOrNull()
-            ?.let { num ->
-                if (num <= 0) resources.getString(R.string.validation_error_max_attendees_min)
-                else null
-            }
+            ?.let { num -> if (num <= 0) resources.getString(R.string.validation_error_max_attendees_min) else null }
             ?: resources.getString(R.string.validation_error_max_attendees_invalid)
     }
 
-    // ── Ubicación — reemplaza los ValidatedField de lat/lon ──────────────
-    //
-    // El flujo es:
-    //   MapBox.onMapClickListener → onMapPointSelected(Point) → _selectedLocation
-    //
-    // Usamos EventLocation como tipo de dominio; el Point de Mapbox
-    // se convierte aquí para que la Screen no tenga lógica de dominio.
+    // ── Imágenes múltiples ───────────────────────────────────────────────
+
+    /**
+     * Lista reactiva de URIs seleccionadas (como String para la UI).
+     * Se convierte a List<String> al guardar en el repositorio.
+     */
+    private val _selectedImageUris = MutableStateFlow<List<Uri>>(emptyList())
+    val selectedImageUris: StateFlow<List<Uri>> = _selectedImageUris.asStateFlow()
+
+    /**
+     * URI temporal para la foto de cámara ACTUAL.
+     * Se genera antes de lanzar el intent; se reutiliza el mismo
+     * slot hasta que el usuario confirma la foto.
+     */
+    private var _currentCameraUri: Uri? = null
+
+    /**
+     * Crea (o reutiliza) un archivo temporal en cache y devuelve su URI
+     * via FileProvider. Llama a esto justo antes de lanzar [cameraLauncher].
+     *
+     * Patrón:
+     *   1. Crear File vacío en cacheDir/images/
+     *   2. Exponer via FileProvider (authority = "${packageName}.provider")
+     *   3. Pasar URI al TakePicture contract
+     *   4. En onResult(true) → agregar a _selectedImageUris
+     */
+    fun createTempCameraUri(context: Context): Uri {
+        val imagesDir = File(context.cacheDir, "event_images").also { it.mkdirs() }
+        // Nombre único por disparo para soportar múltiples fotos de cámara
+        val tempFile = File(imagesDir, "camera_${UUID.randomUUID()}.jpg")
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            tempFile
+        )
+        _currentCameraUri = uri
+        return uri
+    }
+
+    /** Llamado cuando TakePicture devuelve true (foto guardada). */
+    fun onCameraImageCaptured(success: Boolean) {
+        if (success) {
+            _currentCameraUri?.let { uri ->
+                _selectedImageUris.value += uri
+            }
+        }
+        // Si falla, descartamos silenciosamente; el archivo temporal
+        // se limpiará junto con el caché del sistema.
+        _currentCameraUri = null
+    }
+
+    /** Llamado desde el launcher de galería (puede ser múltiple). */
+    fun onGalleryImagesSelected(uris: List<Uri>) {
+        if (uris.isNotEmpty()) {
+            _selectedImageUris.value += uris
+        }
+    }
+
+    /** Elimina una imagen de la lista por índice. */
+    fun removeImage(index: Int) {
+        _selectedImageUris.value = _selectedImageUris.value
+            .toMutableList()
+            .also { it.removeAt(index) }
+    }
+
+    // ── Ubicación ────────────────────────────────────────────────────────
 
     private val _selectedLocation = MutableStateFlow<EventLocation?>(null)
     val selectedLocation: StateFlow<EventLocation?> = _selectedLocation.asStateFlow()
 
-    /**
-     * Llamado desde la Screen cuando el usuario toca el mapa.
-     * Convierte el [Point] de Mapbox a [EventLocation] de dominio.
-     */
-    fun onMapPointSelected(point: Point) {
+    fun onMapPointSelected(point: com.mapbox.geojson.Point) {
         _selectedLocation.value = EventLocation(
             latitude = point.latitude(),
             longitude = point.longitude()
-            // direccionDisplay vacío por ahora;
-            // el Paso 4 agrega reverse geocoding aquí
         )
     }
 
@@ -98,7 +143,7 @@ class CreateEventViewModel @Inject constructor(
     var selectedCategory by mutableStateOf<Category?>(null)
     fun onCategorySelected(category: Category) { selectedCategory = category }
 
-    // ── Fechas (lógica original intacta) ─────────────────────────────────
+    // ── Fechas ───────────────────────────────────────────────────────────
 
     var startDateMillis by mutableStateOf<Long?>(null)
     var endDateMillis by mutableStateOf<Long?>(null)
@@ -110,9 +155,7 @@ class CreateEventViewModel @Inject constructor(
 
         val zoned = Instant.ofEpochMilli(base)
             .atZone(ZoneId.of("America/Bogota"))
-            .withHour(hour)
-            .withMinute(minute)
-            .withSecond(0)
+            .withHour(hour).withMinute(minute).withSecond(0)
 
         if (isStart) startDateMillis = zoned.toInstant().toEpochMilli()
         else endDateMillis = zoned.toInstant().toEpochMilli()
@@ -128,7 +171,7 @@ class CreateEventViewModel @Inject constructor(
     val isFormValid: Boolean
         get() = title.value.isNotBlank() &&
                 description.value.isNotBlank() &&
-                imageUrl.value.startsWith("http") &&
+                _selectedImageUris.value.isNotEmpty() &&   // al menos 1 imagen
                 (maxAttendees.value.toIntOrNull()?.let { it > 0 } ?: false) &&
                 _selectedLocation.value != null &&
                 startDateMillis != null &&
@@ -153,19 +196,20 @@ class CreateEventViewModel @Inject constructor(
 
                 repository.save(
                     Event(
-                        id               = UUID.randomUUID().toString(),
-                        title            = title.value.trim(),
-                        description      = description.value.trim(),
-                        category         = selectedCategory!!,
-                        imageUrl         = imageUrl.value.trim(),
-                        eventLocation    = location,
-                        startDate        = start.format(dateFormatter),
-                        endDate          = end.format(dateFormatter),
-                        maxAttendees     = maxAttendees.value.toIntOrNull(),
-                        ownerId          = owner,
-                        organizerName    = _organizerName.value
+                        id            = UUID.randomUUID().toString(),
+                        title         = title.value.trim(),
+                        description   = description.value.trim(),
+                        category      = selectedCategory!!,
+                        // ✅ Convertir Uri → String aquí, en el límite ViewModel→Dominio
+                        imageUris     = _selectedImageUris.value.map { it.toString() },
+                        eventLocation = location,
+                        startDate     = start.format(dateFormatter),
+                        endDate       = end.format(dateFormatter),
+                        maxAttendees  = maxAttendees.value.toIntOrNull(),
+                        ownerId       = owner,
+                        organizerName = _organizerName.value
                             ?: resources.getString(R.string.default_organizer_name),
-                        eventStatus      = EventStatus.CREATED,
+                        eventStatus        = EventStatus.CREATED,
                         verificationStatus = VerificationStatus.PENDING
                     )
                 )
@@ -186,14 +230,13 @@ class CreateEventViewModel @Inject constructor(
     private fun clearForm() {
         title.reset()
         description.reset()
-        imageUrl.reset()
         maxAttendees.reset()
-        _selectedLocation.value = null
-        selectedCategory        = null
-        startDateMillis         = null
-        endDateMillis           = null
+        _selectedImageUris.value = emptyList()
+        _selectedLocation.value  = null
+        selectedCategory         = null
+        startDateMillis          = null
+        endDateMillis            = null
     }
 
-    fun onImageUrlChange(url: String) { imageUrl.onChange(url) }
-    fun resetResult()                 { _result.value = null }
+    fun resetResult() { _result.value = null }
 }

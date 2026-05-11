@@ -170,45 +170,41 @@ fun EventListScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item {
-                    EventFilterChip(
-                        label = if (viewModel.selectedFilter == stringResource(R.string.event_list_filter_nearby_label)) "📍 " + stringResource(R.string.event_list_filter_nearby_label) else stringResource(R.string.event_list_filter_nearby_label),
-                        isSelected = viewModel.selectedFilter == stringResource(R.string.event_list_filter_nearby_label),
-                        onClick = { viewModel.toggleProximityFilter() }
-                    )
-                }
-                item {
                     val favActive by viewModel.favoriteCategoriesFilter.collectAsState()
                     EventFilterChip(
-                        label = if (favActive) "⭐ " + stringResource(R.string.event_list_filter_recommended_label) else stringResource(R.string.event_list_filter_recommended_label),
+                        label = if (favActive) "⭐ " + stringResource(R.string.event_list_filter_recommended_label)
+                        else stringResource(R.string.event_list_filter_recommended_label),
                         isSelected = favActive,
                         onClick = { viewModel.toggleFavoriteCategoriesFilter() }
                     )
                 }
                 item {
                     val catLabel = viewModel.selectedCategory
-                        ?.name?.lowercase()?.replaceFirstChar { it.uppercase() } ?: stringResource(R.string.event_list_filter_category)
+                        ?.name?.lowercase()?.replaceFirstChar { it.uppercase() }
+                        ?: stringResource(R.string.event_list_filter_category)
                     EventFilterChip(
-                        label = catLabel,
+                        label     = catLabel,
                         isSelected = viewModel.selectedFilter == stringResource(R.string.event_list_filter_category),
-                        onClick = { viewModel.showFiltersDialog = true }
+                        onClick   = { viewModel.showFiltersDialog = true }
                     )
                 }
                 item {
                     val dateLabel = viewModel.selectedDate
                         ?.format(DateTimeFormatter.ofPattern("d MMM", Locale("es", "ES")))
-                        ?.replaceFirstChar { it.uppercase() } ?: stringResource(R.string.event_list_filter_date)
+                        ?.replaceFirstChar { it.uppercase() }
+                        ?: stringResource(R.string.event_list_filter_date)
                     EventFilterChip(
-                        label = dateLabel,
+                        label     = dateLabel,
                         isSelected = viewModel.selectedFilter == stringResource(R.string.event_list_filter_date),
-                        onClick = { viewModel.showDatePicker = true }
+                        onClick   = { viewModel.showDatePicker = true }
                     )
                 }
                 if (viewModel.selectedFilter != null || viewModel.searchQuery.isNotBlank()) {
                     item {
                         EventFilterChip(
-                            label = "✕ " + stringResource(R.string.event_list_filter_clear),
+                            label     = "✕ " + stringResource(R.string.event_list_filter_clear),
                             isSelected = false,
-                            onClick = { viewModel.clearAllFilters() },
+                            onClick   = { viewModel.clearAllFilters() },
                             tintWhenInactive = Color(0xFFC62828)
                         )
                     }
