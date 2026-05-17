@@ -17,31 +17,46 @@ import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.ui.components.AppTextField
 import com.miempresa.comuniapp.ui.theme.appPrimaryButtonColors
 
+/**
+ * Pantalla de recuperación de contraseña.
+ *
+ * El usuario ingresa su email; si existe en Firestore, navega hacia
+ * [ResetPasswordScreen] para establecer una nueva contraseña.
+ *
+ * Manejo de estados:
+ * - [RequestResult.Loading]: spinner en el botón, botón deshabilitado.
+ * - [RequestResult.Success]: muestra mensaje y navega hacia el reset.
+ * - [RequestResult.Failure]: muestra el error en Snackbar, no navega.
+ *
+ * @param onNavigateToReset Callback de navegación hacia la pantalla de reset.
+ * @param viewModel         ViewModel inyectado por Hilt.
+ */
 @Composable
 fun ForgetPasswordScreen(
     onNavigateToReset: () -> Unit = {},
     viewModel: ForgetPasswordViewModel = hiltViewModel()
 ) {
-
     val snackbarHostState = remember { SnackbarHostState() }
     val result by viewModel.result.collectAsState()
-    val loadingMessage = stringResource(R.string.password_forget_loading)
 
+    /**
+     * Reacciona a cada cambio en [result]:
+     * - [RequestResult.Success]: muestra el mensaje y navega al reset.
+     * - [RequestResult.Failure]: muestra el error en Snackbar.
+     * - [RequestResult.Loading]: no interrumpe con Snackbar; el botón lo gestiona.
+     */
     LaunchedEffect(result) {
-        result?.let {
-            val message = when (it) {
-                is RequestResult.Success -> it.message
-                is RequestResult.Failure -> it.errorMessage
-                is RequestResult.Loading -> loadingMessage
-            }
-
-            snackbarHostState.showSnackbar(message)
-
-            if (it is RequestResult.Success) {
+        when (val r = result) {
+            is RequestResult.Success -> {
+                snackbarHostState.showSnackbar(r.message)
+                viewModel.resetResult()
                 onNavigateToReset()
             }
-
-            viewModel.resetResult()
+            is RequestResult.Failure -> {
+                snackbarHostState.showSnackbar(r.errorMessage)
+                viewModel.resetResult()
+            }
+            else -> Unit
         }
     }
 
@@ -85,9 +100,14 @@ fun ForgetPasswordScreen(
 
             Spacer(modifier = Modifier.height(30.dp))
 
+            /**
+             * Botón de verificación:
+             * - Se deshabilita si el formulario no es válido o si hay una operación en curso.
+             * - Muestra [CircularProgressIndicator] mientras [result] es [RequestResult.Loading].
+             */
             Button(
                 onClick = { viewModel.sendRecoveryEmail() },
-                enabled = viewModel.isFormValid,
+                enabled = viewModel.isFormValid && result !is RequestResult.Loading,
                 shape = MaterialTheme.shapes.large,
                 colors = appPrimaryButtonColors(),
                 modifier = Modifier
@@ -96,7 +116,7 @@ fun ForgetPasswordScreen(
             ) {
                 if (result is RequestResult.Loading) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(22.dp),
                         strokeWidth = 2.dp,
                         color = MaterialTheme.colorScheme.onPrimary
                     )

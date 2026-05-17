@@ -16,12 +16,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.domain.model.Badge
 import com.miempresa.comuniapp.domain.model.User
 import com.miempresa.comuniapp.domain.model.UserLevel
 import java.util.Locale
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "85845416836",
+    "project_id": "comuniapp-851d5",
+    "storage_bucket": "comuniapp-851d5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:85845416836:android:c2e0bde2c2ed8a70bc5bd1",
+        "android_client_info": {
+          "package_name": "com.miempresa.comuniapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDGkwh9M8BrDzx1kpGduPlktcTzarES90"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

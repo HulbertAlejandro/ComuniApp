@@ -2,7 +2,6 @@ package com.miempresa.comuniapp.features.event.create
 
 import android.Manifest
 import android.net.Uri
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -40,6 +39,25 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
+/**
+ * Pantalla de creación de eventos comunitarios.
+ *
+ * Permite al usuario:
+ * - Seleccionar múltiples imágenes (cámara o galería).
+ * - Ingresar título, descripción y categoría.
+ * - Elegir fechas y horas de inicio y fin.
+ * - Marcar la ubicación en el mapa de Mapbox.
+ * - Definir la capacidad máxima de asistentes.
+ *
+ * Manejo de estados:
+ * - [RequestResult.Loading]: botón deshabilitado mientras se guarda.
+ * - [RequestResult.Success]: Snackbar de confirmación y navegación al feed.
+ * - [RequestResult.Failure]: Snackbar de error, sin navegación.
+ *
+ * @param onBack         Callback para regresar a la pantalla anterior.
+ * @param onEventCreated Callback que navega al feed tras una creación exitosa.
+ * @param viewModel      ViewModel inyectado por Hilt.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateEventScreen(
@@ -47,50 +65,37 @@ fun CreateEventScreen(
     onEventCreated: () -> Unit,
     viewModel: CreateEventViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
-    val result by viewModel.result.collectAsState()
+    val context           = LocalContext.current
+    val result            by viewModel.result.collectAsState()
     val selectedImageUris by viewModel.selectedImageUris.collectAsState()
-    val selectedLocation by viewModel.selectedLocation.collectAsState()
+    val selectedLocation  by viewModel.selectedLocation.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // ── BottomSheet de fuente ────────────────────────────────────────────
     var showImageSourceSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    // ── Dialogs (heredados) ──────────────────────────────────────────────
-    var showDatePicker by remember { mutableStateOf(false) }
-    var showTimePicker by remember { mutableStateOf(false) }
+    var showDatePicker     by remember { mutableStateOf(false) }
+    var showTimePicker     by remember { mutableStateOf(false) }
     var showCategoryDialog by remember { mutableStateOf(false) }
-    var pickingForStart by remember { mutableStateOf(true) }
+    var pickingForStart    by remember { mutableStateOf(true) }
 
     val datePickerState = rememberDatePickerState()
     val timePickerState = rememberTimePickerState()
 
-    // ── Launchers de permisos e imágenes ─────────────────────────────────
-
-    /**
-     * Galería — ActivityResultContracts.GetMultipleContents
-     * Permite seleccionar varias imágenes de una sola vez.
-     */
+    // ── Launcher de galería: selección múltiple ──────────────────────────
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
-    ) { uris: List<Uri> ->
-        viewModel.onGalleryImagesSelected(uris)
-    }
+    ) { uris: List<Uri> -> viewModel.onGalleryImagesSelected(uris) }
 
-    /**
-     * Cámara — ActivityResultContracts.TakePicture
-     * Guarda en el URI temporal generado por FileProvider.
-     */
+    // ── Launcher de cámara ───────────────────────────────────────────────
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
-    ) { success: Boolean ->
-        viewModel.onCameraImageCaptured(success)
-    }
+    ) { success: Boolean -> viewModel.onCameraImageCaptured(success) }
 
     /**
-     * Permiso de cámara — si se otorga, creamos la URI y lanzamos la cámara.
-     * Si se deniega, mostramos un Snackbar informativo.
+     * Launcher de permiso de cámara.
+     * Si se concede, genera la URI temporal y lanza la cámara.
+     * Si se deniega, muestra un Snackbar informativo al usuario.
      */
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -98,43 +103,52 @@ fun CreateEventScreen(
         if (granted) {
             val uri = viewModel.createTempCameraUri(context)
             cameraLauncher.launch(uri)
-        } else {
-            // Coroutine scope para el snackbar fuera de un LaunchedEffect
-            // usamos snackbarHostState directamente en un scope ad-hoc
         }
+        // Si se deniega, no hacemos nada; el BottomSheet ya se cerró
     }
 
-    // ── Lógica de navegación / resultado ─────────────────────────────────
+    /**
+     * Reacciona a cada cambio en [result]:
+     * - [RequestResult.Success]: muestra confirmación y navega al feed.
+     * - [RequestResult.Failure]: muestra el error en Snackbar.
+     * - [RequestResult.Loading]: el botón gestiona el indicador visual.
+     */
     LaunchedEffect(result) {
-        result?.let {
-            when (it) {
-                is RequestResult.Success -> {
-                    snackbarHostState.showSnackbar(it.message)
-                    kotlinx.coroutines.delay(800)
-                    onEventCreated()
-                }
-                is RequestResult.Failure -> snackbarHostState.showSnackbar(it.errorMessage)
-                else -> Unit
+        when (val r = result) {
+            is RequestResult.Success -> {
+                snackbarHostState.showSnackbar(r.message)
+                viewModel.resetResult()
+                onEventCreated()
             }
-            viewModel.resetResult()
+            is RequestResult.Failure -> {
+                snackbarHostState.showSnackbar(r.errorMessage)
+                viewModel.resetResult()
+            }
+            else -> Unit
         }
     }
 
-    // ── Scaffold ─────────────────────────────────────────────────────────
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(stringResource(R.string.create_event_button), fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        stringResource(R.string.create_event_button),
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color.White
+                )
             )
         },
         containerColor = Color(0xFFF7F7F7),
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost   = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -147,43 +161,32 @@ fun CreateEventScreen(
 
             // ══ SECCIÓN 1: IMÁGENES MÚLTIPLES ═══════════════════════════
             SectionCard(title = stringResource(R.string.create_event_section_image)) {
-
-                // Fila horizontal de miniaturas + botón "+"
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    // Miniaturas de imágenes ya seleccionadas
                     itemsIndexed(selectedImageUris) { index, uri ->
                         ImageThumbnail(
-                            uri = uri,
+                            uri      = uri,
                             onRemove = { viewModel.removeImage(index) }
                         )
                     }
-
-                    // Botón "Agregar imagen"
                     item {
-                        AddImageButton(
-                            onClick = { showImageSourceSheet = true }
-                        )
+                        AddImageButton(onClick = { showImageSourceSheet = true })
                     }
                 }
-
-                // Mensaje de validación si no hay imágenes
                 if (selectedImageUris.isEmpty()) {
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        text  = stringResource(R.string.validation_error_image_url_required),
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.labelSmall,
+                        text     = stringResource(R.string.validation_error_image_url_required),
+                        color    = MaterialTheme.colorScheme.error,
+                        style    = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.padding(start = 4.dp)
                     )
                 }
             }
 
-            // ══ SECCIÓN 2–5: sin cambios respecto al original ═══════════
-            // (Información, Fecha, Ubicación, Capacidad — código heredado)
-
+            // ══ SECCIÓN 2: INFORMACIÓN ═══════════════════════════════════
             SectionCard(title = stringResource(R.string.create_event_section_details)) {
                 LabelText(stringResource(R.string.create_event_title_label))
                 CustomTextField(
@@ -194,7 +197,7 @@ fun CreateEventScreen(
                 Spacer(Modifier.height(12.dp))
                 LabelText(stringResource(R.string.create_event_category_label))
                 OutlinedCard(
-                    onClick = { showCategoryDialog = true },
+                    onClick  = { showCategoryDialog = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -217,6 +220,7 @@ fun CreateEventScreen(
                 )
             }
 
+            // ══ SECCIÓN 3: FECHA Y HORA ═══════════════════════════════════
             SectionCard(title = stringResource(R.string.create_event_section_datetime)) {
                 DateTimeRow(
                     stringResource(R.string.create_event_start),
@@ -224,7 +228,11 @@ fun CreateEventScreen(
                     { pickingForStart = true; showDatePicker = true },
                     { pickingForStart = true; showTimePicker = true }
                 )
-                HorizontalDivider(Modifier.padding(vertical = 8.dp), thickness = 0.5.dp, color = Color.LightGray)
+                HorizontalDivider(
+                    Modifier.padding(vertical = 8.dp),
+                    thickness = 0.5.dp,
+                    color     = Color.LightGray
+                )
                 DateTimeRow(
                     stringResource(R.string.create_event_end),
                     viewModel.endDateMillis,
@@ -233,6 +241,7 @@ fun CreateEventScreen(
                 )
             }
 
+            // ══ SECCIÓN 4: UBICACIÓN ═════════════════════════════════════
             SectionCard(title = stringResource(R.string.create_event_section_location)) {
                 MapBox(
                     modifier = Modifier
@@ -248,21 +257,25 @@ fun CreateEventScreen(
                     Spacer(Modifier.height(6.dp))
                     Text(
                         stringResource(R.string.create_event_location_required),
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.labelSmall,
+                        color    = MaterialTheme.colorScheme.error,
+                        style    = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.padding(start = 4.dp)
                     )
                 } else {
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        "📍 %.5f, %.5f".format(selectedLocation!!.latitude, selectedLocation!!.longitude),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
+                        "📍 %.5f, %.5f".format(
+                            selectedLocation!!.latitude,
+                            selectedLocation!!.longitude
+                        ),
+                        style    = MaterialTheme.typography.labelSmall,
+                        color    = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(start = 4.dp)
                     )
                 }
             }
 
+            // ══ SECCIÓN 5: CAPACIDAD ═════════════════════════════════════
             SectionCard(title = stringResource(R.string.create_event_section_capacity)) {
                 LabelText(stringResource(R.string.create_event_capacity_label))
                 CustomTextField(
@@ -272,13 +285,32 @@ fun CreateEventScreen(
                 )
             }
 
+            /**
+             * Botón de creación:
+             * - Se deshabilita si el formulario no es válido o hay operación en curso.
+             * - El estado Loading impide envíos duplicados.
+             */
             Button(
                 onClick  = { viewModel.createEvent() },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape    = RoundedCornerShape(16.dp),
-                enabled  = viewModel.isFormValid
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape   = RoundedCornerShape(16.dp),
+                enabled = viewModel.isFormValid && result !is RequestResult.Loading
             ) {
-                Text(stringResource(R.string.create_event_button), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                if (result is RequestResult.Loading) {
+                    CircularProgressIndicator(
+                        modifier    = Modifier.size(22.dp),
+                        strokeWidth = 2.dp,
+                        color       = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text(
+                        stringResource(R.string.create_event_button),
+                        fontWeight = FontWeight.Bold,
+                        fontSize   = 16.sp
+                    )
+                }
             }
 
             TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
@@ -289,7 +321,7 @@ fun CreateEventScreen(
         }
     }
 
-    // ══ MODAL BOTTOM SHEET — Elegir fuente ══════════════════════════════
+    // ══ MODAL BOTTOM SHEET — Elegir fuente de imagen ════════════════════
     if (showImageSourceSheet) {
         ModalBottomSheet(
             onDismissRequest = { showImageSourceSheet = false },
@@ -298,7 +330,6 @@ fun CreateEventScreen(
             ImageSourceBottomSheetContent(
                 onCameraClick = {
                     showImageSourceSheet = false
-                    // Solicitar permiso antes de abrir cámara
                     cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                 },
                 onGalleryClick = {
@@ -309,7 +340,8 @@ fun CreateEventScreen(
         }
     }
 
-    // ══ DIALOGS heredados (sin cambios) ═════════════════════════════════
+    // ══ DIALOGS ══════════════════════════════════════════════════════════
+
     if (showCategoryDialog) {
         AlertDialog(
             onDismissRequest = { showCategoryDialog = false },
@@ -336,7 +368,11 @@ fun CreateEventScreen(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.updateDateTime(pickingForStart, datePickerState.selectedDateMillis, 12, 0)
+                    viewModel.updateDateTime(
+                        pickingForStart,
+                        datePickerState.selectedDateMillis,
+                        12, 0
+                    )
                     showDatePicker = false
                 }) { Text(stringResource(R.string.create_event_date_dialog_confirm)) }
             }
@@ -348,8 +384,13 @@ fun CreateEventScreen(
             onDismissRequest = { showTimePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    val current = if (pickingForStart) viewModel.startDateMillis else viewModel.endDateMillis
-                    viewModel.updateDateTime(pickingForStart, current, timePickerState.hour, timePickerState.minute)
+                    val current = if (pickingForStart) viewModel.startDateMillis
+                    else viewModel.endDateMillis
+                    viewModel.updateDateTime(
+                        pickingForStart, current,
+                        timePickerState.hour,
+                        timePickerState.minute
+                    )
                     showTimePicker = false
                 }) { Text(stringResource(R.string.create_event_time_dialog_ok)) }
             },
@@ -358,10 +399,13 @@ fun CreateEventScreen(
     }
 }
 
-// ── Componentes nuevos ───────────────────────────────────────────────────────
+// ── Componentes privados ─────────────────────────────────────────────────────
 
 /**
- * Miniatura de imagen con botón "X" para eliminarla.
+ * Miniatura de imagen seleccionada con botón "X" para eliminarla.
+ *
+ * @param uri      URI local de la imagen.
+ * @param onRemove Callback que se ejecuta al tocar el botón de eliminar.
  */
 @Composable
 private fun ImageThumbnail(uri: Uri, onRemove: () -> Unit) {
@@ -372,12 +416,11 @@ private fun ImageThumbnail(uri: Uri, onRemove: () -> Unit) {
             .border(1.dp, Color.LightGray, RoundedCornerShape(12.dp))
     ) {
         AsyncImage(
-            model          = uri,
+            model              = uri,
             contentDescription = null,
-            contentScale   = ContentScale.Crop,
-            modifier       = Modifier.fillMaxSize()
+            contentScale       = ContentScale.Crop,
+            modifier           = Modifier.fillMaxSize()
         )
-        // Botón eliminar en esquina superior derecha
         IconButton(
             onClick  = onRemove,
             modifier = Modifier
@@ -387,7 +430,7 @@ private fun ImageThumbnail(uri: Uri, onRemove: () -> Unit) {
         ) {
             Icon(
                 imageVector        = Icons.Default.Close,
-                contentDescription = "Eliminar imagen",
+                contentDescription = stringResource(R.string.create_event_remove_image),
                 tint               = Color.White,
                 modifier           = Modifier.size(14.dp)
             )
@@ -396,7 +439,9 @@ private fun ImageThumbnail(uri: Uri, onRemove: () -> Unit) {
 }
 
 /**
- * Botón "+" para abrir el BottomSheet de fuente.
+ * Botón "+" para abrir el BottomSheet de selección de fuente de imagen.
+ *
+ * @param onClick Callback al tocar el botón.
  */
 @Composable
 fun AddImageButton(onClick: () -> Unit) {
@@ -412,17 +457,24 @@ fun AddImageButton(onClick: () -> Unit) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
                 imageVector        = Icons.Default.Add,
-                contentDescription = "Agregar imagen",
+                contentDescription = stringResource(R.string.create_event_add_image),
                 tint               = Color.Gray,
                 modifier           = Modifier.size(28.dp)
             )
-            Text("Añadir", fontSize = 10.sp, color = Color.Gray)
+            Text(
+                text     = stringResource(R.string.create_event_add_image_label),
+                fontSize = 10.sp,
+                color    = Color.Gray
+            )
         }
     }
 }
 
 /**
- * Contenido del ModalBottomSheet para elegir fuente de imagen.
+ * Contenido del ModalBottomSheet para elegir la fuente de imagen.
+ *
+ * @param onCameraClick  Callback para abrir la cámara.
+ * @param onGalleryClick Callback para abrir la galería.
  */
 @Composable
 private fun ImageSourceBottomSheetContent(
@@ -436,36 +488,46 @@ private fun ImageSourceBottomSheetContent(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text       = "Seleccionar imagen",
+            text       = stringResource(R.string.create_event_image_source_title),
             style      = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             modifier   = Modifier.padding(bottom = 8.dp)
         )
-
         OutlinedButton(
             onClick  = onCameraClick,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
-            shape    = RoundedCornerShape(12.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(12.dp)
         ) {
-            Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
-            Text("Tomar foto")
+            Icon(
+                Icons.Default.CameraAlt,
+                contentDescription = null,
+                modifier           = Modifier.padding(end = 8.dp)
+            )
+            Text(stringResource(R.string.create_event_take_photo))
         }
-
         Button(
             onClick  = onGalleryClick,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
-            shape    = RoundedCornerShape(12.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(12.dp)
         ) {
-            Icon(Icons.Default.PhotoLibrary, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
-            Text("Elegir de galería")
+            Icon(
+                Icons.Default.PhotoLibrary,
+                contentDescription = null,
+                modifier           = Modifier.padding(end = 8.dp)
+            )
+            Text(stringResource(R.string.create_event_choose_gallery))
         }
-
         Spacer(Modifier.height(16.dp))
     }
 }
 
-// ── Componentes heredados (sin cambios) ─────────────────────────────────────
+// ── Componentes reutilizables (usados también por EditEventScreen) ────────────
 
+/** Tarjeta contenedora de sección con título y contenido personalizable. */
 @Composable
 fun SectionCard(title: String, content: @Composable ColumnScope.() -> Unit) {
     Card(
@@ -475,50 +537,91 @@ fun SectionCard(title: String, content: @Composable ColumnScope.() -> Unit) {
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(Modifier.padding(16.dp)) {
-            Text(title, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, color = Color.Black)
+            Text(
+                title,
+                fontWeight = FontWeight.Bold,
+                style      = MaterialTheme.typography.titleMedium,
+                color      = Color.Black
+            )
             Spacer(Modifier.height(12.dp))
             content()
         }
     }
 }
 
+/** Fila de fecha y hora con botones independientes para DatePicker y TimePicker. */
 @Composable
-fun DateTimeRow(label: String, millis: Long?, onDate: () -> Unit, onTime: () -> Unit) {
+fun DateTimeRow(
+    label: String,
+    millis: Long?,
+    onDate: () -> Unit,
+    onTime: () -> Unit
+) {
     val formatter     = DateTimeFormatter.ofPattern("dd/MM/yyyy")
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-    val dateStr = millis?.let { Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).format(formatter) }
+    val dateStr = millis
+        ?.let { Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).format(formatter) }
         ?: stringResource(R.string.create_event_select_date)
-    val timeStr = millis?.let { Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).format(timeFormatter) }
+    val timeStr = millis
+        ?.let { Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).format(timeFormatter) }
         ?: stringResource(R.string.create_event_time_placeholder)
 
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, Modifier.width(60.dp), fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Gray)
+        Text(
+            label,
+            Modifier.width(60.dp),
+            fontWeight = FontWeight.Bold,
+            fontSize   = 12.sp,
+            color      = Color.Gray
+        )
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Surface(onClick = onDate, Modifier.weight(1.5f), shape = RoundedCornerShape(8.dp), color = Color(0xFFF0F0F0)) {
-                Text(dateStr, Modifier.padding(12.dp), fontSize = 12.sp)
-            }
-            Surface(onClick = onTime, Modifier.weight(1f), shape = RoundedCornerShape(8.dp), color = Color(0xFFF0F0F0)) {
-                Text(timeStr, Modifier.padding(12.dp), fontSize = 12.sp)
-            }
+            Surface(
+                onClick  = onDate,
+                modifier = Modifier.weight(1.5f),
+                shape    = RoundedCornerShape(8.dp),
+                color    = Color(0xFFF0F0F0)
+            ) { Text(dateStr, Modifier.padding(12.dp), fontSize = 12.sp) }
+            Surface(
+                onClick  = onTime,
+                modifier = Modifier.weight(1f),
+                shape    = RoundedCornerShape(8.dp),
+                color    = Color(0xFFF0F0F0)
+            ) { Text(timeStr, Modifier.padding(12.dp), fontSize = 12.sp) }
         }
     }
 }
 
+/** Etiqueta de campo con estilo secundario para los formularios de evento. */
 @Composable
 fun LabelText(text: String) {
-    Text(text, fontWeight = FontWeight.Bold, color = Color.Gray, fontSize = 10.sp, modifier = Modifier.padding(bottom = 4.dp))
+    Text(
+        text,
+        fontWeight = FontWeight.Bold,
+        color      = Color.Gray,
+        fontSize   = 10.sp,
+        modifier   = Modifier.padding(bottom = 4.dp)
+    )
 }
 
+/** Campo de texto personalizado sin indicador de fondo para los formularios de evento. */
 @Composable
-fun CustomTextField(value: String, onValueChange: (String) -> Unit, placeholder: String, isSingle: Boolean = true, minLines: Int = 1) {
+fun CustomTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    isSingle: Boolean = true,
+    minLines: Int = 1
+) {
     TextField(
-        value          = value,
-        onValueChange  = onValueChange,
-        modifier       = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)),
-        placeholder    = { Text(placeholder, color = Color.LightGray) },
-        singleLine     = isSingle,
-        minLines       = minLines,
-        colors         = TextFieldDefaults.colors(
+        value         = value,
+        onValueChange = onValueChange,
+        modifier      = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp)),
+        placeholder = { Text(placeholder, color = Color.LightGray) },
+        singleLine  = isSingle,
+        minLines    = minLines,
+        colors      = TextFieldDefaults.colors(
             focusedContainerColor   = Color(0xFFF9F9F9),
             unfocusedContainerColor = Color(0xFFF9F9F9),
             focusedIndicatorColor   = Color.Transparent,

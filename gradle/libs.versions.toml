@@ -20,6 +20,8 @@ dataStore = "1.2.0"
 ksp = "2.3.2"
 room = "2.8.4"
 mapsCompose = "11.22.0"
+googleGmsGoogleServices = "4.4.4"
+firebaseFirestore = "26.3.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -48,6 +50,7 @@ coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version
 data-store = { module = "androidx.datastore:datastore-preferences", version.ref="dataStore" }
 maps-android = { module = "com.mapbox.maps:android", version.ref = "mapsCompose" }
 maps-compose = { module = "com.mapbox.extension:maps-compose", version.ref = "mapsCompose" }
+firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -56,3 +59,4 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 hilt-android = { id="com.google.dagger.hilt.android", version.ref="hiltAndroid"}
 devtools-ksp = { id="com.google.devtools.ksp", version.ref="ksp" }
+google-gms-google-services = { id = "com.google.gms.google-services", version.ref = "googleGmsGoogleServices" }

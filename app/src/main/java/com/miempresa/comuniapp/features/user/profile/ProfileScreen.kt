@@ -22,13 +22,36 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel  // ✅ Corregido: era androidx.hilt.lifecycle.viewmodel.compose
 import coil3.compose.AsyncImage
 import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.domain.model.User
 import com.miempresa.comuniapp.ui.components.ConfirmDialog
 import com.miempresa.comuniapp.ui.theme.*
 
+/**
+ * Pantalla de perfil del usuario.
+ *
+ * Muestra:
+ * - Avatar, nombre, email y nivel de reputación.
+ * - Estadísticas reactivas: eventos creados, asistidos, guardados y puntos.
+ * - Opciones de navegación a sub-pantallas (solo para usuarios normales).
+ * - Botón de cierre de sesión con diálogo de confirmación.
+ *
+ * El parámetro [isAdmin] controla qué secciones se muestran:
+ * - Moderadores no ven estadísticas ni opciones de navegación de usuario.
+ * - Ambos roles ven el botón de editar perfil y cerrar sesión.
+ *
+ * @param paddingValues  Padding del Scaffold padre (BottomNav).
+ * @param onLogout       Callback de navegación al login tras cerrar sesión.
+ * @param onEditProfile  Callback hacia la pantalla de edición de perfil.
+ * @param onMyEvents     Callback hacia "Mis Eventos".
+ * @param onSavedEvents  Callback hacia "Eventos Guardados".
+ * @param onAchievements Callback hacia "Logros".
+ * @param onHistory      Callback hacia "Historial".
+ * @param isAdmin        true si el usuario tiene rol [UserRole.MODERATOR].
+ * @param viewModel      ViewModel inyectado por Hilt.
+ */
 @Composable
 fun ProfileScreen(
     paddingValues: PaddingValues,
@@ -38,14 +61,15 @@ fun ProfileScreen(
     onSavedEvents: () -> Unit,
     onAchievements: () -> Unit,
     onHistory: () -> Unit,
-    isAdmin        : Boolean = false,
+    isAdmin: Boolean = false,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
-    val user by viewModel.user.collectAsState()
-    val createdCount by viewModel.createdEventsCount.collectAsState()
+    val user          by viewModel.user.collectAsState()
+    val createdCount  by viewModel.createdEventsCount.collectAsState()
     val attendedCount by viewModel.attendedEventsCount.collectAsState()
-    val savedCount by viewModel.savedEventsCount.collectAsState()
-    val points by viewModel.points.collectAsState()
+    val savedCount    by viewModel.savedEventsCount.collectAsState()
+    val points        by viewModel.points.collectAsState()
+
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     Box(
@@ -54,7 +78,6 @@ fun ProfileScreen(
             .background(AppGradientBackground)
     ) {
         user?.let { u ->
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -64,7 +87,7 @@ fun ProfileScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                // 🔝 HEADER
+                // 🔝 ENCABEZADO
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -72,15 +95,15 @@ fun ProfileScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = stringResource(R.string.profile_title),
+                        text  = stringResource(R.string.profile_title),
                         style = MaterialTheme.typography.titleLarge,
                         color = TextMain
                     )
                 }
 
-                // 👤 AVATAR
+                // 👤 AVATAR con ícono de cámara
                 Box(
-                    modifier = Modifier.size(100.dp),
+                    modifier         = Modifier.size(100.dp),
                     contentAlignment = Alignment.BottomEnd
                 ) {
                     Box(
@@ -92,21 +115,22 @@ fun ProfileScreen(
                     ) {
                         if (u.profilePictureUrl.isNotBlank()) {
                             AsyncImage(
-                                model = u.profilePictureUrl,
+                                model              = u.profilePictureUrl,
                                 contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
+                                modifier           = Modifier.fillMaxSize(),
+                                contentScale       = ContentScale.Crop
                             )
                         } else {
+                            // Muestra la inicial del nombre si no hay foto
                             Text(
-                                text = u.name.take(1),
+                                text  = u.name.take(1),
                                 style = MaterialTheme.typography.headlineLarge,
                                 color = TextGray
                             )
                         }
                     }
 
-                    // 📷 Icono cámara
+                    // Ícono de cámara en esquina inferior derecha del avatar
                     Box(
                         modifier = Modifier
                             .size(28.dp)
@@ -115,17 +139,17 @@ fun ProfileScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.CameraAlt,
+                            imageVector        = Icons.Default.CameraAlt,
                             contentDescription = null,
-                            tint = PrimaryBlue,
-                            modifier = Modifier.size(16.dp)
+                            tint               = PrimaryBlue,
+                            modifier           = Modifier.size(16.dp)
                         )
                     }
                 }
 
                 Spacer(Modifier.height(16.dp))
 
-                // ── NOMBRE Y EMAIL ────────────────────────────────────────────────────────
+                // ── NOMBRE, EMAIL Y NIVEL ────────────────────────────────────
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -139,10 +163,10 @@ fun ProfileScreen(
                         text  = "@${u.email.substringBefore("@")}",
                         color = TextGray
                     )
-                    // ✅ El nivel solo se muestra para usuarios normales
+                    // El nivel de reputación solo se muestra para usuarios normales
                     if (!isAdmin) {
                         Text(
-                            text     = stringResource(
+                            text = stringResource(
                                 R.string.profile_level_label,
                                 u.reputation.level.ordinal + 1,
                                 u.reputation.level.name.lowercase()
@@ -156,11 +180,11 @@ fun ProfileScreen(
 
                 Spacer(Modifier.height(20.dp))
 
-                // ✏️ EDITAR PERFIL (presente para ambos roles)
+                // ✏️ BOTÓN EDITAR PERFIL (visible para ambos roles)
                 Button(
-                    onClick = onEditProfile,
-                    colors  = appPrimaryButtonColors(),
-                    shape   = RoundedCornerShape(30.dp),
+                    onClick  = onEditProfile,
+                    colors   = appPrimaryButtonColors(),
+                    shape    = RoundedCornerShape(30.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(Icons.Outlined.Edit, contentDescription = null)
@@ -170,50 +194,79 @@ fun ProfileScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // ✅ Estadísticas y opciones SOLO para usuario normal
+                // ── ESTADÍSTICAS Y OPCIONES (solo usuario normal) ────────────
                 if (!isAdmin) {
+
+                    // Tarjeta de estadísticas reactivas
                     Surface(
-                        shape         = RoundedCornerShape(24.dp),
-                        color         = SurfaceWhite,
+                        shape          = RoundedCornerShape(24.dp),
+                        color          = SurfaceWhite,
                         tonalElevation = 1.dp,
-                        modifier      = Modifier.fillMaxWidth()
+                        modifier       = Modifier.fillMaxWidth()
                     ) {
                         Row(
-                            modifier              = Modifier.fillMaxWidth().padding(16.dp),
+                            modifier              = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            StatItem(createdCount.toString(), "CREADOS")
+                            StatItem(createdCount.toString(),  "CREADOS")
                             StatItem(attendedCount.toString(), "ASISTIDOS")
-                            StatItem(savedCount.toString(), "GUARDADOS")
-                            StatItem(points.toString(), "PUNTOS")
+                            StatItem(savedCount.toString(),    "GUARDADOS")
+                            StatItem(points.toString(),        "PUNTOS")
                         }
                     }
 
                     Spacer(Modifier.height(16.dp))
 
+                    // Opciones de navegación a sub-pantallas
                     Surface(
                         shape    = RoundedCornerShape(24.dp),
                         color    = SurfaceWhite,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column {
-                            OptionItem(stringResource(R.string.profile_my_events_option), Icons.Outlined.Event) { onMyEvents() }
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                            OptionItem(stringResource(R.string.profile_saved_events_option), Icons.Outlined.BookmarkBorder) { onSavedEvents() }
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                            OptionItem(stringResource(R.string.profile_achievements_option), Icons.Outlined.StarBorder) { onAchievements() }
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                            OptionItem(stringResource(R.string.profile_history_option), Icons.Outlined.History) { onHistory() }
+                            OptionItem(
+                                stringResource(R.string.profile_my_events_option),
+                                Icons.Outlined.Event
+                            ) { onMyEvents() }
+
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant
+                            )
+
+                            OptionItem(
+                                stringResource(R.string.profile_saved_events_option),
+                                Icons.Outlined.BookmarkBorder
+                            ) { onSavedEvents() }
+
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant
+                            )
+
+                            OptionItem(
+                                stringResource(R.string.profile_achievements_option),
+                                Icons.Outlined.StarBorder
+                            ) { onAchievements() }
+
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant
+                            )
+
+                            OptionItem(
+                                stringResource(R.string.profile_history_option),
+                                Icons.Outlined.History
+                            ) { onHistory() }
                         }
                     }
 
                     Spacer(Modifier.height(20.dp))
                 }
 
-                // 🚪 CERRAR SESIÓN (presente para ambos roles)
+                // 🚪 CERRAR SESIÓN (visible para ambos roles)
                 Button(
-                    onClick = { showLogoutDialog = true },
-                    colors  = ButtonDefaults.buttonColors(
+                    onClick  = { showLogoutDialog = true },
+                    colors   = ButtonDefaults.buttonColors(
                         containerColor = ErrorRed.copy(alpha = 0.1f),
                         contentColor   = ErrorRed
                     ),
@@ -229,18 +282,19 @@ fun ProfileScreen(
             }
 
         } ?: Box(
-            Modifier.fillMaxSize(),
+            // Pantalla de carga mientras se resuelve la sesión
+            modifier         = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
             CircularProgressIndicator(color = PrimaryBlue)
         }
     }
 
-    // ✅ Confirm Dialog
+    // Diálogo de confirmación de cierre de sesión
     if (showLogoutDialog) {
         ConfirmDialog(
-            title = stringResource(R.string.profile_logout_dialog_title),
-            text = stringResource(R.string.profile_logout_dialog_message),
+            title     = stringResource(R.string.profile_logout_dialog_title),
+            text      = stringResource(R.string.profile_logout_dialog_message),
             onDismiss = { showLogoutDialog = false },
             onConfirm = {
                 viewModel.logout()
@@ -250,24 +304,29 @@ fun ProfileScreen(
     }
 }
 
-// ───────────────── COMPONENTES ─────────────────
+// ── Componentes reutilizables ────────────────────────────────────────────────
 
+/**
+ * Elemento de estadística con valor y etiqueta apilados verticalmente.
+ *
+ * @param value Valor numérico formateado como String.
+ * @param label Etiqueta descriptiva en mayúsculas.
+ */
 @Composable
 fun StatItem(value: String, label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = value,
-            color = TextMain,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = label,
-            color = TextLightGray,
-            fontSize = 12.sp
-        )
+        Text(text = value, color = TextMain, fontWeight = FontWeight.Bold)
+        Text(text = label, color = TextLightGray, fontSize = 12.sp)
     }
 }
 
+/**
+ * Fila de opción de navegación con ícono, texto y flecha de navegación.
+ *
+ * @param text    Texto descriptivo de la opción.
+ * @param icon    Ícono representativo.
+ * @param onClick Callback al tocar la fila.
+ */
 @Composable
 fun OptionItem(
     text: String,
@@ -284,17 +343,11 @@ fun OptionItem(
     ) {
         Icon(icon, contentDescription = null, tint = TextGray)
         Spacer(Modifier.width(12.dp))
-
-        Text(
-            text = text,
-            color = TextMain,
-            modifier = Modifier.weight(1f)
-        )
-
+        Text(text = text, color = TextMain, modifier = Modifier.weight(1f))
         Icon(
-            imageVector = Icons.Default.ChevronRight,
+            imageVector        = Icons.Default.ChevronRight,
             contentDescription = null,
-            tint = TextGray
+            tint               = TextGray
         )
     }
 }

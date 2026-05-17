@@ -1,7 +1,6 @@
 package com.miempresa.comuniapp.features.password
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,31 +15,56 @@ import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.ui.components.AppPasswordField
 import com.miempresa.comuniapp.ui.theme.appPrimaryButtonColors
 
+/**
+ * Pantalla de restablecimiento de contraseña.
+ *
+ * Recibe el email verificado en la pantalla anterior y permite al usuario
+ * definir y confirmar una nueva contraseña.
+ *
+ * Manejo de estados:
+ * - [RequestResult.Loading]: spinner en el botón, botón deshabilitado.
+ * - [RequestResult.Success]: Snackbar de confirmación y navegación al login.
+ * - [RequestResult.Failure]: Snackbar de error, sin navegación.
+ *
+ * @param emailVerificado      Email confirmado en [ForgetPasswordScreen].
+ * @param onPasswordResetSuccess Callback hacia la pantalla de login.
+ * @param viewModel            ViewModel inyectado por Hilt.
+ */
 @Composable
 fun ResetPasswordScreen(
+    emailVerificado: String = "",                  // ✅ Recibe el email de la pantalla anterior
     onPasswordResetSuccess: () -> Unit = {},
     viewModel: ResetPasswordViewModel = hiltViewModel()
 ) {
-
     val snackbarHostState = remember { SnackbarHostState() }
     val result by viewModel.result.collectAsState()
-    val loadingMessage = stringResource(R.string.password_reset_loading)
 
+    /**
+     * Asigna el email verificado al ViewModel en cuanto la pantalla se compone.
+     * Esto conecta el flujo de ForgetPassword → ResetPassword sin un ViewModel compartido.
+     */
+    LaunchedEffect(Unit) {
+        viewModel.email = emailVerificado
+    }
+
+    /**
+     * Reacciona a cada cambio en [result]:
+     * - [RequestResult.Success]: muestra confirmación y navega al login.
+     * - [RequestResult.Failure]: muestra el error en Snackbar.
+     * - [RequestResult.Loading]: el botón gestiona el indicador visual.
+     */
     LaunchedEffect(result) {
-        result?.let {
-            val message = when (it) {
-                is RequestResult.Success -> it.message
-                is RequestResult.Failure -> it.errorMessage
-                is RequestResult.Loading -> loadingMessage
-            }
-
-            snackbarHostState.showSnackbar(message)
-
-            if (it is RequestResult.Success) {
+        when (val r = result) {
+            is RequestResult.Success -> {
+                snackbarHostState.showSnackbar(r.message)
+                viewModel.resetResult()
                 onPasswordResetSuccess()
             }
-
-            viewModel.resetResult()
+            is RequestResult.Failure -> {
+                snackbarHostState.showSnackbar(r.errorMessage)
+                viewModel.resetResult()
+            }
+            else -> Unit
         }
     }
 
@@ -90,9 +114,14 @@ fun ResetPasswordScreen(
 
             Spacer(modifier = Modifier.height(30.dp))
 
+            /**
+             * Botón de confirmación:
+             * - Se deshabilita si el formulario no es válido o si hay operación en curso.
+             * - Muestra [CircularProgressIndicator] durante [RequestResult.Loading].
+             */
             Button(
                 onClick = { viewModel.resetPassword() },
-                enabled = viewModel.isFormValid,
+                enabled = viewModel.isFormValid && result !is RequestResult.Loading,
                 shape = MaterialTheme.shapes.large,
                 colors = appPrimaryButtonColors(),
                 modifier = Modifier
@@ -101,8 +130,9 @@ fun ResetPasswordScreen(
             ) {
                 if (result is RequestResult.Loading) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp
+                        modifier = Modifier.size(22.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
                     Text(stringResource(R.string.password_reset_button))

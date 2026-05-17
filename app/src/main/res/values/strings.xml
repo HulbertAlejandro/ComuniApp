@@ -414,4 +414,29 @@
     <string name="user_edit_address_label">Barrio o dirección</string>
 
     <string name="create_event_location_required">Toca el mapa para ubicar el evento</string>
+
+    <string name="register_take_photo">Tomar foto</string>
+
+    <string name="register_choose_gallery">Elegir de galería</string>
+
+    <string name="create_event_remove_image">Eliminar imagen</string>
+
+    <string name="create_event_add_image">Agregar imagen</string>
+
+    <string name="create_event_add_image_label">Agregar imagen</string>
+
+    <string name="create_event_image_source_title">Seleccionar fuente de imagen</string>
+
+    <string name="create_event_take_photo">Tomar foto</string>
+
+    <string name="create_event_choose_gallery">Elegir de galería</string>
+
+    <string name="edit_event_remove_image">Eliminar imagen</string>
+
+    <string name="edit_event_image_source_title">Seleccionar fuente de imagen</string>
+
+    <string name="edit_event_take_photo">Tomar foto</string>
+
+    <string name="edit_event_choose_gallery">Elegir de galería</string>
+
 </resources>

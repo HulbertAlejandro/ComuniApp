@@ -17,39 +17,56 @@ import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.ui.components.AppPasswordField
 import com.miempresa.comuniapp.ui.components.AppTextField
-import com.miempresa.comuniapp.ui.theme.*
+import com.miempresa.comuniapp.ui.theme.appPrimaryButtonColors
 
+/**
+ * Pantalla de inicio de sesión.
+ *
+ * Observa el estado [LoginViewModel.loginResult] para:
+ * - Mostrar un [CircularProgressIndicator] mientras la operación está en curso.
+ * - Navegar hacia el home al recibir [RequestResult.Success].
+ * - Mostrar un Snackbar de error al recibir [RequestResult.Failure].
+ *
+ * @param onLoginSuccess        Callback que ejecuta la navegación al home.
+ * @param onRegisterClick       Callback hacia la pantalla de registro.
+ * @param onForgotPasswordClick Callback hacia la pantalla de recuperación.
+ * @param viewModel             ViewModel inyectado por Hilt.
+ */
 @Composable
 fun LoginScreen(
+    onLoginSuccess: () -> Unit = {},
     onRegisterClick: () -> Unit = {},
     onForgotPasswordClick: () -> Unit = {},
     viewModel: LoginViewModel = hiltViewModel()
 ) {
-
     val snackbarHostState = remember { SnackbarHostState() }
     val loginResult by viewModel.loginResult.collectAsState()
-    val loadingMessage = stringResource(R.string.common_loading)
 
+    /**
+     * Reacciona a cada cambio en [loginResult]:
+     * - Loading: no interrumpe con Snackbar; el botón ya muestra el spinner.
+     * - Success: navega al home y luego limpia el estado.
+     * - Failure: muestra el mensaje de error en el Snackbar y limpia el estado.
+     */
     LaunchedEffect(loginResult) {
-        loginResult?.let { result ->
-
-            val message = when (result) {
-                is RequestResult.Success -> result.message
-                is RequestResult.Failure -> result.errorMessage
-                is RequestResult.Loading -> loadingMessage
+        when (val result = loginResult) {
+            is RequestResult.Success -> {
+                onLoginSuccess()
+                viewModel.resetLoginResult()
             }
-
-            snackbarHostState.showSnackbar(message)
-
-            viewModel.resetLoginResult()
+            is RequestResult.Failure -> {
+                snackbarHostState.showSnackbar(result.errorMessage)
+                viewModel.resetLoginResult()
+            }
+            // Loading y null no requieren acción aquí;
+            // el indicador visual se maneja directamente en el botón.
+            else -> Unit
         }
     }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = {
-            SnackbarHost(snackbarHostState)
-        }
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { padding ->
 
         Column(
@@ -95,19 +112,33 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(30.dp))
 
+            /**
+             * El botón se deshabilita durante la carga para evitar
+             * múltiples llamadas simultáneas al repositorio.
+             * Mientras [loginResult] es [RequestResult.Loading],
+             * muestra un [CircularProgressIndicator] en lugar del texto.
+             */
             Button(
                 onClick = { viewModel.login() },
-                enabled = viewModel.isFormValid,
+                enabled = viewModel.isFormValid && loginResult !is RequestResult.Loading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(55.dp),
                 shape = MaterialTheme.shapes.large,
                 colors = appPrimaryButtonColors()
             ) {
-                Text(
-                    stringResource(R.string.login_button),
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                if (loginResult is RequestResult.Loading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.login_button),
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

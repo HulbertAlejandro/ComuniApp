@@ -1,4 +1,3 @@
-// features/event/edit/EditEventScreen.kt
 package com.miempresa.comuniapp.features.event.edit
 
 import android.Manifest
@@ -38,6 +37,27 @@ import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.domain.model.Category
 import com.miempresa.comuniapp.features.event.create.*
 
+/**
+ * Pantalla de edición de un evento existente.
+ *
+ * Carga el evento desde Firestore al componerse y permite editar:
+ * - Imágenes (agregar desde cámara/galería, eliminar existentes).
+ * - Título, descripción y categoría.
+ * - Fechas y horas de inicio y fin.
+ * - Ubicación en el mapa.
+ * - Capacidad máxima.
+ *
+ * También permite eliminar el evento con confirmación mediante diálogo.
+ *
+ * Manejo de estados:
+ * - [RequestResult.Loading]: botones deshabilitados con spinner.
+ * - [RequestResult.Success]: Snackbar de confirmación y navegación hacia atrás.
+ * - [RequestResult.Failure]: Snackbar de error, sin navegación.
+ *
+ * @param eventId   ID del evento a editar.
+ * @param onBack    Callback para regresar al feed o pantalla anterior.
+ * @param viewModel ViewModel inyectado por Hilt.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditEventScreen(
@@ -45,12 +65,11 @@ fun EditEventScreen(
     onBack: () -> Unit,
     viewModel: EditEventViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
-    val result       by viewModel.result.collectAsState()
-    val imageUris    by viewModel.imageUris.collectAsState()
+    val context   = LocalContext.current
+    val result    by viewModel.result.collectAsState()
+    val imageUris by viewModel.imageUris.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // ── Dialogs / Sheets ─────────────────────────────────────────────────
     var showDeleteDialog     by remember { mutableStateOf(false) }
     var showCategoryDialog   by remember { mutableStateOf(false) }
     var showImageSourceSheet by remember { mutableStateOf(false) }
@@ -81,24 +100,29 @@ fun EditEventScreen(
             val uri = viewModel.createTempCameraUri(context)
             cameraLauncher.launch(uri)
         }
-        // Si se deniega: no hacemos nada; el sheet ya se cerró
     }
 
-    // ── Carga inicial ────────────────────────────────────────────────────
+    // ── Carga inicial del evento ─────────────────────────────────────────
     LaunchedEffect(eventId) { viewModel.loadEvent(eventId) }
 
-    // ── Resultado ────────────────────────────────────────────────────────
+    /**
+     * Reacciona a cada cambio en [result]:
+     * - [RequestResult.Success]: muestra mensaje y navega hacia atrás.
+     * - [RequestResult.Failure]: muestra el error en Snackbar.
+     * - [RequestResult.Loading]: los botones gestionan el indicador visual.
+     */
     LaunchedEffect(result) {
-        result?.let {
-            when (it) {
-                is RequestResult.Success -> {
-                    snackbarHostState.showSnackbar(it.message)
-                    onBack()
-                }
-                is RequestResult.Failure -> snackbarHostState.showSnackbar(it.errorMessage)
-                else -> Unit
+        when (val r = result) {
+            is RequestResult.Success -> {
+                snackbarHostState.showSnackbar(r.message)
+                viewModel.resetResult()
+                onBack()
             }
-            viewModel.resetResult()
+            is RequestResult.Failure -> {
+                snackbarHostState.showSnackbar(r.errorMessage)
+                viewModel.resetResult()
+            }
+            else -> Unit
         }
     }
 
@@ -115,15 +139,19 @@ fun EditEventScreen(
                     IconButton(onClick = onBack) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.edit_event_back_button_description)
+                            contentDescription = stringResource(
+                                R.string.edit_event_back_button_description
+                            )
                         )
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color.White
+                )
             )
         },
         containerColor = Color(0xFFF7F7F7),
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost   = { SnackbarHost(snackbarHostState) }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -134,27 +162,22 @@ fun EditEventScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // ══ SECCIÓN 1: IMÁGENES ══════════════════════════════════════════
+            // ══ SECCIÓN 1: IMÁGENES ══════════════════════════════════════
             SectionCard(title = stringResource(R.string.edit_event_image_section)) {
-
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    // Miniaturas editables
                     itemsIndexed(imageUris) { index, uri ->
                         EditImageThumbnail(
                             uri      = uri,
                             onRemove = { viewModel.removeImage(index) }
                         )
                     }
-                    // Botón "+" para agregar
                     item {
                         AddImageButton(onClick = { showImageSourceSheet = true })
                     }
                 }
-
-                // Validación: al menos 1 imagen
                 if (imageUris.isEmpty()) {
                     Spacer(Modifier.height(6.dp))
                     Text(
@@ -166,7 +189,7 @@ fun EditEventScreen(
                 }
             }
 
-            // ══ SECCIÓN 2: INFORMACIÓN ════════════════════════════════════════
+            // ══ SECCIÓN 2: INFORMACIÓN ════════════════════════════════════
             SectionCard(title = stringResource(R.string.edit_event_details_section)) {
                 LabelText(stringResource(R.string.edit_event_title_label))
                 CustomTextField(
@@ -174,11 +197,10 @@ fun EditEventScreen(
                     { viewModel.title.onChange(it) },
                     stringResource(R.string.edit_event_title_placeholder)
                 )
-
                 Spacer(Modifier.height(12.dp))
                 LabelText(stringResource(R.string.edit_event_category_label))
                 OutlinedCard(
-                    onClick = { showCategoryDialog = true },
+                    onClick  = { showCategoryDialog = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -186,7 +208,6 @@ fun EditEventScreen(
                         Icon(Icons.Default.ArrowDropDown, null)
                     }
                 }
-
                 Spacer(Modifier.height(12.dp))
                 LabelText(stringResource(R.string.edit_event_description_label))
                 CustomTextField(
@@ -198,7 +219,7 @@ fun EditEventScreen(
                 )
             }
 
-            // ══ SECCIÓN 3: FECHA Y HORA ═══════════════════════════════════════
+            // ══ SECCIÓN 3: FECHA Y HORA ═══════════════════════════════════
             SectionCard(title = stringResource(R.string.edit_event_datetime_section)) {
                 DateTimeRow(
                     stringResource(R.string.edit_event_start_label),
@@ -215,7 +236,7 @@ fun EditEventScreen(
                 )
             }
 
-            // ══ SECCIÓN 4: UBICACIÓN ══════════════════════════════════════════
+            // ══ SECCIÓN 4: UBICACIÓN ══════════════════════════════════════
             SectionCard(title = stringResource(R.string.edit_event_location_section)) {
                 MapBox(
                     modifier = Modifier
@@ -239,7 +260,7 @@ fun EditEventScreen(
                 }
             }
 
-            // ══ SECCIÓN 5: CAPACIDAD ══════════════════════════════════════════
+            // ══ SECCIÓN 5: CAPACIDAD ══════════════════════════════════════
             SectionCard(title = stringResource(R.string.edit_event_capacity_section)) {
                 LabelText(stringResource(R.string.edit_event_capacity_label))
                 CustomTextField(
@@ -249,24 +270,47 @@ fun EditEventScreen(
                 )
             }
 
-            // ══ BOTONES DE ACCIÓN ═════════════════════════════════════════════
+            /**
+             * Botón de guardar cambios:
+             * - Se deshabilita si el formulario no es válido o hay operación en curso.
+             * - Muestra spinner durante [RequestResult.Loading].
+             */
             Button(
                 onClick  = { viewModel.updateEvent() },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape    = RoundedCornerShape(16.dp),
-                enabled  = viewModel.isFormValid
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape   = RoundedCornerShape(16.dp),
+                enabled = viewModel.isFormValid && result !is RequestResult.Loading
             ) {
-                Text(
-                    stringResource(R.string.edit_event_save_button),
-                    fontWeight = FontWeight.Bold,
-                    fontSize   = 16.sp
-                )
+                if (result is RequestResult.Loading) {
+                    CircularProgressIndicator(
+                        modifier    = Modifier.size(22.dp),
+                        strokeWidth = 2.dp,
+                        color       = MaterialTheme.colorScheme.onPrimary
+                    )
+                } else {
+                    Text(
+                        stringResource(R.string.edit_event_save_button),
+                        fontWeight = FontWeight.Bold,
+                        fontSize   = 16.sp
+                    )
+                }
             }
 
+            /**
+             * Botón de eliminar:
+             * - Se deshabilita durante [RequestResult.Loading] para evitar
+             *   eliminar mientras hay una operación de guardado en progreso.
+             */
             TextButton(
                 onClick  = { showDeleteDialog = true },
                 modifier = Modifier.fillMaxWidth(),
-                colors   = ButtonDefaults.textButtonColors(contentColor = Color(0xFFD32F2F))
+                enabled  = result !is RequestResult.Loading,
+                colors   = ButtonDefaults.textButtonColors(
+                    contentColor         = Color(0xFFD32F2F),
+                    disabledContentColor = Color(0xFFD32F2F).copy(alpha = 0.4f)
+                )
             ) {
                 Text(
                     stringResource(R.string.edit_event_delete_button_text),
@@ -278,7 +322,7 @@ fun EditEventScreen(
         }
     }
 
-    // ══ MODAL BOTTOM SHEET — Elegir fuente ══════════════════════════════
+    // ══ MODAL BOTTOM SHEET ═══════════════════════════════════════════════
     if (showImageSourceSheet) {
         ModalBottomSheet(
             onDismissRequest = { showImageSourceSheet = false },
@@ -298,6 +342,7 @@ fun EditEventScreen(
     }
 
     // ══ DIALOGS ══════════════════════════════════════════════════════════
+
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -305,8 +350,11 @@ fun EditEventScreen(
             text  = { Text(stringResource(R.string.edit_event_delete_dialog_message_text)) },
             confirmButton = {
                 Button(
-                    onClick = { viewModel.deleteEvent() },
-                    colors  = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                    onClick = {
+                        showDeleteDialog = false
+                        viewModel.deleteEvent()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
                 ) { Text(stringResource(R.string.edit_event_delete_confirm_text)) }
             },
             dismissButton = {
@@ -359,12 +407,12 @@ fun EditEventScreen(
             onDismissRequest = { showTimePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    val current =
-                        if (pickingForStart) viewModel.startDateMillis
-                        else viewModel.endDateMillis
+                    val current = if (pickingForStart) viewModel.startDateMillis
+                    else viewModel.endDateMillis
                     viewModel.updateDateTime(
                         pickingForStart, current,
-                        timePickerState.hour, timePickerState.minute
+                        timePickerState.hour,
+                        timePickerState.minute
                     )
                     showTimePicker = false
                 }) { Text(stringResource(R.string.create_event_time_dialog_ok)) }
@@ -378,7 +426,10 @@ fun EditEventScreen(
 
 /**
  * Miniatura editable con botón X.
- * Diseño idéntico al de CreateEventScreen para consistencia visual.
+ * Diseño idéntico al de [CreateEventScreen] para consistencia visual.
+ *
+ * @param uri      URI de la imagen (local o remota).
+ * @param onRemove Callback al tocar el botón de eliminar.
  */
 @Composable
 private fun EditImageThumbnail(uri: Uri, onRemove: () -> Unit) {
@@ -403,7 +454,7 @@ private fun EditImageThumbnail(uri: Uri, onRemove: () -> Unit) {
         ) {
             Icon(
                 Icons.Default.Close,
-                contentDescription = "Eliminar imagen",
+                contentDescription = stringResource(R.string.edit_event_remove_image),
                 tint               = Color.White,
                 modifier           = Modifier.size(14.dp)
             )
@@ -412,8 +463,11 @@ private fun EditImageThumbnail(uri: Uri, onRemove: () -> Unit) {
 }
 
 /**
- * Contenido del ModalBottomSheet para edición.
- * Separado de CreateEventScreen para permitir strings distintos si es necesario.
+ * Contenido del ModalBottomSheet para la pantalla de edición.
+ * Separado de [CreateEventScreen] para permitir strings distintos si es necesario.
+ *
+ * @param onCameraClick  Callback para abrir la cámara.
+ * @param onGalleryClick Callback para abrir la galería.
  */
 @Composable
 private fun EditImageSourceContent(
@@ -427,26 +481,30 @@ private fun EditImageSourceContent(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text       = "Cambiar imágenes",
+            text       = stringResource(R.string.edit_event_image_source_title),
             style      = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             modifier   = Modifier.padding(bottom = 8.dp)
         )
         OutlinedButton(
             onClick  = onCameraClick,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
-            shape    = RoundedCornerShape(12.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(12.dp)
         ) {
             Icon(Icons.Default.CameraAlt, null, modifier = Modifier.padding(end = 8.dp))
-            Text("Tomar foto")
+            Text(stringResource(R.string.edit_event_take_photo))
         }
         Button(
             onClick  = onGalleryClick,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
-            shape    = RoundedCornerShape(12.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp),
+            shape = RoundedCornerShape(12.dp)
         ) {
             Icon(Icons.Default.PhotoLibrary, null, modifier = Modifier.padding(end = 8.dp))
-            Text("Elegir de galería")
+            Text(stringResource(R.string.edit_event_choose_gallery))
         }
         Spacer(Modifier.height(16.dp))
     }

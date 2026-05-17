@@ -10,7 +10,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,7 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel  // ✅ Corregido: era androidx.hilt.lifecycle.viewmodel.compose
 import coil3.compose.AsyncImage
 import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.utils.RequestResult
@@ -43,16 +42,28 @@ import com.miempresa.comuniapp.ui.components.AppPasswordField
 import com.miempresa.comuniapp.ui.components.AppTextField
 import com.miempresa.comuniapp.ui.components.ConfirmDialog
 import com.miempresa.comuniapp.ui.theme.appPrimaryButtonColors
-import kotlinx.coroutines.delay
 import java.io.File
 
+/**
+ * Pantalla de registro de nuevos usuarios.
+ *
+ * Maneja:
+ * - Selección de foto de perfil (cámara o galería).
+ * - Validación reactiva de cada campo del formulario.
+ * - Selección de categorías de interés con [FilterChip].
+ * - Navegación hacia atrás con diálogo de confirmación ([BackHandler]).
+ * - Estados de [RequestResult]: spinner en el botón, Snackbar de error,
+ *   y navegación automática al éxito.
+ *
+ * @param onNavigateToBack Callback para volver a la pantalla anterior.
+ * @param viewModel        ViewModel inyectado por Hilt.
+ */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun RegisterScreen(
     onNavigateToBack: () -> Unit = {},
     viewModel: RegisterViewModel = hiltViewModel()
 ) {
-
     val context = LocalContext.current
 
     var showExitDialog by remember { mutableStateOf(false) }
@@ -66,23 +77,21 @@ fun RegisterScreen(
     val registerResult by viewModel.registerResult.collectAsState()
     val selectedCategories by viewModel.selectedCategories.collectAsState()
 
-    // 📷 Cámara
+    // 📷 Lanzador de cámara: actualiza la foto si la captura fue exitosa
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
-        if (success) {
-            tempCameraUri?.let { photo = it.toString() }
-        }
+        if (success) tempCameraUri?.let { photo = it.toString() }
     }
 
-    // 🖼️ Galería
+    // 🖼️ Lanzador de galería: actualiza la foto con la URI seleccionada
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let { photo = it.toString() }
     }
 
-    // 🔐 Permiso cámara
+    // 🔐 Lanzador de permiso de cámara: abre la cámara si se concede
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -92,25 +101,25 @@ fun RegisterScreen(
         }
     }
 
-    val loadingMessage = stringResource(R.string.register_loading)
-
+    /**
+     * Reacciona a los cambios en [registerResult]:
+     * - [RequestResult.Success]: navega hacia atrás tras mostrar el mensaje.
+     * - [RequestResult.Failure]: muestra el error en el Snackbar.
+     * - [RequestResult.Loading]: no interrumpe con Snackbar; el botón muestra el spinner.
+     */
     LaunchedEffect(registerResult) {
-        registerResult?.let { result ->
-
-            val message = when (result) {
-                is RequestResult.Success -> result.message
-                is RequestResult.Failure -> result.errorMessage
-                is RequestResult.Loading -> loadingMessage
-            }
-
-            snackbarHostState.showSnackbar(message)
-
-            if (result is RequestResult.Success) {
-                delay(1000)
+        when (val result = registerResult) {
+            is RequestResult.Success -> {
+                snackbarHostState.showSnackbar(result.message)
+                viewModel.resetRegisterResult()
                 onNavigateToBack()
             }
-
-            viewModel.resetRegisterResult()
+            is RequestResult.Failure -> {
+                snackbarHostState.showSnackbar(result.errorMessage)
+                viewModel.resetRegisterResult()
+            }
+            // Loading y null se gestionan visualmente en el botón
+            else -> Unit
         }
     }
 
@@ -143,7 +152,7 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 👤 FOTO
+            // 👤 Foto de perfil: toca para abrir opciones de cámara o galería
             Box(
                 modifier = Modifier
                     .size(90.dp)
@@ -158,7 +167,6 @@ fun RegisterScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-
                 Icon(
                     imageVector = Icons.Default.CameraAlt,
                     contentDescription = null,
@@ -184,11 +192,10 @@ fun RegisterScreen(
                 error = viewModel.phone.error
             )
 
-
             AppTextField(
                 value = viewModel.direccion.value,
                 onValueChange = { viewModel.direccion.onChange(it) },
-                label = stringResource(R.string.register_address_label), // "Barrio o dirección (opcional)"
+                label = stringResource(R.string.register_address_label),
                 icon = Icons.Default.LocationOn,
                 error = viewModel.direccion.error
             )
@@ -226,6 +233,7 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Chips de selección de categorías de interés
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -233,13 +241,12 @@ fun RegisterScreen(
             ) {
                 Category.entries.forEach { category ->
                     val isSelected = selectedCategories.contains(category)
-
                     FilterChip(
                         selected = isSelected,
                         onClick = { viewModel.toggleCategory(category) },
                         label = {
                             Text(
-                                category.name.lowercase()
+                                text = category.name.lowercase()
                                     .replaceFirstChar { it.uppercase() },
                                 fontSize = 13.sp
                             )
@@ -251,16 +258,25 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            /**
+             * Botón de registro:
+             * - Se deshabilita si el formulario no es válido o si hay una operación en curso.
+             * - Muestra [CircularProgressIndicator] durante [RequestResult.Loading].
+             */
             Button(
                 onClick = { viewModel.register(photo) },
-                enabled = viewModel.isFormValid,
+                enabled = viewModel.isFormValid && registerResult !is RequestResult.Loading,
                 colors = appPrimaryButtonColors(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(55.dp)
             ) {
                 if (registerResult is RequestResult.Loading) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp))
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(22.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
                 } else {
                     Text(stringResource(R.string.register_button))
                 }
@@ -276,29 +292,27 @@ fun RegisterScreen(
         }
     }
 
-    // 📷 BottomSheet
+    // 📷 BottomSheet para elegir fuente de la foto de perfil
     if (showImageOptions) {
-        ModalBottomSheet(
-            onDismissRequest = { showImageOptions = false }
-        ) {
+        ModalBottomSheet(onDismissRequest = { showImageOptions = false }) {
             Column {
                 TextButton(onClick = {
                     showImageOptions = false
                     cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                 }) {
-                    Text("Tomar foto")
+                    Text(stringResource(R.string.register_take_photo))
                 }
-
                 TextButton(onClick = {
                     showImageOptions = false
                     galleryLauncher.launch("image/*")
                 }) {
-                    Text("Elegir de galería")
+                    Text(stringResource(R.string.register_choose_gallery))
                 }
             }
         }
     }
 
+    // 🚪 Diálogo de confirmación al presionar atrás con el formulario activo
     if (showExitDialog) {
         ConfirmDialog(
             title = stringResource(R.string.register_exit_dialog_title),
@@ -312,6 +326,11 @@ fun RegisterScreen(
     }
 }
 
+/**
+ * Crea un archivo temporal en la caché de la app y retorna su URI
+ * compatible con [FileProvider], necesaria para que la cámara pueda
+ * escribir la foto capturada.
+ */
 private fun createTempImageUri(context: Context): Uri {
     val file = File.createTempFile("photo_", ".jpg", context.cacheDir)
     return FileProvider.getUriForFile(

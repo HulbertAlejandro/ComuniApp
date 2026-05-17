@@ -7,6 +7,7 @@ import com.miempresa.comuniapp.domain.model.Event
 import com.miempresa.comuniapp.domain.model.EventStatus
 import com.miempresa.comuniapp.domain.model.User
 import com.miempresa.comuniapp.domain.model.VerificationStatus
+import com.miempresa.comuniapp.domain.repository.CommentRepository
 import com.miempresa.comuniapp.domain.repository.EventRepository
 import com.miempresa.comuniapp.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,18 +16,43 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * ViewModel de la pantalla "Mis Eventos".
+ *
+ * Expone cuatro listas reactivas según el estado del evento:
+ * - [createdEvents]:  Creados y pendientes de aprobación (PENDING).
+ * - [rejectedEvents]: Rechazados por el moderador (REJECTED).
+ * - [activeEvents]:   Aprobados y disponibles (ACTIVE o FULL).
+ * - [finishedEvents]: Finalizados (FINISHED).
+ *
+ * Todas las listas adjuntan el conteo de comentarios y pre-cargan
+ * los datos de los organizadores para la UI.
+ *
+ * @param eventRepository   Repositorio de eventos (Firestore).
+ * @param userRepository    Repositorio de usuarios (Firestore).
+ * @param commentRepository Repositorio de comentarios para contar por evento.
+ * @param sessionDataStore  Almacén local de la sesión del usuario autenticado.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class MyEventsViewModel @Inject constructor(
     private val eventRepository: EventRepository,
     private val userRepository: UserRepository,
-    private val commentRepository: com.miempresa.comuniapp.domain.repository.CommentRepository, // ✅ Inyectado para contar comentarios
+    private val commentRepository: CommentRepository,
     private val sessionDataStore: SessionDataStore
 ) : ViewModel() {
 
-    private val currentSession = sessionDataStore.sessionFlow.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    /** ID del usuario en sesión; se actualiza al suscribirse a [userInterests]. */
+    private val _currentUserId = MutableStateFlow<String?>(null)
 
-    // 1. CREADOS: Ahora solo muestra los que están en proceso de verificación (PENDING)
+    /** Mapa de organizadores pre-cargados para evitar consultas repetidas desde la UI. */
+    private val _usersMap = MutableStateFlow<Map<String, User>>(emptyMap())
+    val usersMap: StateFlow<Map<String, User>> = _usersMap.asStateFlow()
+
+    /**
+     * Eventos recién creados que están pendientes de aprobación moderación.
+     * Solo muestra los que tienen [VerificationStatus.PENDING].
+     */
     val createdEvents: StateFlow<List<Event>> =
         sessionDataStore.sessionFlow
             .filterNotNull()
@@ -35,15 +61,22 @@ class MyEventsViewModel @Inject constructor(
                     events.filter {
                         it.ownerId == session.userId &&
                                 it.eventStatus == EventStatus.CREATED &&
-                                it.verificationStatus == VerificationStatus.PENDING // ✅ Solo pendientes
+                                it.verificationStatus == VerificationStatus.PENDING
                     }.sortedByDescending { it.startDate }
                 }
             }
-            .flatMapLatest { events -> attachCommentCounts(events) } // ✅ Cargar contadores
+            .flatMapLatest { events -> attachCommentCounts(events) }
             .onEach { preloadOrganizers(it) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+            .stateIn(
+                scope        = viewModelScope,
+                started      = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList()
+            )
 
-    // 2. RECHAZADOS: Nueva sección para eventos con status REJECTED
+    /**
+     * Eventos rechazados por el moderador.
+     * Incluye el motivo de rechazo en [Event.rejectionReason].
+     */
     val rejectedEvents: StateFlow<List<Event>> =
         sessionDataStore.sessionFlow
             .filterNotNull()
@@ -57,9 +90,16 @@ class MyEventsViewModel @Inject constructor(
             }
             .flatMapLatest { events -> attachCommentCounts(events) }
             .onEach { preloadOrganizers(it) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+            .stateIn(
+                scope        = viewModelScope,
+                started      = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList()
+            )
 
-    // 3. ACTIVOS: Solo aprobados
+    /**
+     * Eventos aprobados y disponibles para la comunidad.
+     * Incluye tanto los de estado [EventStatus.ACTIVE] como [EventStatus.FULL].
+     */
     val activeEvents: StateFlow<List<Event>> =
         sessionDataStore.sessionFlow
             .filterNotNull()
@@ -68,15 +108,23 @@ class MyEventsViewModel @Inject constructor(
                     events.filter {
                         it.ownerId == session.userId &&
                                 it.verificationStatus == VerificationStatus.APPROVED &&
-                                (it.eventStatus == EventStatus.ACTIVE || it.eventStatus == EventStatus.FULL)
+                                (it.eventStatus == EventStatus.ACTIVE ||
+                                        it.eventStatus == EventStatus.FULL)
                     }.sortedByDescending { it.startDate }
                 }
             }
             .flatMapLatest { events -> attachCommentCounts(events) }
             .onEach { preloadOrganizers(it) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+            .stateIn(
+                scope        = viewModelScope,
+                started      = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList()
+            )
 
-    // 4. FINALIZADOS: Incluye mapeo de comentarios
+    /**
+     * Eventos finalizados del usuario.
+     * Un evento puede marcarse como finalizado manualmente desde esta pantalla.
+     */
     val finishedEvents: StateFlow<List<Event>> =
         sessionDataStore.sessionFlow
             .filterNotNull()
@@ -88,48 +136,47 @@ class MyEventsViewModel @Inject constructor(
                     }.sortedByDescending { it.startDate }
                 }
             }
-            .flatMapLatest { events -> attachCommentCounts(events) } // ✅ Corregido el contador
+            .flatMapLatest { events -> attachCommentCounts(events) }
             .onEach { preloadOrganizers(it) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+            .stateIn(
+                scope        = viewModelScope,
+                started      = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList()
+            )
 
-    // ✅ Función auxiliar para actualizar el contador de comentarios en la lista
-    private fun attachCommentCounts(events: List<Event>): Flow<List<Event>> = flow {
-        val updatedEvents = events.map { event ->
-            // ✅ .first() obtiene la lista actual de comentarios y permite sacar el .size (Int)
-            val comments = commentRepository.getCommentsByEvent(event.id).first()
-            event.copy(commentsCount = comments.size)
-        }
-        emit(updatedEvents)
-    }
-
-    // Intereses del usuario actual (para verificar estado)
-    private val _currentUserId = MutableStateFlow<String?>(null)
+    /**
+     * Conjunto de IDs de eventos marcados como "me interesa" por el usuario actual.
+     * Reactivo al documento del usuario en Firestore.
+     */
     val userInterests: StateFlow<Set<String>> =
         sessionDataStore.sessionFlow
             .filterNotNull()
             .flatMapLatest { session ->
                 _currentUserId.value = session.userId
                 userRepository.users.map { users ->
-                    users.find { it.id == session.userId }?.interestedEventIds ?: emptySet()
+                    users.find { it.id == session.userId }
+                        ?.interestedEventIds
+                        ?.toSet()
+                        ?: emptySet()
                 }
             }
             .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
+                scope        = viewModelScope,
+                started      = SharingStarted.WhileSubscribed(5000),
                 initialValue = emptySet()
             )
 
-    // Mapa de usuarios para mostrar organizadores
-    private val _usersMap = MutableStateFlow<Map<String, User>>(emptyMap())
-    val usersMap: StateFlow<Map<String, User>> = _usersMap.asStateFlow()
-
-    // Función toggle de interés (solo para CREADOS y ACTIVOS)
+    /**
+     * Alterna el interés del usuario en un evento.
+     * Si ya le interesa, lo quita; si no, lo agrega.
+     * Actualiza tanto [UserRepository] como [EventRepository] en Firestore.
+     *
+     * @param eventId ID del evento a alternar.
+     */
     fun toggleInterest(eventId: String) {
-        val userId = currentSession.value?.userId ?: return
-
+        val userId = _currentUserId.value ?: return
         viewModelScope.launch {
-            val isInterested = userInterests.value.contains(eventId)
-            if (isInterested) {
+            if (userInterests.value.contains(eventId)) {
                 userRepository.removeInterestFromUser(userId, eventId)
                 eventRepository.removeInterest(eventId)
             } else {
@@ -139,20 +186,43 @@ class MyEventsViewModel @Inject constructor(
         }
     }
 
-    // Función para finalizar evento
+    /**
+     * Marca un evento como finalizado en Firestore.
+     * Solo disponible para eventos en estado [EventStatus.ACTIVE].
+     *
+     * @param eventId ID del evento a finalizar.
+     */
     fun finishEvent(eventId: String) {
         viewModelScope.launch {
             eventRepository.markAsFinished(eventId)
         }
     }
 
-    // Preload de organizadores para eventos
+    /**
+     * Adjunta el conteo de comentarios a cada evento de la lista.
+     * Consulta secuencial con [Flow.first] por ser seguro con [callbackFlow] de Firestore.
+     *
+     * @param events Lista de eventos a enriquecer con [Event.commentsCount].
+     */
+    private fun attachCommentCounts(events: List<Event>): Flow<List<Event>> = flow {
+        val updatedEvents = events.map { event ->
+            val comments = commentRepository.getCommentsByEvent(event.id).first()
+            event.copy(commentsCount = comments.size)
+        }
+        emit(updatedEvents)
+    }
+
+    /**
+     * Pre-carga los datos de los organizadores de los eventos dados.
+     * Evita consultas duplicadas revisando el mapa antes de llamar a Firestore.
+     *
+     * @param events Lista de eventos cuyos organizadores pre-cargar.
+     */
     private suspend fun preloadOrganizers(events: List<Event>) {
         val userIds = events.mapNotNull { it.ownerId }.distinct()
         if (userIds.isNotEmpty()) {
-            val users = userRepository.getUsersByIds(userIds)
-            val usersMap = users.associateBy { it.id }
-            _usersMap.value = _usersMap.value + usersMap
+            val users  = userRepository.getUsersByIds(userIds)
+            _usersMap.value = _usersMap.value + users.associateBy { it.id }
         }
     }
 }

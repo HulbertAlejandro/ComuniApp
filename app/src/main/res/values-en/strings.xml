@@ -414,5 +414,29 @@
     <string name="user_edit_address_label">Neighborhood or address</string>
 
     <string name="create_event_location_required">Tap the map to locate the event</string>
+
+    <string name="register_take_photo">Take Photo</string>
+    <string name="register_choose_gallery">Choose from Gallery</string>
+
+    <string name="create_event_remove_image">Remove Image</string>
+
+    <string name="create_event_add_image">Add Image</string>
+
+    <string name="create_event_add_image_label">Add Image</string>
+
+    <string name="create_event_image_source_title">Select Image Source</string>
+
+    <string name="create_event_take_photo">Take Photo</string>
+
+    <string name="create_event_choose_gallery">Choose from Gallery</string>
+
+    <string name="edit_event_remove_image">Remove Image</string>
+
+    <string name="edit_event_image_source_title">Select Image Source</string>
+
+    <string name="edit_event_take_photo">Take Photo</string>
+
+    <string name="edit_event_choose_gallery">Choose from Gallery</string>
+
 </resources>
 

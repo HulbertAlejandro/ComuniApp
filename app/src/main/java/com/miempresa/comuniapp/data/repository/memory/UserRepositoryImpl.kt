@@ -162,24 +162,28 @@ class UserRepositoryImpl @Inject constructor() : UserRepository {
 
     override suspend fun addInterestToUser(userId: String, eventId: String) {
         val user = findById(userId) ?: return
+
+        if (eventId in user.interestedEventIds) return
+
         update(
             user.copy(
-                interestedEventIds = user.interestedEventIds + eventId
+                interestedEventIds = (user.interestedEventIds + eventId).toList()
             )
         )
     }
 
     override suspend fun removeInterestFromUser(userId: String, eventId: String) {
         val user = findById(userId) ?: return
+
         update(
             user.copy(
-                interestedEventIds = user.interestedEventIds - eventId
+                interestedEventIds = (user.interestedEventIds - eventId).toList()
             )
         )
     }
 
     override suspend fun getUserInterestedEventIds(userId: String): Set<String> {
-        return findById(userId)?.interestedEventIds ?: emptySet()
+        return findById(userId)?.interestedEventIds?.toSet() ?: emptySet()
     }
 
     // =============================

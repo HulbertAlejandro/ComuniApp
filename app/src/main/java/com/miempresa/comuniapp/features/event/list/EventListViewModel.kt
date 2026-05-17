@@ -64,7 +64,10 @@ class EventListViewModel @Inject constructor(
             .filterNotNull()
             .flatMapLatest { session ->
                 userRepository.users.map { users ->
-                    users.find { it.id == session.userId }?.interestedEventIds ?: emptySet()
+                    users.find { it.id == session.userId }
+                        ?.interestedEventIds
+                        ?.toSet()
+                        ?: emptySet()
                 }
             }
             .stateIn(
@@ -72,7 +75,6 @@ class EventListViewModel @Inject constructor(
                 started      = SharingStarted.WhileSubscribed(5_000),
                 initialValue = emptySet()
             )
-
     // ── Filtro por categorías favoritas ───────────────────────────────────
 
     private val _favoriteCategoriesFilter = MutableStateFlow(false)

@@ -1,5 +1,9 @@
 package com.miempresa.comuniapp.domain.model
 
+/**
+ * Constantes que definen cuántos puntos se otorgan o restan
+ * por cada acción del usuario en la aplicación.
+ */
 object ReputationPoints {
     const val INTEREST_ADDED   = 5
     const val INTEREST_REMOVED = -5
