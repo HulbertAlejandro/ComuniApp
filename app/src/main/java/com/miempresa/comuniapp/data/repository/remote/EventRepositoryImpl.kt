@@ -1,8 +1,13 @@
 package com.miempresa.comuniapp.data.repository.remote
 
+
+import android.util.Log
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.ListenerRegistration
 import com.miempresa.comuniapp.core.utils.toUserMessage
 import com.miempresa.comuniapp.domain.model.Category
 import com.miempresa.comuniapp.domain.model.Event
@@ -23,223 +28,294 @@ import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.math.sqrt
 
+
 @Singleton
 class EventRepositoryImpl @Inject constructor(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val auth: FirebaseAuth
 ) : EventRepository {
+
 
     private val collection = firestore.collection("events")
 
-    private val _events = MutableStateFlow<List<Event>>(emptyList())
 
+    private val _events = MutableStateFlow<List<Event>>(emptyList())
     override val events: StateFlow<List<Event>> = _events.asStateFlow()
 
-    init {
 
-        collection.addSnapshotListener { snapshot, error ->
+    private var snapshotListener: ListenerRegistration? = null
 
-            if (error != null) return@addSnapshotListener
 
-            snapshot?.let {
+    private val authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
 
-                _events.value = it.documents.mapNotNull { doc ->
 
-                    doc.toObject(Event::class.java)?.apply {
-                        id = doc.id
-                    }
-                }
-            }
+        Log.d("EventRepository", "Auth changed: ${firebaseAuth.currentUser?.uid}")
+
+
+        snapshotListener?.remove()
+        snapshotListener = null
+
+
+        if (firebaseAuth.currentUser != null) {
+            startEventsListener()
+        } else {
+            _events.value = emptyList()
         }
     }
 
-    override suspend fun save(event: Event) {
 
-        try {
+    init {
+        auth.addAuthStateListener(authStateListener)
+    }
+
+
+    private fun startEventsListener() {
+
+
+        snapshotListener?.remove()
+
+
+        snapshotListener = collection
+            .addSnapshotListener { snapshot, error ->
+
+
+                if (error != null) {
+
+
+                    Log.e(
+                        "EventRepository",
+                        "Firestore listener error: ${error.message}"
+                    )
+
+
+                    return@addSnapshotListener
+                }
+
+
+                val events = snapshot?.documents?.mapNotNull { doc ->
+
+
+                    doc.toObject(Event::class.java)
+                        ?.apply {
+                            id = doc.id
+                        }
+
+
+                } ?: emptyList()
+
+
+                _events.value = events
+            }
+    }
+
+
+    override suspend fun save(event: Event): String {
+        return try {
+            val currentUid = auth.currentUser?.uid
+                ?: throw Exception("Usuario no autenticado")
+
 
             val docRef = collection.document()
 
+
             val finalEvent = event.copy(
                 id = docRef.id,
+                ownerId = currentUid,
                 eventStatus = EventStatus.CREATED,
                 verificationStatus = VerificationStatus.PENDING
             )
 
+
             docRef.set(finalEvent).await()
 
+
+            docRef.id // 🔥 RETORNAMOS EL ID RECIÉN GENERADO
+
+
         } catch (e: FirebaseFirestoreException) {
-
             throw Exception(e.toUserMessage())
-
         } catch (e: Exception) {
-
-            throw Exception("Error al guardar el evento: ${e.message}")
+            throw Exception("Error al guardar evento: ${e.message}")
         }
     }
+
 
     override suspend fun findById(id: String): Event? {
 
-        try {
 
-            val doc = collection
-                .document(id)
-                .get()
-                .await()
+        return try {
 
-            return doc.toObject(Event::class.java)?.apply {
-                this.id = doc.id
-            }
+
+            val doc = collection.document(id).get().await()
+
+
+            doc.toObject(Event::class.java)
+                ?.apply {
+                    this.id = doc.id
+                }
+
 
         } catch (e: FirebaseFirestoreException) {
 
+
             throw Exception(e.toUserMessage())
+
 
         } catch (e: Exception) {
 
-            throw Exception("Error al buscar el evento: ${e.message}")
+
+            throw Exception(
+                "Error al buscar evento: ${e.message}"
+            )
         }
     }
 
+
     override suspend fun update(event: Event) {
 
+
         try {
+
 
             collection
                 .document(event.id)
                 .set(event)
                 .await()
 
+
         } catch (e: FirebaseFirestoreException) {
+
 
             throw Exception(e.toUserMessage())
 
+
         } catch (e: Exception) {
 
-            throw Exception("Error al actualizar el evento: ${e.message}")
+
+            throw Exception(
+                "Error al actualizar evento: ${e.message}"
+            )
         }
     }
 
+
     override suspend fun delete(id: String) {
 
+
         try {
+
 
             collection
                 .document(id)
                 .delete()
                 .await()
 
-        } catch (e: FirebaseFirestoreException) {
-
-            throw Exception(e.toUserMessage())
-
-        } catch (e: Exception) {
-
-            throw Exception("Error al eliminar el evento: ${e.message}")
-        }
-    }
-
-    // =========================================================
-    // MODERACIÓN
-    // =========================================================
-
-    override suspend fun getPendingEvents(): List<Event> {
-
-        try {
-
-            val snapshot = collection
-                .whereEqualTo(
-                    "verificationStatus",
-                    VerificationStatus.PENDING.name
-                )
-                .orderBy("date")
-                .get()
-                .await()
-
-            return snapshot.documents.mapNotNull { doc ->
-
-                doc.toObject(Event::class.java)?.apply {
-                    id = doc.id
-                }
-            }
 
         } catch (e: FirebaseFirestoreException) {
 
+
             throw Exception(e.toUserMessage())
+
 
         } catch (e: Exception) {
 
-            throw Exception("Error al consultar eventos pendientes: ${e.message}")
+
+            throw Exception(
+                "Error al eliminar evento: ${e.message}"
+            )
         }
     }
+
 
     override suspend fun approveEvent(eventId: String) {
 
+
         try {
+
 
             collection
                 .document(eventId)
                 .update(
                     mapOf(
                         "verificationStatus" to VerificationStatus.APPROVED.name,
+                        "eventStatus" to EventStatus.ACTIVE.name,
                         "rejectionReason" to null
                     )
                 )
                 .await()
 
+
         } catch (e: FirebaseFirestoreException) {
+
 
             throw Exception(e.toUserMessage())
 
+
         } catch (e: Exception) {
 
-            throw Exception("Error al aprobar el evento: ${e.message}")
+
+            throw Exception(
+                "Error al aprobar evento: ${e.message}"
+            )
         }
     }
+
 
     override suspend fun rejectEvent(
         eventId: String,
         reason: String
     ) {
 
+
         try {
+
 
             collection
                 .document(eventId)
                 .update(
                     mapOf(
                         "verificationStatus" to VerificationStatus.REJECTED.name,
+                        "eventStatus" to EventStatus.CREATED.name,
                         "rejectionReason" to reason
                     )
                 )
                 .await()
 
+
         } catch (e: FirebaseFirestoreException) {
+
 
             throw Exception(e.toUserMessage())
 
+
         } catch (e: Exception) {
 
-            throw Exception("Error al rechazar el evento: ${e.message}")
+
+            throw Exception(
+                "Error al rechazar evento: ${e.message}"
+            )
         }
     }
+
 
     override fun getEventsByVerificationStatus(
         status: VerificationStatus
     ): Flow<List<Event>> {
 
-        return _events.map { list ->
-            list.filter {
+
+        return _events.map { events ->
+            events.filter {
                 it.verificationStatus == status
             }
         }
     }
 
-    // =========================================================
-    // ESTADOS
-    // =========================================================
 
     override suspend fun markAsFinished(eventId: String) {
 
+
         try {
+
 
             collection
                 .document(eventId)
@@ -249,38 +325,157 @@ class EventRepositoryImpl @Inject constructor(
                 )
                 .await()
 
+
         } catch (e: FirebaseFirestoreException) {
+
 
             throw Exception(e.toUserMessage())
 
+
         } catch (e: Exception) {
 
-            throw Exception("Error al finalizar evento: ${e.message}")
+
+            throw Exception(
+                "Error al finalizar evento: ${e.message}"
+            )
         }
     }
 
-    override suspend fun updateEventStatus(eventId: String) {
 
-        try {
+    override suspend fun getEventsByIds(ids: List<String>): List<Event> {
 
-            val event = findById(eventId)
-                ?: return
 
-            val newStatus = when {
+        if (ids.isEmpty()) return emptyList()
 
-                event.maxAttendees != null &&
-                        event.currentAttendees >= event.maxAttendees -> {
-                    EventStatus.FULL
-                }
 
-                else -> EventStatus.ACTIVE
+        return try {
+
+
+            val chunks = ids.chunked(30)
+
+
+            val result = mutableListOf<Event>()
+
+
+            chunks.forEach { chunk ->
+
+
+                val snapshot = collection
+                    .whereIn(FieldPath.documentId(), chunk)
+                    .get()
+                    .await()
+
+
+                result.addAll(
+                    snapshot.documents.mapNotNull { doc ->
+
+
+                        doc.toObject(Event::class.java)
+                            ?.apply {
+                                id = doc.id
+                            }
+                    }
+                )
             }
 
-            collection
-                .document(eventId)
+
+            result
+
+
+        } catch (e: FirebaseFirestoreException) {
+
+
+            throw Exception(e.toUserMessage())
+
+
+        } catch (e: Exception) {
+
+
+            throw Exception(
+                "Error al consultar eventos: ${e.message}"
+            )
+        }
+    }
+
+
+    override suspend fun getEventsByUser(userId: String): List<Event> {
+
+
+        return try {
+
+
+            val snapshot = collection
+                .whereEqualTo("ownerId", userId)
+                .orderBy("startDate")
+                .get()
+                .await()
+
+
+            snapshot.documents.mapNotNull { doc ->
+
+
+                doc.toObject(Event::class.java)
+                    ?.apply {
+                        id = doc.id
+                    }
+            }
+
+
+        } catch (e: FirebaseFirestoreException) {
+
+
+            throw Exception(e.toUserMessage())
+
+
+        } catch (e: Exception) {
+
+
+            throw Exception(
+                "Error al consultar eventos del usuario: ${e.message}"
+            )
+        }
+    }
+
+
+    override suspend fun getEventsByCreator(userId: String): List<Event> {
+        return getEventsByUser(userId)
+    }
+
+
+    override suspend fun addInterest(eventId: String) {
+
+
+        collection.document(eventId)
+            .update(
+                "interestCount",
+                FieldValue.increment(1)
+            )
+            .await()
+    }
+
+
+    override suspend fun removeInterest(eventId: String) {
+
+
+        collection.document(eventId)
+            .update(
+                "interestCount",
+                FieldValue.increment(-1)
+            )
+            .await()
+    }
+
+
+    override suspend fun updateAttendeesCount(
+        eventId: String,
+        count: Int
+    ) {
+        try {
+
+            collection.document(eventId)
                 .update(
-                    "eventStatus",
-                    newStatus.name
+                    "currentAttendees",
+                    FieldValue.increment(count.toLong())
                 )
                 .await()
 
@@ -290,55 +485,60 @@ class EventRepositoryImpl @Inject constructor(
 
         } catch (e: Exception) {
 
-            throw Exception("Error al actualizar estado del evento: ${e.message}")
+            throw Exception(
+                "Error al actualizar asistentes: ${e.message}"
+            )
         }
     }
 
-    // =========================================================
-    // FILTROS
-    // =========================================================
+
+    override suspend fun updateEventStatus(eventId: String) {
+
+
+        val event = findById(eventId)
+            ?: return
+
+
+        val newStatus =
+            if (
+                event.maxAttendees != null &&
+                event.currentAttendees >= event.maxAttendees
+            ) {
+                EventStatus.FULL
+            } else {
+                EventStatus.ACTIVE
+            }
+
+
+        collection.document(eventId)
+            .update(
+                "eventStatus",
+                newStatus.name
+            )
+            .await()
+    }
+
+
+    override suspend fun getPendingEvents(): List<Event> {
+
+
+        return events.value.filter {
+            it.verificationStatus == VerificationStatus.PENDING
+        }
+    }
+
 
     override suspend fun getEventsByCategory(
         category: Category
     ): List<Event> {
 
-        try {
 
-            /**
-             * Consulta avanzada:
-             * - whereEqualTo
-             * - enum.name
-             * - orderBy
-             */
-            val snapshot = collection
-                .whereEqualTo(
-                    "category",
-                    category.name
-                )
-                .whereEqualTo(
-                    "verificationStatus",
-                    VerificationStatus.APPROVED.name
-                )
-                .orderBy("date")
-                .get()
-                .await()
-
-            return snapshot.documents.mapNotNull { doc ->
-
-                doc.toObject(Event::class.java)?.apply {
-                    id = doc.id
-                }
-            }
-
-        } catch (e: FirebaseFirestoreException) {
-
-            throw Exception(e.toUserMessage())
-
-        } catch (e: Exception) {
-
-            throw Exception("Error al consultar eventos por categoría: ${e.message}")
+        return events.value.filter {
+            it.category == category &&
+                    it.verificationStatus == VerificationStatus.APPROVED
         }
     }
+
 
     override suspend fun getEventsNearby(
         latitude: Double,
@@ -346,185 +546,19 @@ class EventRepositoryImpl @Inject constructor(
         radiusKm: Double
     ): List<Event> {
 
-        return try {
 
-            _events.value.filter { event ->
+        return events.value.filter { event ->
 
-                calculateDistanceKm(
-                    latitude,
-                    longitude,
-                    event.eventLocation.latitude,
-                    event.eventLocation.longitude
-                ) <= radiusKm
-            }
 
-        } catch (e: Exception) {
-
-            throw Exception("Error al consultar eventos cercanos: ${e.message}")
+            calculateDistanceKm(
+                latitude,
+                longitude,
+                event.eventLocation.latitude,
+                event.eventLocation.longitude
+            ) <= radiusKm
         }
     }
 
-    override suspend fun getEventsByUser(userId: String): List<Event> {
-
-        try {
-
-            val snapshot = collection
-                .whereEqualTo("ownerId", userId)
-                .orderBy("date")
-                .get()
-                .await()
-
-            return snapshot.documents.mapNotNull { doc ->
-
-                doc.toObject(Event::class.java)?.apply {
-                    id = doc.id
-                }
-            }
-
-        } catch (e: FirebaseFirestoreException) {
-
-            throw Exception(e.toUserMessage())
-
-        } catch (e: Exception) {
-
-            throw Exception("Error al consultar eventos del usuario: ${e.message}")
-        }
-    }
-
-    override suspend fun getEventsByCreator(userId: String): List<Event> {
-
-        return getEventsByUser(userId)
-    }
-
-    // =========================================================
-    // INTERACCIÓN
-    // =========================================================
-
-    override suspend fun addInterest(eventId: String) {
-
-        try {
-
-            collection
-                .document(eventId)
-                .update(
-                    "interestCount",
-                    FieldValue.increment(1)
-                )
-                .await()
-
-        } catch (e: FirebaseFirestoreException) {
-
-            throw Exception(e.toUserMessage())
-
-        } catch (e: Exception) {
-
-            throw Exception("Error al agregar interés: ${e.message}")
-        }
-    }
-
-    override suspend fun removeInterest(eventId: String) {
-
-        try {
-
-            collection
-                .document(eventId)
-                .update(
-                    "interestCount",
-                    FieldValue.increment(-1)
-                )
-                .await()
-
-        } catch (e: FirebaseFirestoreException) {
-
-            throw Exception(e.toUserMessage())
-
-        } catch (e: Exception) {
-
-            throw Exception("Error al remover interés: ${e.message}")
-        }
-    }
-
-    // =========================================================
-    // ASISTENTES
-    // =========================================================
-
-    override suspend fun updateAttendeesCount(
-        eventId: String,
-        count: Int
-    ) {
-
-        try {
-
-            collection
-                .document(eventId)
-                .update(
-                    "currentAttendees",
-                    count
-                )
-                .await()
-
-            updateEventStatus(eventId)
-
-        } catch (e: FirebaseFirestoreException) {
-
-            throw Exception(e.toUserMessage())
-
-        } catch (e: Exception) {
-
-            throw Exception("Error al actualizar asistentes: ${e.message}")
-        }
-    }
-
-    // =========================================================
-    // CONSULTA POR IDS
-    // =========================================================
-
-    override suspend fun getEventsByIds(ids: List<String>): List<Event> {
-
-        try {
-
-            if (ids.isEmpty()) return emptyList()
-
-            /**
-             * Consulta avanzada usando whereIn.
-             * Firestore permite máximo 10 IDs por consulta.
-             */
-            val chunks = ids.chunked(10)
-
-            val events = mutableListOf<Event>()
-
-            chunks.forEach { chunk ->
-
-                val snapshot = collection
-                    .whereIn("id", chunk)
-                    .get()
-                    .await()
-
-                events.addAll(
-                    snapshot.documents.mapNotNull { doc ->
-
-                        doc.toObject(Event::class.java)?.apply {
-                            id = doc.id
-                        }
-                    }
-                )
-            }
-
-            return events
-
-        } catch (e: FirebaseFirestoreException) {
-
-            throw Exception(e.toUserMessage())
-
-        } catch (e: Exception) {
-
-            throw Exception("Error al consultar eventos por IDs: ${e.message}")
-        }
-    }
-
-    // =========================================================
-    // HELPERS
-    // =========================================================
 
     private fun calculateDistanceKm(
         lat1: Double,
@@ -533,11 +567,13 @@ class EventRepositoryImpl @Inject constructor(
         lon2: Double
     ): Double {
 
+
         val r = 6371.0
 
-        val dLat = Math.toRadians(lat2 - lat1)
 
+        val dLat = Math.toRadians(lat2 - lat1)
         val dLon = Math.toRadians(lon2 - lon1)
+
 
         val a =
             sin(dLat / 2).pow(2) +
@@ -545,9 +581,30 @@ class EventRepositoryImpl @Inject constructor(
                     cos(Math.toRadians(lat2)) *
                     sin(dLon / 2).pow(2)
 
+
         return r * 2 * atan2(
             sqrt(a),
             sqrt(1 - a)
         )
+    }
+
+    override suspend fun incrementCommentsCount(eventId: String) {
+
+        collection.document(eventId)
+            .update(
+                "commentsCount",
+                FieldValue.increment(1)
+            )
+            .await()
+    }
+
+    override suspend fun decrementCommentsCount(eventId: String) {
+
+        collection.document(eventId)
+            .update(
+                "commentsCount",
+                FieldValue.increment(-1)
+            )
+            .await()
     }
 }

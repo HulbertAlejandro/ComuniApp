@@ -17,33 +17,54 @@ import com.miempresa.comuniapp.features.dashboard.user.UserScreen
 import com.miempresa.comuniapp.features.home.HomeScreen
 import com.miempresa.comuniapp.features.login.LoginScreen
 import com.miempresa.comuniapp.features.password.ForgetPasswordScreen
-import com.miempresa.comuniapp.features.password.ResetPasswordScreen
 import com.miempresa.comuniapp.features.register.RegisterScreen
 
 @Composable
 fun AppNavigation(
+    initialEventId: String? = null,
     sessionViewModel: SessionViewModel = hiltViewModel()
 ) {
+
     val sessionState by sessionViewModel.sessionState.collectAsState()
 
     Surface(modifier = Modifier.fillMaxSize()) {
+
         when (val state = sessionState) {
 
             is SessionState.Loading -> {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator()
                 }
             }
 
-            is SessionState.NotAuthenticated -> AuthNavigation()
+            is SessionState.NotAuthenticated -> {
+
+                AuthNavigation()
+            }
 
             is SessionState.Authenticated -> {
-                // ✅ El rol determina qué contenedor se muestra.
-                // Cada contenedor (AdminScreen / UserScreen) tiene su propio
-                // NavHost interno — el raíz solo necesita estas dos ramas.
+
                 when (state.session.role) {
-                    UserRole.MODERATOR -> AdminScreen(onLogout = sessionViewModel::logout)
-                    UserRole.USER      -> UserScreen(onLogout  = sessionViewModel::logout)
+
+                    UserRole.MODERATOR -> {
+
+                        AdminScreen(
+                            onLogout = sessionViewModel::logout,
+                            initialEventId = initialEventId
+                        )
+                    }
+
+                    UserRole.USER -> {
+
+                        UserScreen(
+                            onLogout = sessionViewModel::logout,
+                            initialEventId = initialEventId
+                        )
+                    }
                 }
             }
         }
@@ -52,43 +73,51 @@ fun AppNavigation(
 
 @Composable
 private fun AuthNavigation() {
+
     val navController = rememberNavController()
 
     NavHost(
-        navController    = navController,
+        navController = navController,
         startDestination = MainRoutes.Home
     ) {
+
         composable<MainRoutes.Home> {
+
             HomeScreen(
-                onLoginClick = { navController.navigate(MainRoutes.Login) }
+                onLoginClick = {
+                    navController.navigate(MainRoutes.Login)
+                }
             )
         }
 
         composable<MainRoutes.Login> {
+
             LoginScreen(
-                onRegisterClick       = { navController.navigate(MainRoutes.Register) },
-                onForgotPasswordClick = { navController.navigate(MainRoutes.ForgotPassword) }
+
+                onRegisterClick = {
+                    navController.navigate(MainRoutes.Register)
+                },
+
+                onForgotPasswordClick = {
+                    navController.navigate(MainRoutes.ForgotPassword)
+                }
             )
         }
 
         composable<MainRoutes.Register> {
+
             RegisterScreen(
-                onNavigateToBack = { navController.popBackStack() }
+                onNavigateToBack = {
+                    navController.popBackStack()
+                }
             )
         }
 
         composable<MainRoutes.ForgotPassword> {
-            ForgetPasswordScreen(
-                onNavigateToReset = { navController.navigate(MainRoutes.ResetPassword) }
-            )
-        }
 
-        composable<MainRoutes.ResetPassword> {
-            ResetPasswordScreen(
-                onPasswordResetSuccess = {
-                    navController.navigate(MainRoutes.Login) {
-                        popUpTo(MainRoutes.Home) { inclusive = false }
-                    }
+            ForgetPasswordScreen(
+                onNavigateToBack = {
+                    navController.popBackStack()
                 }
             )
         }

@@ -2,6 +2,7 @@ package com.miempresa.comuniapp.data.repository.memory
 
 import com.miempresa.comuniapp.domain.model.*
 import com.miempresa.comuniapp.domain.repository.AttendanceRepository
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,4 +45,13 @@ class AttendanceRepositoryImpl @Inject constructor() : AttendanceRepository {
         _attendances.value =
             _attendances.value.filterNot { it.eventId == eventId && it.userId == userId }
     }
+
+    override fun observeUserAttendance(
+        eventId: String,
+        userId: String
+    ): Flow<Boolean> {
+        TODO("Not yet implemented")
+    }
+
+
 }

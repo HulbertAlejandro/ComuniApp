@@ -18,11 +18,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
+// Cambiamos el import antiguo de AsyncImage si no se usa más por el de tu componente personalizado
+// import coil3.compose.AsyncImage
 import com.miempresa.comuniapp.domain.model.Event
 import com.miempresa.comuniapp.domain.model.EventStatus
 import com.miempresa.comuniapp.domain.model.User
 import com.miempresa.comuniapp.domain.model.UserLevel
+import com.miempresa.comuniapp.ui.components.NetworkImage
+// Asegúrate de importar tu NetworkImage si está en otro paquete, por ejemplo:
+// import com.miempresa.comuniapp.core.components.NetworkImage
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -55,12 +59,12 @@ fun EventCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
-            // ── Imagen con badges ─────────────────────────────────────────────
+            // ── Imagen con badges (Integrado con NetworkImage) ─────────────────
             Box(modifier = Modifier.fillMaxWidth().height(200.dp)) {
-                AsyncImage(
-                    // ✅ CORRECCIÓN: Usar imageUris.firstOrNull()
-                    model = event.imageUris.firstOrNull(),
-                    contentDescription = null,
+
+                // ✅ IMPLEMENTADO: Renderizador controlado con manejo de caché y errores
+                NetworkImage(
+                    url = event.imageUris.firstOrNull().orEmpty(),
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
@@ -118,10 +122,9 @@ fun EventCard(
                         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
                     )
                     dt.format(
-                        // ✅ CORRECCIÓN: Usar Locale.forLanguageTag o Locale("es")
                         DateTimeFormatter.ofPattern("EEE d MMM · h:mm a", Locale.forLanguageTag("es-ES"))
                     ).replaceFirstChar { it.uppercase() }
-                } catch (_: Exception) { // ✅ CORRECCIÓN: "_" para parámetro no usado
+                } catch (_: Exception) {
                     event.startDate
                 }
 

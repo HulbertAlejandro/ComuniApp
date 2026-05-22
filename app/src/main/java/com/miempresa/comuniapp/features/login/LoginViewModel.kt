@@ -1,8 +1,12 @@
 package com.miempresa.comuniapp.features.login
 
 import android.util.Patterns
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
+import com.google.firebase.messaging.FirebaseMessaging
 import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.resources.ResourceProvider
 import com.miempresa.comuniapp.core.utils.RequestResult
@@ -14,73 +18,126 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 /**
  * ViewModel de la pantalla de inicio de sesión.
  *
- * Gestiona la validación de campos, la llamada al repositorio de usuarios
- * y el almacenamiento de la sesión activa mediante [SessionDataStore].
+ * Responsabilidades:
+ * - Validar email y contraseña.
+ * - Autenticar al usuario.
+ * - Guardar sesión local en DataStore.
+ * - Obtener y persistir el token FCM en Firestore.
  *
- * @param repository       Repositorio que consulta credenciales en Firestore.
- * @param sessionDataStore Almacén local de la sesión del usuario autenticado.
- * @param resources        Proveedor de strings para mensajes localizados.
+ * El token FCM se guarda después del login porque:
+ * - onNewToken() NO siempre se ejecuta al iniciar sesión.
+ * - Firebase puede reutilizar un token ya existente.
+ *
+ * Estructura esperada en Firestore:
+ *
+ * users/{uid}
+ *    ├── name
+ *    ├── email
+ *    ├── role
+ *    └── fcmToken
  */
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val repository: UserRepository,
     private val sessionDataStore: SessionDataStore,
-    private val resources: ResourceProvider
+    private val resources: ResourceProvider,
+    private val firestore: FirebaseFirestore
 ) : ViewModel() {
 
-    /** Estado del resultado del intento de inicio de sesión. */
-    private val _loginResult = MutableStateFlow<RequestResult?>(null)
-    val loginResult: StateFlow<RequestResult?> = _loginResult.asStateFlow()
+    // ─────────────────────────────────────────────────────────────
+    // Estado UI
+    // ─────────────────────────────────────────────────────────────
 
-    /** Campo de email con validación reactiva. */
+    private val _loginResult =
+        MutableStateFlow<RequestResult?>(null)
+
+    val loginResult: StateFlow<RequestResult?> =
+        _loginResult.asStateFlow()
+
+    // ─────────────────────────────────────────────────────────────
+    // Campos del formulario
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Campo email con validación reactiva.
+     */
     val email = ValidatedField("") { value ->
+
         when {
-            value.isEmpty() -> resources.getString(R.string.error_email_empty)
-            !Patterns.EMAIL_ADDRESS.matcher(value).matches() ->
-                resources.getString(R.string.error_email_invalid)
+
+            value.isEmpty() -> {
+                resources.getString(
+                    R.string.error_email_empty
+                )
+            }
+
+            !Patterns.EMAIL_ADDRESS
+                .matcher(value)
+                .matches() -> {
+
+                resources.getString(
+                    R.string.error_email_invalid
+                )
+            }
+
             else -> null
         }
     }
 
-    /** Campo de contraseña con validación reactiva. */
+    /**
+     * Campo contraseña con validación reactiva.
+     */
     val password = ValidatedField("") { value ->
+
         when {
-            value.isEmpty() -> resources.getString(R.string.error_password_empty)
-            value.length < 6 -> resources.getString(R.string.validation_error_password_length)
+
+            value.isEmpty() -> {
+                resources.getString(
+                    R.string.error_password_empty
+                )
+            }
+
+            value.length < 6 -> {
+                resources.getString(
+                    R.string.validation_error_password_length
+                )
+            }
+
             else -> null
         }
     }
 
-    /** Indica si todos los campos del formulario son válidos. */
+    /**
+     * El formulario es válido solo si
+     * ambos campos pasan la validación.
+     */
     val isFormValid: Boolean
         get() = email.isValid && password.isValid
 
+    // ─────────────────────────────────────────────────────────────
+    // Login
+    // ─────────────────────────────────────────────────────────────
+
     /**
-     * Intenta autenticar al usuario con las credenciales ingresadas.
-     *
-     * Flujo:
-     * 1. Emite [RequestResult.Loading] para activar el indicador en la UI.
-     * 2. Consulta el repositorio con email y contraseña.
-     * 3. Si el usuario existe, guarda la sesión y emite [RequestResult.Success].
-     * 4. Si las credenciales no coinciden, emite [RequestResult.Failure].
-     * 5. Cualquier excepción inesperada también emite [RequestResult.Failure].
+     * Inicia sesión con las credenciales proporcionadas.
      */
     fun login() {
         if (!isFormValid) return
-
         viewModelScope.launch {
             _loginResult.value = RequestResult.Loading
-
             try {
                 val user = repository.login(email.value, password.value)
                 if (user != null) {
-                    // Persiste el ID, nombre y rol del usuario en DataStore
                     sessionDataStore.saveSession(user.id, user.name, user.role)
+
+                    actualizarTokenFcm(user.id)
+
                     _loginResult.value = RequestResult.Success(
                         resources.getString(R.string.login_success)
                     )
@@ -90,7 +147,6 @@ class LoginViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
                 _loginResult.value = RequestResult.Failure(
                     e.message ?: resources.getString(R.string.error_generic)
                 )
@@ -98,15 +154,46 @@ class LoginViewModel @Inject constructor(
         }
     }
 
-    /** Limpia el formulario y reinicia el estado de resultado. */
+    /**
+     * Obtiene el token FCM actual del dispositivo y lo guarda en Firestore.
+     * Si falla, lo registra silenciosamente: no debe bloquear el login.
+     *
+     * @param userId ID del usuario recién autenticado.
+     */
+    private fun actualizarTokenFcm(userId: String) {
+        viewModelScope.launch {
+            runCatching {
+                val token = com.google.firebase.messaging.FirebaseMessaging
+                    .getInstance()
+                    .token
+                    .await()
+                repository.updateFcmToken(userId, token)
+            }.onFailure { e ->
+                android.util.Log.e("FCM", "Error al registrar token FCM: ${e.message}")
+            }
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // Helpers
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Limpia formulario y estado.
+     */
     fun resetForm() {
+
         email.reset()
         password.reset()
+
         _loginResult.value = null
     }
 
-    /** Reinicia el estado de resultado sin limpiar el formulario. */
+    /**
+     * Limpia únicamente el resultado del login.
+     */
     fun resetLoginResult() {
+
         _loginResult.value = null
     }
 }

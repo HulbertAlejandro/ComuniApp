@@ -31,33 +31,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.AsyncImage
+import coil3.compose.AsyncImagePainter
+import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.SubcomposeAsyncImageContent
 import com.miempresa.comuniapp.R
 import com.miempresa.comuniapp.core.component.MapBox
 import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.domain.model.Category
 import com.miempresa.comuniapp.features.event.create.*
 
-/**
- * Pantalla de edición de un evento existente.
- *
- * Carga el evento desde Firestore al componerse y permite editar:
- * - Imágenes (agregar desde cámara/galería, eliminar existentes).
- * - Título, descripción y categoría.
- * - Fechas y horas de inicio y fin.
- * - Ubicación en el mapa.
- * - Capacidad máxima.
- *
- * También permite eliminar el evento con confirmación mediante diálogo.
- *
- * Manejo de estados:
- * - [RequestResult.Loading]: botones deshabilitados con spinner.
- * - [RequestResult.Success]: Snackbar de confirmación y navegación hacia atrás.
- * - [RequestResult.Failure]: Snackbar de error, sin navegación.
- *
- * @param eventId   ID del evento a editar.
- * @param onBack    Callback para regresar al feed o pantalla anterior.
- * @param viewModel ViewModel inyectado por Hilt.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditEventScreen(
@@ -83,7 +65,7 @@ fun EditEventScreen(
 
     val initialPoint = remember(eventId) { viewModel.initialMapPoint }
 
-    // ── Launchers (misma lógica que CreateEventScreen) ───────────────────
+    // ── Launchers ────────────────────────────────────────────────────────
 
     val galleryLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetMultipleContents()
@@ -102,15 +84,8 @@ fun EditEventScreen(
         }
     }
 
-    // ── Carga inicial del evento ─────────────────────────────────────────
     LaunchedEffect(eventId) { viewModel.loadEvent(eventId) }
 
-    /**
-     * Reacciona a cada cambio en [result]:
-     * - [RequestResult.Success]: muestra mensaje y navega hacia atrás.
-     * - [RequestResult.Failure]: muestra el error en Snackbar.
-     * - [RequestResult.Loading]: los botones gestionan el indicador visual.
-     */
     LaunchedEffect(result) {
         when (val r = result) {
             is RequestResult.Success -> {
@@ -270,11 +245,6 @@ fun EditEventScreen(
                 )
             }
 
-            /**
-             * Botón de guardar cambios:
-             * - Se deshabilita si el formulario no es válido o hay operación en curso.
-             * - Muestra spinner durante [RequestResult.Loading].
-             */
             Button(
                 onClick  = { viewModel.updateEvent() },
                 modifier = Modifier
@@ -298,11 +268,6 @@ fun EditEventScreen(
                 }
             }
 
-            /**
-             * Botón de eliminar:
-             * - Se deshabilita durante [RequestResult.Loading] para evitar
-             *   eliminar mientras hay una operación de guardado en progreso.
-             */
             TextButton(
                 onClick  = { showDeleteDialog = true },
                 modifier = Modifier.fillMaxWidth(),
@@ -425,11 +390,17 @@ fun EditEventScreen(
 // ── Componentes privados ─────────────────────────────────────────────────────
 
 /**
- * Miniatura editable con botón X.
- * Diseño idéntico al de [CreateEventScreen] para consistencia visual.
+ * Miniatura de imagen con soporte para URIs locales y URLs remotas de Storage.
  *
- * @param uri      URI de la imagen (local o remota).
- * @param onRemove Callback al tocar el botón de eliminar.
+ * Usa [SubcomposeAsyncImage] de Coil3 para mostrar un estado de carga
+ * mientras descarga la imagen desde Firebase Storage, y un ícono de error
+ * si la URL es inaccesible.
+ *
+ * - URI local (content:// / file://): Coil la lee directamente del disco.
+ * - URL HTTPS de Storage: Coil la descarga con soporte de caché en disco.
+ *
+ * @param uri      URI o URL de la imagen.
+ * @param onRemove Callback al tocar el botón eliminar.
  */
 @Composable
 private fun EditImageThumbnail(uri: Uri, onRemove: () -> Unit) {
@@ -439,12 +410,48 @@ private fun EditImageThumbnail(uri: Uri, onRemove: () -> Unit) {
             .clip(RoundedCornerShape(12.dp))
             .border(1.dp, Color.LightGray, RoundedCornerShape(12.dp))
     ) {
-        AsyncImage(
+        SubcomposeAsyncImage(
             model              = uri,
             contentDescription = null,
             contentScale       = ContentScale.Crop,
             modifier           = Modifier.fillMaxSize()
-        )
+        ) {
+            when (painter.state) {
+                is AsyncImagePainter.State.Loading -> {
+                    // Placeholder mientras descarga desde Storage
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFFEEEEEE)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier    = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color       = Color.Gray
+                        )
+                    }
+                }
+                is AsyncImagePainter.State.Error -> {
+                    // Ícono de error si la URL no es accesible
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFFEEEEEE)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector        = Icons.Default.BrokenImage,
+                            contentDescription = null,
+                            tint               = Color.Gray,
+                            modifier           = Modifier.size(28.dp)
+                        )
+                    }
+                }
+                else -> SubcomposeAsyncImageContent()
+            }
+        }
+
         IconButton(
             onClick  = onRemove,
             modifier = Modifier
@@ -462,13 +469,6 @@ private fun EditImageThumbnail(uri: Uri, onRemove: () -> Unit) {
     }
 }
 
-/**
- * Contenido del ModalBottomSheet para la pantalla de edición.
- * Separado de [CreateEventScreen] para permitir strings distintos si es necesario.
- *
- * @param onCameraClick  Callback para abrir la cámara.
- * @param onGalleryClick Callback para abrir la galería.
- */
 @Composable
 private fun EditImageSourceContent(
     onCameraClick: () -> Unit,

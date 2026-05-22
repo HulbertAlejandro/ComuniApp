@@ -438,5 +438,12 @@
 
     <string name="edit_event_choose_gallery">Choose from Gallery</string>
 
+    <!-- Notificaciones -->
+    <string name="notifications_title">Notifications</string>
+    <string name="notifications_mark_all_read">Mark all as read</string>
+    <string name="notifications_empty_title">All clear here</string>
+    <string name="notifications_empty_body">No notifications to display</string>
+    <string name="notifications_delete">Delete notification</string>
+
 </resources>
 

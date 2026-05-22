@@ -12,57 +12,95 @@ import com.miempresa.comuniapp.features.dashboard.navigation.DashboardRoutes
 import com.miempresa.comuniapp.features.dashboard.navigation.UserNavigation
 
 @Composable
-fun UserScreen(onLogout: () -> Unit) {
+fun UserScreen(
+    onLogout: () -> Unit,
+    initialEventId: String? = null
+) {
+
     val navController = rememberNavController()
+
     val defaultTitle = stringResource(R.string.bottom_nav_home)
-    var title by remember { mutableStateOf(defaultTitle) }
-    var showTopBar by remember { mutableStateOf(false) }
-    var showBottomBar by remember { mutableStateOf(true) }
+
+    var title by remember {
+        mutableStateOf(defaultTitle)
+    }
+
+    var showTopBar by remember {
+        mutableStateOf(false)
+    }
+
+    var showBottomBar by remember {
+        mutableStateOf(true)
+    }
+
+    LaunchedEffect(initialEventId) {
+
+        if (!initialEventId.isNullOrBlank()) {
+
+            navController.navigate(
+                DashboardRoutes.EventDetail(initialEventId)
+            )
+        }
+    }
 
     LaunchedEffect(navController) {
+
         navController.currentBackStackEntryFlow.collect { backStackEntry ->
+
             val dest = backStackEntry.destination
 
-            // Pantallas con TopAppBar propia: no mostrar la global
-            showTopBar = !dest.hasRoute<DashboardRoutes.EventList>() &&
-                    !dest.hasRoute<DashboardRoutes.Map>() &&
-                    !dest.hasRoute<DashboardRoutes.CreateEvent>() &&
-                    !dest.hasRoute<DashboardRoutes.EventDetail>() &&
-                    !dest.hasRoute<DashboardRoutes.Profile>() &&
-                    !dest.hasRoute<DashboardRoutes.UserEdit>() &&
-                    !dest.hasRoute<DashboardRoutes.MyEvents>() &&
-                    !dest.hasRoute<DashboardRoutes.SavedEvents>() &&
-                    !dest.hasRoute<DashboardRoutes.Achievements>() &&
-                    !dest.hasRoute<DashboardRoutes.EditEvent>() &&
-                    !dest.hasRoute<DashboardRoutes.History>()
+            showTopBar =
+                !dest.hasRoute<DashboardRoutes.EventList>() &&
+                        !dest.hasRoute<DashboardRoutes.Map>() &&
+                        !dest.hasRoute<DashboardRoutes.CreateEvent>() &&
+                        !dest.hasRoute<DashboardRoutes.EventDetail>() &&
+                        !dest.hasRoute<DashboardRoutes.Profile>() &&
+                        !dest.hasRoute<DashboardRoutes.UserEdit>() &&
+                        !dest.hasRoute<DashboardRoutes.MyEvents>() &&
+                        !dest.hasRoute<DashboardRoutes.SavedEvents>() &&
+                        !dest.hasRoute<DashboardRoutes.Achievements>() &&
+                        !dest.hasRoute<DashboardRoutes.EditEvent>() &&
+                        !dest.hasRoute<DashboardRoutes.History>() &&
+                        !dest.hasRoute<DashboardRoutes.Notifications>()
 
-            // Ocultar BottomBar en pantallas de flujo secundario
-            showBottomBar = !dest.hasRoute<DashboardRoutes.EventDetail>() &&
-                    !dest.hasRoute<DashboardRoutes.CreateEvent>() &&
-                    !dest.hasRoute<DashboardRoutes.UserEdit>() &&
-                    !dest.hasRoute<DashboardRoutes.MyEvents>() &&
-                    !dest.hasRoute<DashboardRoutes.SavedEvents>() &&
-                    !dest.hasRoute<DashboardRoutes.Achievements>() &&
-                    !dest.hasRoute<DashboardRoutes.EditEvent>() &&
-                    !dest.hasRoute<DashboardRoutes.History>()
+            showBottomBar =
+                !dest.hasRoute<DashboardRoutes.EventDetail>() &&
+                        !dest.hasRoute<DashboardRoutes.CreateEvent>() &&
+                        !dest.hasRoute<DashboardRoutes.UserEdit>() &&
+                        !dest.hasRoute<DashboardRoutes.MyEvents>() &&
+                        !dest.hasRoute<DashboardRoutes.SavedEvents>() &&
+                        !dest.hasRoute<DashboardRoutes.Achievements>() &&
+                        !dest.hasRoute<DashboardRoutes.EditEvent>() &&
+                        !dest.hasRoute<DashboardRoutes.History>()
         }
     }
 
     Scaffold(
+
         topBar = {
+
             if (showTopBar) {
-                TopAppBar(title = title, onLogout = onLogout)
+
+                TopAppBar(
+                    title = title,
+                    onLogout = onLogout
+                )
             }
         },
+
         bottomBar = {
+
             if (showBottomBar) {
+
                 BottomNavigationBar(
                     navController = navController,
                     titleTopBar = { title = it }
                 )
             }
         }
+
     ) { padding ->
+
         UserNavigation(
             navController = navController,
             padding = padding,

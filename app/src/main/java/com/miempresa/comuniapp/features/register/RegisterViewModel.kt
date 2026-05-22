@@ -1,5 +1,6 @@
 package com.miempresa.comuniapp.features.register
 
+import android.net.Uri
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,36 +9,23 @@ import com.miempresa.comuniapp.core.resources.ResourceProvider
 import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.core.utils.ValidatedField
 import com.miempresa.comuniapp.domain.model.*
+import com.miempresa.comuniapp.domain.repository.StorageRepository
 import com.miempresa.comuniapp.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * ViewModel de la pantalla de registro de nuevos usuarios.
- *
- * Responsabilidades:
- * - Validar cada campo del formulario mediante [ValidatedField].
- * - Verificar si el email ya está registrado antes de crear el usuario.
- * - Construir el objeto [User] y delegarlo al repositorio.
- * - Emitir estados [RequestResult] para que la UI reaccione.
- *
- * @param repository Repositorio de usuarios que persiste en Firestore.
- * @param resources  Proveedor de strings para mensajes localizados.
- */
 @HiltViewModel
 class RegisterViewModel @Inject constructor(
     private val repository: UserRepository,
+    private val storageRepository: StorageRepository,  // ← nueva dependencia
     private val resources: ResourceProvider
 ) : ViewModel() {
 
-    /** Campo nombre: no puede estar vacío. */
     val name = ValidatedField("") {
         if (it.isBlank()) resources.getString(R.string.error_name_empty) else null
     }
-
-    /** Campo email: formato válido obligatorio. */
     val email = ValidatedField("") {
         when {
             it.isBlank() -> resources.getString(R.string.error_email_empty)
@@ -46,13 +34,9 @@ class RegisterViewModel @Inject constructor(
             else -> null
         }
     }
-
-    /** Campo teléfono: no puede estar vacío. */
     val phone = ValidatedField("") {
         if (it.isBlank()) resources.getString(R.string.error_phone_empty) else null
     }
-
-    /** Campo contraseña: mínimo 6 caracteres. */
     val password = ValidatedField("") {
         when {
             it.isBlank() -> resources.getString(R.string.error_password_required)
@@ -60,8 +44,6 @@ class RegisterViewModel @Inject constructor(
             else -> null
         }
     }
-
-    /** Campo confirmar contraseña: debe coincidir con [password]. */
     val confirmPassword = ValidatedField("") {
         when {
             it.isBlank() -> resources.getString(R.string.error_confirm_password_empty)
@@ -70,49 +52,30 @@ class RegisterViewModel @Inject constructor(
             else -> null
         }
     }
-
-    /** Campo dirección: opcional, sin validación obligatoria. */
     val direccion = ValidatedField("") { null }
 
-    /** Categorías de interés seleccionadas por el usuario. */
     private val _selectedCategories = MutableStateFlow<Set<Category>>(emptySet())
     val selectedCategories: StateFlow<Set<Category>> = _selectedCategories.asStateFlow()
 
-    /**
-     * Agrega o quita una categoría del conjunto de seleccionadas.
-     * Si ya está presente la elimina; si no, la agrega.
-     */
     fun toggleCategory(category: Category) {
         _selectedCategories.update { current ->
             if (current.contains(category)) current - category else current + category
         }
     }
 
-    /** Retorna true solo si todos los campos obligatorios son válidos. */
     val isFormValid: Boolean
-        get() = name.isValid &&
-                email.isValid &&
-                phone.isValid &&
-                password.isValid &&
-                confirmPassword.isValid
+        get() = name.isValid && email.isValid && phone.isValid &&
+                password.isValid && confirmPassword.isValid
 
-    /** Estado del proceso de registro expuesto a la UI. */
     private val _registerResult = MutableStateFlow<RequestResult?>(null)
     val registerResult: StateFlow<RequestResult?> = _registerResult.asStateFlow()
 
     /**
-     * Ejecuta el flujo de registro del nuevo usuario.
+     * Registra al usuario subiendo primero la foto si es una URI local,
+     * luego persiste el perfil completo en Firestore con la URL de Storage.
      *
-     * Pasos:
-     * 1. Valida el formulario; si no es válido, no continúa.
-     * 2. Emite [RequestResult.Loading] para activar el indicador visual.
-     * 3. Verifica que el email no esté ya registrado en Firestore.
-     * 4. Construye el [User] sin ID (Firestore lo asigna en el repositorio).
-     * 5. Llama a [UserRepository.saveWithPassword] y emite [RequestResult.Success].
-     * 6. Cualquier excepción emite [RequestResult.Failure].
-     *
-     * @param photo URI o URL de la foto de perfil seleccionada; usa un avatar
-     *              genérico si se deja en blanco.
+     * @param photo String con la URI local seleccionada por el usuario,
+     *              o vacío si no seleccionó ninguna.
      */
     fun register(photo: String) {
         if (!isFormValid) return
@@ -121,33 +84,33 @@ class RegisterViewModel @Inject constructor(
             _registerResult.value = RequestResult.Loading
 
             try {
-                // Verifica duplicados antes de crear el documento
-                val existe = repository.findByEmail(email.value)
-                if (existe != null) {
-                    _registerResult.value = RequestResult.Failure(
-                        resources.getString(R.string.error_email_already_exists)
-                    )
-                    return@launch
-                }
+                // ── PASO 1: subir foto si el usuario seleccionó una ──────
+                // Usamos el email como nombre de archivo para que sea único
+                // y predecible. Tras el registro, el UID sería mejor clave;
+                // aquí lo hacemos antes de tener el UID, así que usamos email.
+                val profilePictureUrl = resolveProfilePictureUrl(
+                    localUriString = photo,
+                    email          = email.value.trim()
+                )
 
-                // El id se deja vacío; el repositorio lo asigna al hacer .document()
+                // ── PASO 2: construir el modelo y guardar en Firestore ────
                 val user = User(
-                    id = "",
-                    name = name.value.trim(),
-                    email = email.value.trim(),
-                    phoneNumber = phone.value.trim(),
-                    profilePictureUrl = photo.ifBlank { "https://i.pravatar.cc/300" },
-                    direction = direccion.value.trim(),
-                    role = UserRole.USER,
-                    reputation = Reputation(
+                    id                 = "",
+                    name               = name.value.trim(),
+                    email              = email.value.trim(),
+                    phoneNumber        = phone.value.trim(),
+                    profilePictureUrl  = profilePictureUrl,
+                    direction          = direccion.value.trim(),
+                    role               = UserRole.USER,
+                    reputation         = Reputation(
                         points = 0,
-                        level = UserLevel.ESPECTADOR,
+                        level  = UserLevel.ESPECTADOR,
                         badges = emptyList()
                     ),
                     favoriteCategories = _selectedCategories.value.toList()
                 )
 
-                repository.saveWithPassword(user, password.value)
+                repository.save(user, password.value)
 
                 _registerResult.value = RequestResult.Success(
                     resources.getString(R.string.register_success)
@@ -161,10 +124,33 @@ class RegisterViewModel @Inject constructor(
         }
     }
 
-    /** Reinicia el estado del resultado sin limpiar el formulario. */
+    /**
+     * Determina la URL final de la foto de perfil.
+     *
+     * - Si [localUriString] está en blanco → usa avatar genérico.
+     * - Si es una URI local (content:// o file://) → sube a Storage y
+     *   retorna la downloadUrl.
+     * - Si ya es una URL HTTPS → es una selección previa, la reutiliza.
+     */
+    private suspend fun resolveProfilePictureUrl(
+        localUriString: String,
+        email: String
+    ): String {
+        if (localUriString.isBlank()) return "https://i.pravatar.cc/300"
+
+        // Las URLs de Storage y avatares empiezan con "https"
+        if (localUriString.startsWith("https")) return localUriString
+
+        val localUri  = Uri.parse(localUriString)
+        // Sanitizamos el email para usarlo como nombre de archivo seguro
+        val safeEmail = email.replace(Regex("[^a-zA-Z0-9]"), "_")
+        val path      = "profile_pictures/$safeEmail.jpg"
+
+        return storageRepository.uploadImage(localUri, path)
+    }
+
     fun resetRegisterResult() { _registerResult.value = null }
 
-    /** Limpia todos los campos del formulario y las categorías seleccionadas. */
     fun resetForm() {
         name.reset()
         email.reset()

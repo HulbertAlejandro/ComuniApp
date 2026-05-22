@@ -1,5 +1,6 @@
 package com.miempresa.comuniapp.features.event.list
 
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,6 +29,7 @@ import com.miempresa.comuniapp.features.event.components.EventCard
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EventListScreen(
@@ -38,6 +40,7 @@ fun EventListScreen(
     val events        by viewModel.events.collectAsState()
     val usersMap      by viewModel.usersMap.collectAsState()
     val votedEventIds by viewModel.votedEventIds.collectAsState()
+
 
     // ── DatePicker ────────────────────────────────────────────────────────────
     val datePickerState = rememberDatePickerState()
@@ -62,6 +65,7 @@ fun EventListScreen(
             }
         ) { DatePicker(state = datePickerState) }
     }
+
 
     // ── Category dialog ───────────────────────────────────────────────────────
     if (viewModel.showFiltersDialog) {
@@ -107,6 +111,7 @@ fun EventListScreen(
         )
     }
 
+
     // ── Scaffold ──────────────────────────────────────────────────────────────
     Scaffold(
         topBar = {
@@ -128,6 +133,7 @@ fun EventListScreen(
                         .fillMaxWidth()
                         .padding(top = 16.dp, bottom = 4.dp)
                 )
+
 
                 // SearchBar
                 SearchBar(
@@ -154,13 +160,16 @@ fun EventListScreen(
                     shape = RoundedCornerShape(14.dp)
                 ) {}
 
+
                 HorizontalDivider(thickness = 1.dp, color = Color(0xFFE0E0E0))
             }
         },
         containerColor = Color.White
     ) { innerPadding ->
 
+
         Column(modifier = Modifier.padding(innerPadding)) {
+
 
             // ── Chips de filtro ───────────────────────────────────────────────
             LazyRow(
@@ -211,6 +220,7 @@ fun EventListScreen(
                 }
             }
 
+
             // ── Lista / Estado vacío ──────────────────────────────────────────
             if (events.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -242,6 +252,7 @@ fun EventListScreen(
         }
     }
 }
+
 
 @Composable
 fun EventFilterChip(

@@ -152,7 +152,6 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 👤 Foto de perfil: toca para abrir opciones de cámara o galería
             Box(
                 modifier = Modifier
                     .size(90.dp)
@@ -161,16 +160,28 @@ fun RegisterScreen(
                     .clickable { showImageOptions = true },
                 contentAlignment = Alignment.Center
             ) {
-                AsyncImage(
-                    model = photo.ifBlank { "https://i.pravatar.cc/300" },
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
+                if (photo.isNotBlank()) {
+                    // URI local seleccionada: Coil la carga directamente desde el dispositivo
+                    AsyncImage(
+                        model              = Uri.parse(photo),
+                        contentDescription = null,
+                        modifier           = Modifier.fillMaxSize(),
+                        contentScale       = ContentScale.Crop
+                    )
+                } else {
+                    // Sin foto seleccionada: muestra ícono genérico
+                    Icon(
+                        imageVector        = Icons.Default.Person,
+                        contentDescription = null,
+                        modifier           = Modifier.size(48.dp),
+                        tint               = Color.Gray
+                    )
+                }
                 Icon(
-                    imageVector = Icons.Default.CameraAlt,
+                    imageVector        = Icons.Default.CameraAlt,
                     contentDescription = null,
-                    modifier = Modifier.align(Alignment.BottomEnd)
+                    modifier           = Modifier.align(Alignment.BottomEnd),
+                    tint               = Color.White
                 )
             }
 

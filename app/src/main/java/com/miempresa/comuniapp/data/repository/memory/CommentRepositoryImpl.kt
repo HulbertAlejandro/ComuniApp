@@ -21,16 +21,16 @@ class CommentRepositoryImpl @Inject constructor() : CommentRepository {
         _allComments.update { it + comment }
     }
 
-    override suspend fun getCommentsByEvent(eventId: String): Flow<List<Comment>> =
-        _allComments.map { it.filter { comment -> comment.eventId == eventId } }
-
-    override suspend fun deleteComment(commentId: String) {
-        _allComments.update { it.filterNot { it.id == commentId } }
+    override fun getCommentsByEvent(eventId: String): Flow<List<Comment>> {
+        TODO("Not yet implemented")
     }
 
-    // ✅ NUEVO: Devuelve el conteo de comentarios para un evento específico de forma reactiva
-    override fun getTotalCommentsCount(eventId: String): Flow<Int> =
-        _allComments.map { comments ->
-            comments.count { it.eventId == eventId }
-        }
+    override suspend fun deleteComment(commentId: String) {
+        TODO("Not yet implemented")
+    }
+
+    override fun getTotalCommentsCount(eventId: String): Flow<Int> {
+        TODO("Not yet implemented")
+    }
+
 }

@@ -35,22 +35,17 @@ class ProfileViewModel @Inject constructor(
     private val sessionDataStore: SessionDataStore
 ) : ViewModel() {
 
-    /**
-     * Usuario actualmente autenticado, derivado reactivamente del repositorio.
-     * Se actualiza automáticamente cuando [UserEditViewModel] llama a [UserRepository.update].
+    /** Usuario autenticado actualmente, o null si no hay sesión activa.
+     * Se actualiza automáticamente con cambios en Firestore gracias a [observeCurrentUser].
      */
     val user: StateFlow<User?> =
-        sessionDataStore.sessionFlow
-            .filterNotNull()
-            .flatMapLatest { session ->
-                repository.users.map { list -> list.find { it.id == session.userId } }
-            }
+        repository
+            .observeCurrentUser()
             .stateIn(
-                scope        = viewModelScope,
-                started      = SharingStarted.WhileSubscribed(5000),
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
                 initialValue = null
             )
-
     /**
      * Número de eventos creados por el usuario actual.
      * Se actualiza reactivamente cuando cambia la colección de eventos en Firestore.
@@ -124,11 +119,13 @@ class ProfileViewModel @Inject constructor(
             )
 
     /**
-     * Cierra la sesión del usuario limpiando el [SessionDataStore].
-     * La navegación al login es responsabilidad de la Screen.
+     * Cierra sesión llamando al repositorio, que delega en [FirebaseAuth.signOut].
+     * El [observeCurrentUser] emitirá null automáticamente tras esta llamada,
+     * lo que el NavGraph usa para redirigir al flujo de login.
      */
     fun logout() {
         viewModelScope.launch {
+            repository.logout()
             sessionDataStore.clearSession()
         }
     }

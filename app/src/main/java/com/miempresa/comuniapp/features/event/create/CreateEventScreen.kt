@@ -4,6 +4,7 @@ import android.Manifest
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -39,25 +40,6 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-/**
- * Pantalla de creación de eventos comunitarios.
- *
- * Permite al usuario:
- * - Seleccionar múltiples imágenes (cámara o galería).
- * - Ingresar título, descripción y categoría.
- * - Elegir fechas y horas de inicio y fin.
- * - Marcar la ubicación en el mapa de Mapbox.
- * - Definir la capacidad máxima de asistentes.
- *
- * Manejo de estados:
- * - [RequestResult.Loading]: botón deshabilitado mientras se guarda.
- * - [RequestResult.Success]: Snackbar de confirmación y navegación al feed.
- * - [RequestResult.Failure]: Snackbar de error, sin navegación.
- *
- * @param onBack         Callback para regresar a la pantalla anterior.
- * @param onEventCreated Callback que navega al feed tras una creación exitosa.
- * @param viewModel      ViewModel inyectado por Hilt.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateEventScreen(
@@ -69,6 +51,7 @@ fun CreateEventScreen(
     val result            by viewModel.result.collectAsState()
     val selectedImageUris by viewModel.selectedImageUris.collectAsState()
     val selectedLocation  by viewModel.selectedLocation.collectAsState()
+    val suggestionState   by viewModel.suggestionState.collectAsState()  // ← nuevo
     val snackbarHostState = remember { SnackbarHostState() }
 
     var showImageSourceSheet by remember { mutableStateOf(false) }
@@ -82,37 +65,23 @@ fun CreateEventScreen(
     val datePickerState = rememberDatePickerState()
     val timePickerState = rememberTimePickerState()
 
-    // ── Launcher de galería: selección múltiple ──────────────────────────
     val galleryLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetMultipleContents()
+        ActivityResultContracts.GetMultipleContents()
     ) { uris: List<Uri> -> viewModel.onGalleryImagesSelected(uris) }
 
-    // ── Launcher de cámara ───────────────────────────────────────────────
     val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture()
+        ActivityResultContracts.TakePicture()
     ) { success: Boolean -> viewModel.onCameraImageCaptured(success) }
 
-    /**
-     * Launcher de permiso de cámara.
-     * Si se concede, genera la URI temporal y lanza la cámara.
-     * Si se deniega, muestra un Snackbar informativo al usuario.
-     */
     val cameraPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
+        ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
             val uri = viewModel.createTempCameraUri(context)
             cameraLauncher.launch(uri)
         }
-        // Si se deniega, no hacemos nada; el BottomSheet ya se cerró
     }
 
-    /**
-     * Reacciona a cada cambio en [result]:
-     * - [RequestResult.Success]: muestra confirmación y navega al feed.
-     * - [RequestResult.Failure]: muestra el error en Snackbar.
-     * - [RequestResult.Loading]: el botón gestiona el indicador visual.
-     */
     LaunchedEffect(result) {
         when (val r = result) {
             is RequestResult.Success -> {
@@ -139,7 +108,7 @@ fun CreateEventScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, null)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -159,21 +128,16 @@ fun CreateEventScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
 
-            // ══ SECCIÓN 1: IMÁGENES MÚLTIPLES ═══════════════════════════
+            // ══ SECCIÓN 1: IMÁGENES ══════════════════════════════════════
             SectionCard(title = stringResource(R.string.create_event_section_image)) {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     itemsIndexed(selectedImageUris) { index, uri ->
-                        ImageThumbnail(
-                            uri      = uri,
-                            onRemove = { viewModel.removeImage(index) }
-                        )
+                        ImageThumbnail(uri = uri, onRemove = { viewModel.removeImage(index) })
                     }
-                    item {
-                        AddImageButton(onClick = { showImageSourceSheet = true })
-                    }
+                    item { AddImageButton(onClick = { showImageSourceSheet = true }) }
                 }
                 if (selectedImageUris.isEmpty()) {
                     Spacer(Modifier.height(6.dp))
@@ -186,41 +150,67 @@ fun CreateEventScreen(
                 }
             }
 
-            // ══ SECCIÓN 2: INFORMACIÓN ═══════════════════════════════════
+            // ══ SECCIÓN 2: INFORMACIÓN ════════════════════════════════════
             SectionCard(title = stringResource(R.string.create_event_section_details)) {
+
                 LabelText(stringResource(R.string.create_event_title_label))
                 CustomTextField(
-                    viewModel.title.value,
-                    { viewModel.title.onChange(it) },
-                    stringResource(R.string.create_event_title_placeholder)
+                    value         = viewModel.title.value,
+                    onValueChange = {
+                        viewModel.title.onChange(it)
+                    },
+                    placeholder = stringResource(R.string.create_event_title_placeholder)
                 )
+
                 Spacer(Modifier.height(12.dp))
                 LabelText(stringResource(R.string.create_event_category_label))
+
+                // ── Selector de categoría con badge de sugerencia ─────────
                 OutlinedCard(
                     onClick  = { showCategoryDialog = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            viewModel.selectedCategory?.name
+                            text     = viewModel.selectedCategory?.name
                                 ?: stringResource(R.string.create_event_category_select),
                             modifier = Modifier.weight(1f)
                         )
                         Icon(Icons.Default.ArrowDropDown, null)
                     }
                 }
+
+                Spacer(Modifier.height(8.dp))
+
+                // ── BANNER DE SUGERENCIA DE IA ────────────────────────────
+                // AnimatedVisibility hace que el banner aparezca/desaparezca
+                // con una animación suave en lugar de un salto brusco
+                AnimatedVisibility(
+                    visible = suggestionState !is SuggestionState.Idle,
+                    enter   = fadeIn() + expandVertically(),
+                    exit    = fadeOut() + shrinkVertically()
+                ) {
+                    AiSuggestionBanner(
+                        state        = suggestionState,
+                        onAccept     = { viewModel.acceptSuggestion() },
+                        onDismiss    = { viewModel.dismissSuggestion() }
+                    )
+                }
+
                 Spacer(Modifier.height(12.dp))
                 LabelText(stringResource(R.string.create_event_description_label))
                 CustomTextField(
-                    viewModel.description.value,
-                    { viewModel.description.onChange(it) },
-                    stringResource(R.string.create_event_description_placeholder),
-                    isSingle = false,
-                    minLines = 4
+                    value         = viewModel.description.value,
+                    onValueChange = {
+                        viewModel.description.onChange(it)
+                    },
+                    placeholder = stringResource(R.string.create_event_description_placeholder),
+                    isSingle    = false,
+                    minLines    = 4
                 )
             }
 
-            // ══ SECCIÓN 3: FECHA Y HORA ═══════════════════════════════════
+            // ══ SECCIÓN 3: FECHA Y HORA ══════════════════════════════════
             SectionCard(title = stringResource(R.string.create_event_section_datetime)) {
                 DateTimeRow(
                     stringResource(R.string.create_event_start),
@@ -285,11 +275,6 @@ fun CreateEventScreen(
                 )
             }
 
-            /**
-             * Botón de creación:
-             * - Se deshabilita si el formulario no es válido o hay operación en curso.
-             * - El estado Loading impide envíos duplicados.
-             */
             Button(
                 onClick  = { viewModel.createEvent() },
                 modifier = Modifier
@@ -321,7 +306,8 @@ fun CreateEventScreen(
         }
     }
 
-    // ══ MODAL BOTTOM SHEET — Elegir fuente de imagen ════════════════════
+    // ══ MODALS Y DIALOGS (sin cambios) ═══════════════════════════════════
+
     if (showImageSourceSheet) {
         ModalBottomSheet(
             onDismissRequest = { showImageSourceSheet = false },
@@ -340,8 +326,6 @@ fun CreateEventScreen(
         }
     }
 
-    // ══ DIALOGS ══════════════════════════════════════════════════════════
-
     if (showCategoryDialog) {
         AlertDialog(
             onDismissRequest = { showCategoryDialog = false },
@@ -352,7 +336,7 @@ fun CreateEventScreen(
                         ListItem(
                             headlineContent = { Text(cat.name) },
                             modifier = Modifier.clickable {
-                                viewModel.onCategorySelected(cat)
+                                viewModel.onCategorySelected(cat)  // ← usa el nuevo método
                                 showCategoryDialog = false
                             }
                         )
@@ -399,14 +383,145 @@ fun CreateEventScreen(
     }
 }
 
-// ── Componentes privados ─────────────────────────────────────────────────────
+// ── Componente banner de sugerencia ──────────────────────────────────────────
 
 /**
- * Miniatura de imagen seleccionada con botón "X" para eliminarla.
+ * Banner sutil que muestra el estado de la sugerencia de IA debajo
+ * del selector de categoría.
  *
- * @param uri      URI local de la imagen.
- * @param onRemove Callback que se ejecuta al tocar el botón de eliminar.
+ * Tres estados visuales:
+ * - [SuggestionState.Loading] → spinner pequeño + texto "Analizando..."
+ * - [SuggestionState.Success] → nombre de la categoría + botones Aceptar/Descartar
+ * - [SuggestionState.Error]   → mensaje de error en tono apagado
+ *
+ * @param state    Estado actual de la sugerencia.
+ * @param onAccept Callback cuando el usuario acepta la categoría sugerida.
+ * @param onDismiss Callback cuando el usuario descarta la sugerencia.
  */
+@Composable
+private fun AiSuggestionBanner(
+    state: SuggestionState,
+    onAccept: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    // Contenedor con borde izquierdo de acento para distinguirlo visualmente
+    // del resto del formulario sin ser demasiado intrusivo
+    Surface(
+        modifier  = Modifier.fillMaxWidth(),
+        shape     = RoundedCornerShape(10.dp),
+        color     = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment    = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+
+            when (state) {
+
+                // ── CARGANDO ────────────────────────────────────────────
+                is SuggestionState.Loading -> {
+                    CircularProgressIndicator(
+                        modifier    = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color       = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text  = "✨ Analizando con IA...",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // ── SUGERENCIA DISPONIBLE ────────────────────────────────
+                is SuggestionState.Success -> {
+                    // Ícono de IA
+                    Icon(
+                        imageVector        = Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        modifier           = Modifier.size(18.dp),
+                        tint               = MaterialTheme.colorScheme.primary
+                    )
+                    // Texto con la categoría sugerida
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text  = "Sugerencia de IA",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text       = state.category.name
+                                .lowercase()
+                                .replaceFirstChar { it.uppercase() },
+                            style      = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color      = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    // Botón Aceptar
+                    TextButton(
+                        onClick      = onAccept,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            "Aplicar",
+                            style      = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color      = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    // Botón Descartar
+                    IconButton(
+                        onClick  = onDismiss,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector        = Icons.Default.Close,
+                            contentDescription = "Descartar sugerencia",
+                            modifier           = Modifier.size(16.dp),
+                            tint               = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // ── ERROR ────────────────────────────────────────────────
+                is SuggestionState.Error -> {
+                    Icon(
+                        imageVector        = Icons.Default.WifiOff,
+                        contentDescription = null,
+                        modifier           = Modifier.size(16.dp),
+                        tint               = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        text     = state.message,
+                        style    = MaterialTheme.typography.bodySmall,
+                        color    = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(
+                        onClick  = onDismiss,
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector        = Icons.Default.Close,
+                            contentDescription = "Cerrar",
+                            modifier           = Modifier.size(16.dp),
+                            tint               = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                is SuggestionState.Idle -> Unit // AnimatedVisibility oculta este estado
+            }
+        }
+    }
+}
+
+// ── Componentes sin cambios (se mantienen igual) ─────────────────────────────
+
 @Composable
 private fun ImageThumbnail(uri: Uri, onRemove: () -> Unit) {
     Box(
@@ -416,10 +531,8 @@ private fun ImageThumbnail(uri: Uri, onRemove: () -> Unit) {
             .border(1.dp, Color.LightGray, RoundedCornerShape(12.dp))
     ) {
         AsyncImage(
-            model              = uri,
-            contentDescription = null,
-            contentScale       = ContentScale.Crop,
-            modifier           = Modifier.fillMaxSize()
+            model = uri, contentDescription = null,
+            contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()
         )
         IconButton(
             onClick  = onRemove,
@@ -429,7 +542,7 @@ private fun ImageThumbnail(uri: Uri, onRemove: () -> Unit) {
                 .background(Color.Black.copy(alpha = 0.5f), CircleShape)
         ) {
             Icon(
-                imageVector        = Icons.Default.Close,
+                Icons.Default.Close,
                 contentDescription = stringResource(R.string.create_event_remove_image),
                 tint               = Color.White,
                 modifier           = Modifier.size(14.dp)
@@ -438,11 +551,6 @@ private fun ImageThumbnail(uri: Uri, onRemove: () -> Unit) {
     }
 }
 
-/**
- * Botón "+" para abrir el BottomSheet de selección de fuente de imagen.
- *
- * @param onClick Callback al tocar el botón.
- */
 @Composable
 fun AddImageButton(onClick: () -> Unit) {
     Box(
@@ -455,32 +563,17 @@ fun AddImageButton(onClick: () -> Unit) {
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                imageVector        = Icons.Default.Add,
-                contentDescription = stringResource(R.string.create_event_add_image),
-                tint               = Color.Gray,
-                modifier           = Modifier.size(28.dp)
-            )
+            Icon(Icons.Default.Add, null, tint = Color.Gray, modifier = Modifier.size(28.dp))
             Text(
-                text     = stringResource(R.string.create_event_add_image_label),
-                fontSize = 10.sp,
-                color    = Color.Gray
+                stringResource(R.string.create_event_add_image_label),
+                fontSize = 10.sp, color = Color.Gray
             )
         }
     }
 }
 
-/**
- * Contenido del ModalBottomSheet para elegir la fuente de imagen.
- *
- * @param onCameraClick  Callback para abrir la cámara.
- * @param onGalleryClick Callback para abrir la galería.
- */
 @Composable
-private fun ImageSourceBottomSheetContent(
-    onCameraClick: () -> Unit,
-    onGalleryClick: () -> Unit
-) {
+private fun ImageSourceBottomSheetContent(onCameraClick: () -> Unit, onGalleryClick: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -488,46 +581,30 @@ private fun ImageSourceBottomSheetContent(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text       = stringResource(R.string.create_event_image_source_title),
-            style      = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            modifier   = Modifier.padding(bottom = 8.dp)
+            stringResource(R.string.create_event_image_source_title),
+            style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 8.dp)
         )
         OutlinedButton(
-            onClick  = onCameraClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
+            onClick = onCameraClick,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Icon(
-                Icons.Default.CameraAlt,
-                contentDescription = null,
-                modifier           = Modifier.padding(end = 8.dp)
-            )
+            Icon(Icons.Default.CameraAlt, null, modifier = Modifier.padding(end = 8.dp))
             Text(stringResource(R.string.create_event_take_photo))
         }
         Button(
-            onClick  = onGalleryClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
+            onClick = onGalleryClick,
+            modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(12.dp)
         ) {
-            Icon(
-                Icons.Default.PhotoLibrary,
-                contentDescription = null,
-                modifier           = Modifier.padding(end = 8.dp)
-            )
+            Icon(Icons.Default.PhotoLibrary, null, modifier = Modifier.padding(end = 8.dp))
             Text(stringResource(R.string.create_event_choose_gallery))
         }
         Spacer(Modifier.height(16.dp))
     }
 }
 
-// ── Componentes reutilizables (usados también por EditEventScreen) ────────────
-
-/** Tarjeta contenedora de sección con título y contenido personalizable. */
 @Composable
 fun SectionCard(title: String, content: @Composable ColumnScope.() -> Unit) {
     Card(
@@ -537,91 +614,56 @@ fun SectionCard(title: String, content: @Composable ColumnScope.() -> Unit) {
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(Modifier.padding(16.dp)) {
-            Text(
-                title,
-                fontWeight = FontWeight.Bold,
-                style      = MaterialTheme.typography.titleMedium,
-                color      = Color.Black
-            )
+            Text(title, fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium, color = Color.Black)
             Spacer(Modifier.height(12.dp))
             content()
         }
     }
 }
 
-/** Fila de fecha y hora con botones independientes para DatePicker y TimePicker. */
 @Composable
-fun DateTimeRow(
-    label: String,
-    millis: Long?,
-    onDate: () -> Unit,
-    onTime: () -> Unit
-) {
+fun DateTimeRow(label: String, millis: Long?, onDate: () -> Unit, onTime: () -> Unit) {
     val formatter     = DateTimeFormatter.ofPattern("dd/MM/yyyy")
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-    val dateStr = millis
-        ?.let { Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).format(formatter) }
-        ?: stringResource(R.string.create_event_select_date)
-    val timeStr = millis
-        ?.let { Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).format(timeFormatter) }
-        ?: stringResource(R.string.create_event_time_placeholder)
+    val dateStr = millis?.let {
+        Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).format(formatter)
+    } ?: stringResource(R.string.create_event_select_date)
+    val timeStr = millis?.let {
+        Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).format(timeFormatter)
+    } ?: stringResource(R.string.create_event_time_placeholder)
 
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            label,
-            Modifier.width(60.dp),
-            fontWeight = FontWeight.Bold,
-            fontSize   = 12.sp,
-            color      = Color.Gray
-        )
+        Text(label, Modifier.width(60.dp), fontWeight = FontWeight.Bold,
+            fontSize = 12.sp, color = Color.Gray)
         Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Surface(
-                onClick  = onDate,
-                modifier = Modifier.weight(1.5f),
-                shape    = RoundedCornerShape(8.dp),
-                color    = Color(0xFFF0F0F0)
+            Surface(onClick = onDate, modifier = Modifier.weight(1.5f),
+                shape = RoundedCornerShape(8.dp), color = Color(0xFFF0F0F0)
             ) { Text(dateStr, Modifier.padding(12.dp), fontSize = 12.sp) }
-            Surface(
-                onClick  = onTime,
-                modifier = Modifier.weight(1f),
-                shape    = RoundedCornerShape(8.dp),
-                color    = Color(0xFFF0F0F0)
+            Surface(onClick = onTime, modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(8.dp), color = Color(0xFFF0F0F0)
             ) { Text(timeStr, Modifier.padding(12.dp), fontSize = 12.sp) }
         }
     }
 }
 
-/** Etiqueta de campo con estilo secundario para los formularios de evento. */
 @Composable
 fun LabelText(text: String) {
-    Text(
-        text,
-        fontWeight = FontWeight.Bold,
-        color      = Color.Gray,
-        fontSize   = 10.sp,
-        modifier   = Modifier.padding(bottom = 4.dp)
-    )
+    Text(text, fontWeight = FontWeight.Bold, color = Color.Gray,
+        fontSize = 10.sp, modifier = Modifier.padding(bottom = 4.dp))
 }
 
-/** Campo de texto personalizado sin indicador de fondo para los formularios de evento. */
 @Composable
 fun CustomTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    placeholder: String,
-    isSingle: Boolean = true,
-    minLines: Int = 1
+    value: String, onValueChange: (String) -> Unit,
+    placeholder: String, isSingle: Boolean = true, minLines: Int = 1
 ) {
     TextField(
-        value         = value,
-        onValueChange = onValueChange,
-        modifier      = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp)),
+        value = value, onValueChange = onValueChange,
+        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)),
         placeholder = { Text(placeholder, color = Color.LightGray) },
-        singleLine  = isSingle,
-        minLines    = minLines,
-        colors      = TextFieldDefaults.colors(
+        singleLine = isSingle, minLines = minLines,
+        colors = TextFieldDefaults.colors(
             focusedContainerColor   = Color(0xFFF9F9F9),
             unfocusedContainerColor = Color(0xFFF9F9F9),
             focusedIndicatorColor   = Color.Transparent,

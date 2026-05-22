@@ -12,6 +12,7 @@ import com.miempresa.comuniapp.features.event.detail.EventDetailScreen
 import com.miempresa.comuniapp.features.event.edit.EditEventScreen
 import com.miempresa.comuniapp.features.event.list.EventListScreen
 import com.miempresa.comuniapp.features.map.MapScreen
+import com.miempresa.comuniapp.features.notification.NotificationScreen
 import com.miempresa.comuniapp.features.user.achievements.AchievementsScreen
 import com.miempresa.comuniapp.features.user.edit.UserEditScreen
 import com.miempresa.comuniapp.features.user.history.HistoryScreen
@@ -57,7 +58,24 @@ fun UserNavigation(
         }
 
         composable<DashboardRoutes.Notifications> {
-            Text("Notificaciones (pendiente)")
+
+            NotificationScreen(
+                paddingValues = padding,
+
+                onNotificationClick = { notification ->
+
+                    // Si la notificación tiene un evento relacionado,
+                    // navegamos al detalle del evento.
+                    if (notification.relatedEventId.isNotBlank()) {
+
+                        navController.navigate(
+                            DashboardRoutes.EventDetail(
+                                notification.relatedEventId
+                            )
+                        )
+                    }
+                }
+            )
         }
 
         composable<DashboardRoutes.Profile> {

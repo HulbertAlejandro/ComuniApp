@@ -439,4 +439,11 @@
 
     <string name="edit_event_choose_gallery">Elegir de galería</string>
 
+    <!-- Notificaciones -->
+    <string name="notifications_title">Notificaciones</string>
+    <string name="notifications_mark_all_read">Marcar todo</string>
+    <string name="notifications_empty_title">Todo tranquilo por aquí</string>
+    <string name="notifications_empty_body">Cuando haya actividad en tus eventos recibirás notificaciones aquí.</string>
+    <string name="notifications_delete">Eliminar notificación</string>
+
 </resources>

@@ -21,12 +21,19 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
         _events.value = seedEvents()
     }
 
-    override suspend fun save(event: Event) {
-        // Ahora el evento ya trae su lista de imageUris desde el ViewModel
+    override suspend fun save(event: Event): String {
+        // 1. Si el evento no trae ID, le generamos uno de prueba en memoria
+        val eventId = event.id.ifBlank { java.util.UUID.randomUUID().toString() }
+
+        // 2. Guardamos el evento modificado en el estado de la lista
         _events.value += event.copy(
+            id = eventId,
             eventStatus = EventStatus.CREATED,
             verificationStatus = VerificationStatus.PENDING
         )
+
+        // 3. Retornamos el ID para cumplir con el nuevo contrato de la interfaz
+        return eventId
     }
 
     override suspend fun findById(id: String): Event? =
@@ -356,4 +363,12 @@ class EventRepositoryImpl @Inject constructor() : EventRepository {
 
     override suspend fun getEventsByIds(ids: List<String>): List<Event> =
         _events.value.filter { it.id in ids }
+
+    override suspend fun incrementCommentsCount(eventId: String) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun decrementCommentsCount(eventId: String) {
+        TODO("Not yet implemented")
+    }
 }

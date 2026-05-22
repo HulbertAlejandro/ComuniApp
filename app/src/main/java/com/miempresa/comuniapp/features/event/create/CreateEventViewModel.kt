@@ -5,17 +5,26 @@ import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.miempresa.comuniapp.R
+import com.miempresa.comuniapp.core.notifications.NotificationSender
 import com.miempresa.comuniapp.core.resources.ResourceProvider
 import com.miempresa.comuniapp.core.utils.RequestResult
 import com.miempresa.comuniapp.core.utils.ValidatedField
 import com.miempresa.comuniapp.data.datastore.SessionDataStore
 import com.miempresa.comuniapp.domain.model.*
 import com.miempresa.comuniapp.domain.repository.EventRepository
+import com.miempresa.comuniapp.domain.repository.StorageRepository
+import com.miempresa.comuniapp.domain.service.CategorySuggestionService
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.io.File
@@ -25,190 +34,170 @@ import java.time.format.DateTimeFormatter
 import java.util.UUID
 import javax.inject.Inject
 
-/**
- * ViewModel de la pantalla de creación de eventos.
- *
- * Responsabilidades:
- * - Gestionar los campos del formulario con validación reactiva.
- * - Manejar la selección de imágenes desde cámara o galería.
- * - Capturar la ubicación seleccionada en el mapa.
- * - Delegar la persistencia al [EventRepository] (Firestore asigna el ID).
- * - Leer el ID y nombre del organizador desde [SessionDataStore].
- *
- * @param repository       Repositorio de eventos que persiste en Firestore.
- * @param sessionDataStore Almacén local de la sesión del usuario autenticado.
- * @param resources        Proveedor de strings localizados.
- */
+/** Estado del proceso de sugerencia de categoría por IA. */
+sealed interface SuggestionState {
+    data object Idle : SuggestionState
+    data object Loading : SuggestionState
+    data class Success(val category: Category) : SuggestionState
+    data class Error(val message: String) : SuggestionState
+}
+
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class CreateEventViewModel @Inject constructor(
     private val repository: EventRepository,
+    private val storageRepository: StorageRepository,
+    private val categorySuggestionService: CategorySuggestionService,
     private val sessionDataStore: SessionDataStore,
+    private val notificationSender: NotificationSender,
     private val resources: ResourceProvider
 ) : ViewModel() {
 
-    private val _ownerId       = MutableStateFlow<String?>(null)
+    // ── 1. Propiedades de Estado y Campos Validados (Siempre primero en memoria) ──────────────────
+
+    private val _ownerId = MutableStateFlow<String?>(null)
     private val _organizerName = MutableStateFlow<String?>(null)
-    private val dateFormatter  = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+    private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
-    init {
-        // Observa la sesión activa para obtener el ID y nombre del organizador
-        viewModelScope.launch {
-            sessionDataStore.sessionFlow.collect { session ->
-                _ownerId.value       = session?.userId ?: "user_test_123"
-                _organizerName.value = session?.name   ?: "Usuario Anónimo"
-            }
-        }
-    }
-
-    // ── Campos con validación ────────────────────────────────────────────
-
-    /** Título del evento: no puede estar vacío. */
     val title = ValidatedField("") {
         if (it.isBlank()) resources.getString(R.string.validation_error_title_required) else null
     }
 
-    /** Descripción del evento: no puede estar vacía. */
     val description = ValidatedField("") {
         if (it.isBlank()) resources.getString(R.string.validation_error_description_required) else null
     }
 
-    /** Capacidad máxima: debe ser un número entero positivo. */
     val maxAttendees = ValidatedField("") {
         it.toIntOrNull()
-            ?.let { num -> if (num <= 0) resources.getString(R.string.validation_error_max_attendees_min) else null }
+            ?.let { num ->
+                if (num <= 0) resources.getString(R.string.validation_error_max_attendees_min)
+                else null
+            }
             ?: resources.getString(R.string.validation_error_max_attendees_invalid)
     }
 
-    // ── Imágenes múltiples ───────────────────────────────────────────────
-
-    /**
-     * Lista reactiva de URIs seleccionadas por el usuario.
-     * Se convierte a List<String> al momento de guardar en el repositorio.
-     */
     private val _selectedImageUris = MutableStateFlow<List<Uri>>(emptyList())
     val selectedImageUris: StateFlow<List<Uri>> = _selectedImageUris.asStateFlow()
-
-    /** URI temporal del archivo de cámara en curso. Se limpia tras cada captura. */
     private var _currentCameraUri: Uri? = null
 
-    /**
-     * Crea un archivo temporal en caché y retorna su URI via FileProvider.
-     * Debe llamarse justo antes de lanzar el launcher de cámara.
-     *
-     * @param context Contexto de la Activity para acceder a cacheDir y packageName.
-     * @return URI expuesta via FileProvider para que la cámara escriba la foto.
-     */
+    private val _selectedLocation = MutableStateFlow<EventLocation?>(null)
+    val selectedLocation: StateFlow<EventLocation?> = _selectedLocation.asStateFlow()
+
+    var selectedCategory by mutableStateOf<Category?>(null)
+
+    private val _suggestionState = MutableStateFlow<SuggestionState>(SuggestionState.Idle)
+    val suggestionState: StateFlow<SuggestionState> = _suggestionState.asStateFlow()
+
+    var startDateMillis by mutableStateOf<Long?>(null)
+    var endDateMillis by mutableStateOf<Long?>(null)
+
+    private val _result = MutableStateFlow<RequestResult?>(null)
+    val result: StateFlow<RequestResult?> = _result.asStateFlow()
+
+    // ── 2. Bloque de Inicialización (Ahora lee variables ya creadas con seguridad) ───────────────
+
+    init {
+        viewModelScope.launch {
+            sessionDataStore.sessionFlow.collect { session ->
+                _ownerId.value = session?.userId ?: "user_test_123"
+                _organizerName.value = session?.name ?: "Usuario Anónimo"
+            }
+        }
+
+        // ── Pipeline reactivo de sugerencia IA con soporte de cancelación nativa ──────────────────────────
+        snapshotFlow { title.value to description.value }
+            .debounce(2000L) // Pausa prudente del teclado
+            .map { (t, d) -> t.trim() to d.trim() }
+            .distinctUntilChanged() // Evita repetir llamadas si el texto final no varió
+            .flatMapLatest { (t, d) ->
+                // flatMapLatest cancela automáticamente el bloque previo si llega una nueva emisión
+                flow {
+                    if (t.length >= 5 && d.length >= 30) {
+                        emit(SuggestionState.Loading)
+                        try {
+                            val suggested = categorySuggestionService.suggestCategory(t, d)
+                            if (suggested != null) {
+                                emit(SuggestionState.Success(suggested))
+                            } else {
+                                emit(SuggestionState.Idle)
+                            }
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (e: Exception) {
+                            emit(SuggestionState.Error(e.message ?: "Error al obtener sugerencia"))
+                        }
+                    } else {
+                        emit(SuggestionState.Idle)
+                    }
+                }
+            }
+            .onEach { state ->
+                _suggestionState.value = state
+            }
+            .launchIn(viewModelScope)
+    }
+
+    // ── 3. Funciones y Lógica de Negocio ─────────────────────────────────────────────────────────
+
     fun createTempCameraUri(context: Context): Uri {
         val imagesDir = File(context.cacheDir, "event_images").also { it.mkdirs() }
-        val tempFile  = File(imagesDir, "camera_${UUID.randomUUID()}.jpg")
+        val tempFile = File(imagesDir, "camera_${UUID.randomUUID()}.jpg")
         val uri = FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.fileprovider",
-            tempFile
+            context, "${context.packageName}.fileprovider", tempFile
         )
         _currentCameraUri = uri
         return uri
     }
 
-    /**
-     * Llamado cuando TakePicture devuelve resultado.
-     * Solo agrega la URI a la lista si la foto fue confirmada por el usuario.
-     *
-     * @param success true si la foto fue guardada exitosamente.
-     */
     fun onCameraImageCaptured(success: Boolean) {
-        if (success) {
-            _currentCameraUri?.let { _selectedImageUris.value += it }
-        }
+        if (success) _currentCameraUri?.let { _selectedImageUris.value += it }
         _currentCameraUri = null
     }
 
-    /**
-     * Agrega las URIs devueltas por el selector de galería a la lista actual.
-     *
-     * @param uris Lista de URIs seleccionadas; se ignora si está vacía.
-     */
     fun onGalleryImagesSelected(uris: List<Uri>) {
         if (uris.isNotEmpty()) _selectedImageUris.value += uris
     }
 
-    /**
-     * Elimina la imagen en la posición [index] de la lista.
-     *
-     * @param index Posición de la imagen a eliminar.
-     */
     fun removeImage(index: Int) {
         _selectedImageUris.value = _selectedImageUris.value
-            .toMutableList()
-            .also { it.removeAt(index) }
+            .toMutableList().also { it.removeAt(index) }
     }
 
-    // ── Ubicación ────────────────────────────────────────────────────────
-
-    private val _selectedLocation = MutableStateFlow<EventLocation?>(null)
-    val selectedLocation: StateFlow<EventLocation?> = _selectedLocation.asStateFlow()
-
-    /**
-     * Actualiza la ubicación del evento con el punto tocado en el mapa.
-     *
-     * @param point Punto geográfico seleccionado en Mapbox.
-     */
     fun onMapPointSelected(point: com.mapbox.geojson.Point) {
         _selectedLocation.value = EventLocation(
-            latitude  = point.latitude(),
+            latitude = point.latitude(),
             longitude = point.longitude()
         )
     }
 
-    // ── Categoría ────────────────────────────────────────────────────────
+    fun onCategorySelected(category: Category) {
+        selectedCategory = category
+        dismissSuggestion()
+    }
 
-    /** Categoría seleccionada por el usuario; null hasta que elija una. */
-    var selectedCategory by mutableStateOf<Category?>(null)
+    fun acceptSuggestion() {
+        val state = _suggestionState.value
+        if (state is SuggestionState.Success) {
+            selectedCategory = state.category
+            _suggestionState.value = SuggestionState.Idle
+        }
+    }
 
-    /** Actualiza la categoría seleccionada desde el diálogo de selección. */
-    fun onCategorySelected(category: Category) { selectedCategory = category }
+    fun dismissSuggestion() {
+        _suggestionState.value = SuggestionState.Idle
+    }
 
-    // ── Fechas ───────────────────────────────────────────────────────────
-
-    /** Timestamp en milisegundos de la fecha/hora de inicio. */
-    var startDateMillis by mutableStateOf<Long?>(null)
-
-    /** Timestamp en milisegundos de la fecha/hora de fin. */
-    var endDateMillis by mutableStateOf<Long?>(null)
-
-    /**
-     * Combina una fecha seleccionada en el DatePicker con una hora del TimePicker.
-     *
-     * @param isStart   true si se actualiza la fecha de inicio; false para la de fin.
-     * @param dateMillis Timestamp del día seleccionado (puede ser null si no cambió).
-     * @param hour      Hora seleccionada en el TimePicker.
-     * @param minute    Minuto seleccionado en el TimePicker.
-     */
     fun updateDateTime(isStart: Boolean, dateMillis: Long?, hour: Int, minute: Int) {
         val base = dateMillis
             ?: (if (isStart) startDateMillis else endDateMillis)
             ?: System.currentTimeMillis()
-
         val zoned = Instant.ofEpochMilli(base)
             .atZone(ZoneId.of("America/Bogota"))
             .withHour(hour).withMinute(minute).withSecond(0)
-
         if (isStart) startDateMillis = zoned.toInstant().toEpochMilli()
-        else         endDateMillis   = zoned.toInstant().toEpochMilli()
+        else endDateMillis = zoned.toInstant().toEpochMilli()
     }
 
-    // ── Resultado ────────────────────────────────────────────────────────
-
-    /** Estado del proceso de creación expuesto a la UI. */
-    private val _result = MutableStateFlow<RequestResult?>(null)
-    val result: StateFlow<RequestResult?> = _result.asStateFlow()
-
-    // ── Validación ───────────────────────────────────────────────────────
-
-    /**
-     * Retorna true solo si todos los campos obligatorios están correctamente diligenciados.
-     * Se evalúa en cada recomposición gracias a que los campos son observables.
-     */
     val isFormValid: Boolean
         get() = title.value.isNotBlank() &&
                 description.value.isNotBlank() &&
@@ -216,25 +205,12 @@ class CreateEventViewModel @Inject constructor(
                 (maxAttendees.value.toIntOrNull()?.let { it > 0 } ?: false) &&
                 _selectedLocation.value != null &&
                 startDateMillis != null &&
-                endDateMillis   != null &&
+                endDateMillis != null &&
                 endDateMillis!! > startDateMillis!! &&
                 selectedCategory != null
 
-    // ── Creación ─────────────────────────────────────────────────────────
-
-    /**
-     * Persiste el nuevo evento en Firestore.
-     *
-     * Flujo:
-     * 1. Valida que el formulario sea correcto y que haya sesión activa.
-     * 2. Emite [RequestResult.Loading].
-     * 3. Construye el objeto [Event] con id vacío (Firestore lo asigna en el repositorio).
-     * 4. Convierte las URIs locales a String en el límite ViewModel → Dominio.
-     * 5. Llama a [EventRepository.save] y emite [RequestResult.Success].
-     * 6. Cualquier excepción emite [RequestResult.Failure].
-     */
     fun createEvent() {
-        val owner    = _ownerId.value         ?: return
+        val owner = _ownerId.value ?: return
         val location = _selectedLocation.value ?: return
         if (!isFormValid) return
 
@@ -243,29 +219,43 @@ class CreateEventViewModel @Inject constructor(
             try {
                 val start = Instant.ofEpochMilli(startDateMillis!!)
                     .atZone(ZoneId.systemDefault())
-                val end   = Instant.ofEpochMilli(endDateMillis!!)
+                val end = Instant.ofEpochMilli(endDateMillis!!)
                     .atZone(ZoneId.systemDefault())
 
-                repository.save(
+                val eventTitleClean = title.value.trim()
+                val imageUrls = uploadEventImages(_selectedImageUris.value)
+
+                val nuevoEventId = repository.save(
                     Event(
-                        // ✅ id vacío: Firestore lo genera en EventRepositoryImpl.save()
-                        id            = "",
-                        title         = title.value.trim(),
-                        description   = description.value.trim(),
-                        category      = selectedCategory!!,
-                        // ✅ Conversión Uri → String en el límite ViewModel → Dominio
-                        imageUris     = _selectedImageUris.value.map { it.toString() },
+                        id = "",
+                        title = eventTitleClean,
+                        description = description.value.trim(),
+                        category = selectedCategory!!,
+                        imageUris = imageUrls,
                         eventLocation = location,
-                        startDate     = start.format(dateFormatter),
-                        endDate       = end.format(dateFormatter),
-                        maxAttendees  = maxAttendees.value.toIntOrNull(),
-                        ownerId       = owner,
+                        startDate = start.format(dateFormatter),
+                        endDate = end.format(dateFormatter),
+                        maxAttendees = maxAttendees.value.toIntOrNull(),
+                        ownerId = owner,
                         organizerName = _organizerName.value
                             ?: resources.getString(R.string.default_organizer_name),
-                        eventStatus        = EventStatus.CREATED,
+                        eventStatus = EventStatus.CREATED,
                         verificationStatus = VerificationStatus.PENDING
                     )
                 )
+
+                runCatching {
+                    notificationSender.enviar(
+                        destinatarioId = owner,
+                        tipo = NotificationType.EVENT_UNDER_REVIEW,
+                        titulo = "📋 Evento enviado a revisión",
+                        cuerpo = "\"$eventTitleClean\" está siendo revisado.",
+                        relatedEventId = nuevoEventId
+                    )
+                }.onFailure { e ->
+                    android.util.Log.e("CreateEventVM", "Error al notificar: ${e.message}")
+                }
+
                 clearForm()
                 _result.value = RequestResult.Success(
                     resources.getString(R.string.create_event_success)
@@ -278,20 +268,28 @@ class CreateEventViewModel @Inject constructor(
         }
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────
+    private suspend fun uploadEventImages(uris: List<Uri>): List<String> =
+        kotlinx.coroutines.coroutineScope {
+            uris.map { uri ->
+                async {
+                    val s = uri.toString()
+                    if (s.startsWith("https")) s
+                    else storageRepository.uploadImage(uri, "event_images/${UUID.randomUUID()}.jpg")
+                }
+            }.awaitAll()
+        }
 
-    /** Reinicia todos los campos del formulario a sus valores iniciales. */
     private fun clearForm() {
         title.reset()
         description.reset()
         maxAttendees.reset()
         _selectedImageUris.value = emptyList()
-        _selectedLocation.value  = null
-        selectedCategory         = null
-        startDateMillis          = null
-        endDateMillis            = null
+        _selectedLocation.value = null
+        selectedCategory = null
+        startDateMillis = null
+        endDateMillis = null
+        _suggestionState.value = SuggestionState.Idle
     }
 
-    /** Reinicia el estado del resultado sin limpiar el formulario. */
     fun resetResult() { _result.value = null }
 }

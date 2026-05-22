@@ -53,38 +53,20 @@ class ForgetPasswordViewModel @Inject constructor(
     private val _result = MutableStateFlow<RequestResult?>(null)
     val result: StateFlow<RequestResult?> = _result.asStateFlow()
 
-    /**
-     * Busca en Firestore si el email ingresado corresponde a un usuario registrado.
-     *
-     * Flujo:
-     * 1. Emite [RequestResult.Loading] para activar el spinner en el botón.
-     * 2. Consulta el repositorio con el email.
-     * 3. Si no existe el usuario, emite [RequestResult.Failure].
-     * 4. Si existe, emite [RequestResult.Success] para que la UI navegue
-     *    hacia la pantalla de restablecimiento de contraseña.
-     * 5. Cualquier excepción de red o Firestore emite [RequestResult.Failure].
-     */
+    /** Verifica si el email existe en Firestore y emite el resultado. */
     fun sendRecoveryEmail() {
         if (!isFormValid) return
 
         viewModelScope.launch {
             _result.value = RequestResult.Loading
-
             try {
-                val user = userRepository.findByEmail(email.value)
+                // Firebase Auth envía el enlace; no necesitamos verificar
+                // si el email existe primero (Firebase lo hace internamente)
+                userRepository.sendPasswordResetEmail(email.value)
 
-                if (user == null) {
-                    _result.value = RequestResult.Failure(
-                        resources.getString(R.string.error_user_not_found)
-                    )
-                    return@launch
-                }
-
-                // Usuario encontrado: habilita el flujo de restablecimiento
                 _result.value = RequestResult.Success(
                     resources.getString(R.string.password_forget_success)
                 )
-
             } catch (e: Exception) {
                 _result.value = RequestResult.Failure(
                     e.message ?: resources.getString(R.string.password_forget_failure)

@@ -18,22 +18,21 @@ import com.miempresa.comuniapp.ui.components.AppTextField
 import com.miempresa.comuniapp.ui.theme.appPrimaryButtonColors
 
 /**
- * Pantalla de recuperación de contraseña.
+ * Pantalla de "¿Olvidaste tu contraseña?".
  *
- * El usuario ingresa su email; si existe en Firestore, navega hacia
- * [ResetPasswordScreen] para establecer una nueva contraseña.
+ * Permite al usuario ingresar su email para recibir instrucciones de recuperación.
  *
  * Manejo de estados:
  * - [RequestResult.Loading]: spinner en el botón, botón deshabilitado.
- * - [RequestResult.Success]: muestra mensaje y navega hacia el reset.
- * - [RequestResult.Failure]: muestra el error en Snackbar, no navega.
+ * - [RequestResult.Success]: Snackbar con mensaje y navegación al login.
+ * - [RequestResult.Failure]: Snackbar con error, sin navegación.
  *
- * @param onNavigateToReset Callback de navegación hacia la pantalla de reset.
- * @param viewModel         ViewModel inyectado por Hilt.
+ * @param onNavigateToBack Callback para volver a la pantalla de login.
+ * @param viewModel        ViewModel inyectado por Hilt.
  */
 @Composable
 fun ForgetPasswordScreen(
-    onNavigateToReset: () -> Unit = {},
+    onNavigateToBack: () -> Unit = {},
     viewModel: ForgetPasswordViewModel = hiltViewModel()
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -50,7 +49,7 @@ fun ForgetPasswordScreen(
             is RequestResult.Success -> {
                 snackbarHostState.showSnackbar(r.message)
                 viewModel.resetResult()
-                onNavigateToReset()
+                onNavigateToBack()  // Vuelve al login, no a ResetPassword
             }
             is RequestResult.Failure -> {
                 snackbarHostState.showSnackbar(r.errorMessage)
