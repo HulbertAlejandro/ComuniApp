@@ -1,24 +1,71 @@
+# ====================================================================
+# 1. ARCHIVOS TEMPORALES Y COMPILACIÓN DE ANDROID / GRADLE
+# ====================================================================
+.gradle/
+/build/
+/*/build/
+/captures/
+.externalNativeBuild/
+.cxx/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+*.apk
+*.aar
 
-# Mapbox tokens privados
+# ====================================================================
+# 2. CONFIGURACIÓN LOCAL (Específica de tu PC)
+# ====================================================================
+local.properties
+/local.properties
+.DS_Store
+Thumbs.db
+
+# ====================================================================
+# 3. ANDROID STUDIO / IDE (Ignorar toda la carpeta .idea de forma limpia)
+# ====================================================================
+/.idea/
+.idea/
+*.ipr
+*.iws
+
+# Evita subir perfiles de hardware del emulador local
+/captures/
+*.keystore
+# Excepción por si acaso usas firmas embebidas (descomentar solo si es necesario)
+# !debug.keystore
+
+# ====================================================================
+# 4. SEGURIDAD, LLAVES PRIVADAS Y CREDENCIALES (CRÍTICO)
+# ====================================================================
+# Bloquea tokens específicos de mapas
 app/src/main/res/values/mapbox_access_token.xml
 
-# SE SEGURIDAD: Bloquea la carpeta de credenciales de Firebase de la PC local
+# Bloquea la carpeta completa de tus llaves de Firebase de producción
 app/credentials/
+**/credentials/
 
-# CORRECCIÓN: Evita ignorar todos los JSON (permitiendo pasar google-services.json)
-# Si necesitas ignorar algún json específico en el futuro, agrégalo con su ruta completa aquí abajo:
+# Bloquea archivos de variables de entorno locales donde guardes API Keys
+.env
+.env.*
+
+# ====================================================================
+# 5. BACKEND / FIREBASE FUNCTIONS (Si usas Typescript/Javascript)
+# ====================================================================
+functions/node_modules/
+functions/.runtimeconfig.json
+functions/lib/
+.firebase/
+
+# ====================================================================
+# 6. LOGS, REPORTES DE ERRORES Y BASURA DEL SISTEMA
+# ====================================================================
+*.log
+hs_err_pid*
+replay_pid*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ====================================================================
+# 7. ASISTENTES DE IA / AGENTES (Opcional - carpetas de skills locales)
+# ====================================================================
+.agents/
