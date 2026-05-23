@@ -6,4 +6,5 @@ plugins {
     alias(libs.plugins.hilt.android) apply false
     alias(libs.plugins.devtools.ksp) apply false
     alias(libs.plugins.google.gms.google.services) apply false
+    alias(libs.plugins.firebase.appdistribution) apply false
 }

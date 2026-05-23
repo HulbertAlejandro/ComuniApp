@@ -1,4 +1,7 @@
 import java.util.Properties
+import com.android.build.api.dsl.ApplicationExtension
+// Mantenemos el import por si acaso, pero usaremos la clase explícita abajo para ir sobre seguro
+import com.google.firebase.appdistribution.gradle.AppDistributionExtension
 
 plugins {
     alias(libs.plugins.android.application)
@@ -8,9 +11,9 @@ plugins {
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.devtools.ksp)
     alias(libs.plugins.google.gms.google.services)
+    alias(libs.plugins.firebase.appdistribution)
 }
 
-// Lógica para cargar de forma segura las propiedades locales
 val localProperties = Properties().apply {
     val localPropertiesFile = rootProject.file("local.properties")
     if (localPropertiesFile.exists()) {
@@ -18,38 +21,50 @@ val localProperties = Properties().apply {
     }
 }
 
-android {
+configure<ApplicationExtension> {
     namespace = "com.miempresa.comuniapp"
 
+    // Subimos a SDK 35/36 según lo que pida tu entorno para mitigar advertencias de compatibilidad vieja
     compileSdk = 36
 
     defaultConfig {
         applicationId = "com.miempresa.comuniapp"
-
         minSdk = 28
         targetSdk = 36
-
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // CAMBIADO: Ahora inyecta la clave de OpenRouter en lugar de Gemini
         val openRouterKey = localProperties.getProperty("OPENROUTER_API_KEY") ?: ""
         buildConfigField("String", "OPENROUTER_API_KEY", "\"$openRouterKey\"")
     }
 
     buildTypes {
-        debug {
+        getByName("debug") {
             isDebuggable = true
-        }
-        release {
-            isMinifyEnabled = false
 
+            (this as ExtensionAware).extensions.configure<AppDistributionExtension>("firebaseAppDistribution") {
+                artifactType = "APK"
+                releaseNotes = "ComuniApp Debug — Rama activa: ${getGitBranch()}"
+                groups = "testers-comuniapp-interno"
+            }
+        }
+
+        getByName("release") {
+            isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+
+            // SOLUCIÓN DEFINITIVA: Mismo enfoque agnóstico del azúcar sintáctico de Gradle
+            (this as ExtensionAware).extensions.configure<AppDistributionExtension>("firebaseAppDistribution") {
+                artifactType = "APK"
+                releaseNotes = "ComuniApp v${defaultConfig.versionName} — Build oficial de Entrega"
+                groups = "testers-comuniapp-interno"
+                serviceCredentialsFile = "app/credentials/firebase-service-account.json"
+            }
         }
     }
 
@@ -71,7 +86,6 @@ kotlin {
 }
 
 dependencies {
-
     // Core
     implementation(libs.androidx.core.ktx)
 
@@ -81,17 +95,10 @@ dependencies {
 
     // Compose
     implementation(libs.androidx.activity.compose)
-
     implementation(platform(libs.androidx.compose.bom))
-
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
-
-    implementation(libs.retrofit.core)
-    implementation(libs.retrofit.converter.gson)
-    implementation(libs.okhttp.logging)
-
     implementation(libs.androidx.compose.material3)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
@@ -99,6 +106,11 @@ dependencies {
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+
+    // Networking & APIs
+    implementation(libs.retrofit.core)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.okhttp.logging)
 
     // Navigation
     implementation(libs.androidx.navigation.compose)
@@ -109,13 +121,11 @@ dependencies {
     // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
-
     implementation(libs.androidx.hilt.navigation.compose)
 
     // WorkManager
     implementation(libs.androidx.work.runtime)
     implementation(libs.hilt.work)
-
     ksp(libs.hilt.compiler.work)
 
     // Firebase
@@ -123,8 +133,6 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.messaging)
     implementation(libs.firebase.storage)
-
-    // ELIMINADO: Se removió la línea de libs.google.generativeai para limpiar a Gemini
 
     // Coil
     implementation(libs.coil.compose)
@@ -142,7 +150,17 @@ dependencies {
 
     // Testing
     testImplementation(libs.junit)
-
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+}
+
+fun getGitBranch(): String {
+    return try {
+        val process = ProcessBuilder("git", "rev-parse", "--abbrev-ref", "HEAD")
+            .redirectErrorStream(true)
+            .start()
+        process.inputStream.bufferedReader().readLine()?.trim() ?: "unknown"
+    } catch (_: Exception) {
+        "unknown"
+    }
 }
